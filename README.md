@@ -32,7 +32,26 @@ Machine Learning.
 
 ## Como executar
 
-...
+Pré-requisitos: [Docker Desktop](https://www.docker.com/products/docker-desktop/) e [uv](https://docs.astral.sh/uv/).
+
+```bash
+# 1. Banco (PostgreSQL no Docker, exposto na porta 55432)
+docker compose up -d
+
+# 2. Back-end
+cd backend
+uv sync                   # instala as dependências
+uv run alembic upgrade head   # cria/atualiza as tabelas
+uv run pytest             # testes (usam o banco skinomics_test, criado sozinho)
+uv run uvicorn app.main:app --reload   # API em http://localhost:8000
+```
+
+A porta do banco é 55432, e não a padrão 5432, para não colidir com um PostgreSQL instalado
+direto na máquina. Para mudar a conexão, copie `.env.example` para `backend/.env` e ajuste
+`SKINOMICS_DATABASE_URL`.
+
+Depois de alterar um modelo em `backend/app/models/`, gere a migração com
+`uv run alembic revision --autogenerate -m "descrição"` e revise o arquivo gerado antes de commitar.
 
 ## Documentação
 

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Skinomics API"
     environment: str = "development"
-    database_url: str = "postgresql+psycopg://skinomics:skinomics@localhost:5432/skinomics"
+    database_url: str = "postgresql+psycopg://skinomics:skinomics@localhost:55432/skinomics"
     cors_origins: list[str] = ["http://localhost:5173"]
 
 
