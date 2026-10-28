@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+
+# Dados de ML (grandes demais para o git; compartilhados fora do repo)
+ml/data/*
+!ml/data/.gitkeep
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Editores e SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code (configurações locais)
+.claude/settings.local.json
