@@ -14,6 +14,20 @@ defaults:
 jobs:
   qualidade:
     runs-on: ubuntu-latest
+    services:
+      # Mesmo Postgres do docker-compose.yml; os testes de banco criam o skinomics_test nele.
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: skinomics
+          POSTGRES_PASSWORD: skinomics
+          POSTGRES_DB: skinomics
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U skinomics"
+          --health-interval 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5

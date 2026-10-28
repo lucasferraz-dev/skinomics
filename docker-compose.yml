@@ -6,7 +6,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skinomics}
       POSTGRES_DB: ${POSTGRES_DB:-skinomics}
     ports:
-      - "5432:5432"
+      # Porta alta no host para não colidir com PostgreSQL instalado direto na máquina
+      # (os instaladores ocupam a 5432 e, numa segunda versão, a 5433).
+      - "55432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
