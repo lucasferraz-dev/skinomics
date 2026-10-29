@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Tokens do design (Figma do Pedro). Viram classes do Tailwind: bg-painel, text-suave, etc. */
+@theme {
+  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-fundo: #0b0d0c;
+  --color-painel: #111412;
+  --color-painel-alto: #171b18;
+  --color-borda: #232924;
+  --color-texto: #e9ece7;
+  --color-suave: #8b928c;
+  --color-apagado: #5c635d;
+  --color-destaque: #c6f36b;
+  --color-destaque-fundo: #1d2614;
+  --color-queda: #f2876b;
+}
+
+body {
+  @apply bg-fundo font-sans text-texto antialiased;
+}
