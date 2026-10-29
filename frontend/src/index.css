@@ -2,8 +2,10 @@
 
 /* Tokens do design (Figma do Pedro). Viram classes do Tailwind: bg-painel, text-suave, etc. */
 @theme {
-  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Letras romanas em versalete para rótulos: o clima "jogo/art déco" do Deadlock. */
+  --font-rotulo: "Cinzel Variable", serif;
 
   --color-fundo: #0b0d0c;
   --color-painel: #111412;
@@ -19,4 +21,11 @@
 
 body {
   @apply bg-fundo font-sans text-texto antialiased;
+}
+
+/* Títulos: Archivo larga e pesada (eixo de largura da fonte variável). */
+@utility titulo {
+  font-weight: 800;
+  font-stretch: 112%;
+  letter-spacing: -0.03em;
 }

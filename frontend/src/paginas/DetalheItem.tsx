@@ -42,7 +42,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
       <header className="flex items-center gap-4">
         <IconeItem url={item.icon_url} nome={item.nome} tamanho={56} />
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-medium tracking-tight sm:text-3xl">{item.nome}</h1>
+          <h1 className="truncate text-2xl titulo sm:text-3xl">{item.nome}</h1>
           <Rotulo>TF2 / {item.tipo ?? "Item"}</Rotulo>
         </div>
       </header>

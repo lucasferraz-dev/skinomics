@@ -1,5 +1,16 @@
 /** Mini gráfico da tabela. SVG puro: uma biblioteca de gráficos por linha pesaria à toa. */
-export function Sparkline({ valores, largura = 112, altura = 32 }: { valores: number[]; largura?: number; altura?: number }) {
+export function Sparkline({
+  valores,
+  largura = 112,
+  altura = 32,
+  titulo,
+}: {
+  valores: number[];
+  largura?: number;
+  altura?: number;
+  /** Texto do tooltip (e do leitor de tela); sem ele, o gráfico é só decorativo. */
+  titulo?: string;
+}) {
   if (valores.length < 2) {
     return <span className="font-mono text-xs text-apagado">—</span>;
   }
@@ -17,7 +28,15 @@ export function Sparkline({ valores, largura = 112, altura = 32 }: { valores: nu
   const subiu = valores.at(-1)! >= valores[0]!;
 
   return (
-    <svg width={largura} height={altura} viewBox={`0 0 ${largura} ${altura}`} aria-hidden>
+    <svg
+      width={largura}
+      height={altura}
+      viewBox={`0 0 ${largura} ${altura}`}
+      role={titulo ? "img" : undefined}
+      aria-label={titulo}
+      aria-hidden={titulo ? undefined : true}
+    >
+      {titulo && <title>{titulo}</title>}
       <polyline
         points={pontos}
         fill="none"
