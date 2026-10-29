@@ -10,6 +10,9 @@ from app.db.base import Base
 class TipoColeta(StrEnum):
     CATALOGO = "catalogo"
     PRECOS = "precos"
+    # Carga de um histórico já coletado (CSV); fica à parte para não entrar na taxa de
+    # sucesso da coleta diária.
+    IMPORTACAO = "importacao"
 
 
 class StatusExecucao(StrEnum):
