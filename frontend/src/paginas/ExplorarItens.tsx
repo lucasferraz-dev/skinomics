@@ -1,10 +1,10 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
-import { type FiltrosItens, type ItemResumo, useHistorico, useItens } from "../api/itens";
+import { type FiltrosItens, type ItemResumo, type PontoHistorico, useHistorico, useItens } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { Sparkline } from "../componentes/Sparkline";
-import { diasAntes, formatarInteiro, formatarPreco } from "../lib/formato";
+import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
 
 type Ordenacao = NonNullable<FiltrosItens["ordenar"]>;
 type Direcao = NonNullable<FiltrosItens["direcao"]>;
@@ -49,8 +49,8 @@ export function ExplorarItens() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
-          <Rotulo marcador>No radar / Team Fortress 2</Rotulo>
-          <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Explorar itens</h1>
+          <Rotulo destaque>No radar / Team Fortress 2</Rotulo>
+          <h1 className="text-3xl titulo sm:text-4xl">Explorar itens</h1>
         </div>
         <p className="max-w-sm text-sm text-suave">
           Compare preço, movimento da semana e liquidez. Clique em um item para ver o histórico completo.
@@ -73,7 +73,7 @@ export function ExplorarItens() {
           <MensagemErro titulo="Nenhum item encontrado." detalhe="Tente outro termo de busca." />
         ) : (
           <div className={`overflow-x-auto transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
-            <table className="w-full min-w-[720px] text-left">
+            <table className="w-full min-w-[800px] text-left">
               <thead className="whitespace-nowrap">
                 <tr className="border-b border-borda">
                   <Cabecalho rotulo="Item" coluna="nome" filtros={filtros} atualizar={atualizar} />
@@ -167,7 +167,7 @@ function Cabecalho({
   );
 }
 
-function LinhaItem({ item }: { item: ItemResumo }) {
+export function LinhaItem({ item }: { item: ItemResumo }) {
   const inicio = item.data_preco ? diasAntes(item.data_preco, 30) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
 
@@ -192,13 +192,36 @@ function LinhaItem({ item }: { item: ItemResumo }) {
         <Variacao valor={item.variacao_7d} />
       </td>
       <td className="px-4 py-3">
-        <Sparkline valores={historico.data?.map((ponto) => ponto.preco) ?? []} />
+        <Tendencia pontos={historico.data} />
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm text-suave">
         {item.volume_7d !== null ? formatarInteiro(item.volume_7d) : "—"}
       </td>
       <td className="pr-4 text-right text-apagado" aria-hidden>↗</td>
     </tr>
+  );
+}
+
+/**
+ * Mini gráfico de 30 dias com a variação do mês ao lado. Sem o número, um item que subiu
+ * na semana (Var. 7d verde) mas caiu no mês (gráfico vermelho) parecia um erro.
+ */
+function Tendencia({ pontos }: { pontos: PontoHistorico[] | undefined }) {
+  const primeiro = pontos?.[0];
+  const ultimo = pontos?.at(-1);
+  if (!pontos || !primeiro || !ultimo || pontos.length < 2) {
+    return <Sparkline valores={[]} />;
+  }
+
+  const variacao = ultimo.preco / primeiro.preco - 1;
+  const titulo = `${formatarData(primeiro.data)} – ${formatarData(ultimo.data)}: ${formatarVariacao(variacao)}`;
+  return (
+    <div className="flex items-center gap-3">
+      <Sparkline valores={pontos.map((ponto) => ponto.preco)} titulo={titulo} />
+      <span className="text-xs">
+        <Variacao valor={variacao} />
+      </span>
+    </div>
   );
 }
 

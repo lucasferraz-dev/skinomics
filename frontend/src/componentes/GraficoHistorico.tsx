@@ -29,9 +29,9 @@ function Dica({ active, payload }: TooltipContentProps<TooltipValueType, string 
   );
 }
 
-export function GraficoHistorico({ pontos }: { pontos: PontoHistorico[] }) {
+export function GraficoHistorico({ pontos, altura = 320 }: { pontos: PontoHistorico[]; altura?: number }) {
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height={altura}>
       <LineChart data={pontos} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--color-borda)" />
         <XAxis

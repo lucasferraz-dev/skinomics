@@ -2,11 +2,13 @@ import type { ReactNode } from "react";
 
 import { formatarVariacao } from "../lib/formato";
 
-/** Rótulo em caixa alta e fonte mono, com o quadradinho verde do design. */
-export function Rotulo({ children, marcador = false }: { children: ReactNode; marcador?: boolean }) {
+/** Rótulo em Cinzel (versalete). `destaque` o pinta de verde, para abrir seções. */
+export function Rotulo({ children, destaque = false }: { children: ReactNode; destaque?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-suave">
-      {marcador && <span className="size-1.5 bg-destaque" aria-hidden />}
+    <span
+      // inline-block: span comum ignora a margem vertical que o space-y-* do pai aplica.
+      className={`inline-block font-rotulo text-[13px] font-semibold tracking-[0.06em] ${destaque ? "text-destaque" : "text-suave"}`}
+    >
       {children}
     </span>
   );

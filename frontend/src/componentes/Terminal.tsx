@@ -2,14 +2,7 @@ import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
 
 import { Rotulo } from "./Basicos";
-
-export function Logo() {
-  return (
-    <svg width="22" height="18" viewBox="0 0 22 18" aria-hidden>
-      <path d="M1 17V6l7 7V1l7 9 6-8v15" fill="none" stroke="var(--color-destaque)" strokeWidth="2.4" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { Logo } from "./Logo";
 
 type ItemMenu = { rotulo: string; icone: ReactNode; para?: string };
 
@@ -55,8 +48,7 @@ export function Terminal() {
     <div className="flex min-h-dvh flex-col">
       <header className="flex h-14 items-center justify-between border-b border-borda px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <Logo />
-          <span className="font-semibold tracking-tight">Terminal</span>
+          <Logo texto="Terminal" />
           <span className="text-apagado">/</span>
           <span className="text-sm text-suave">Team Fortress 2</span>
         </div>
