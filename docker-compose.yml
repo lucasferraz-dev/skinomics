@@ -15,16 +15,17 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skinomics}"]
       interval: 5s
       retries: 10
+
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: ./backend
     environment:
+      # Dentro da rede do compose o banco é o host "db", na porta interna 5432.
       SKINOMICS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-skinomics}:${POSTGRES_PASSWORD:-skinomics}@db:5432/${POSTGRES_DB:-skinomics}
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+
 volumes:
   db-data:
