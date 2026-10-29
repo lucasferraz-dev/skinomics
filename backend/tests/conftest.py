@@ -4,11 +4,14 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Connection, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.db.session import obter_sessao
+from app.main import create_app
 
 ALEMBIC_INI = Path(__file__).parents[1] / "alembic.ini"
 
@@ -48,3 +51,12 @@ def sessao(conexao: Connection) -> Iterator[Session]:
     with Session(bind=conexao, join_transaction_mode="create_savepoint") as s:
         yield s
     transacao.rollback()
+
+
+@pytest.fixture
+def cliente(sessao: Session) -> Iterator[TestClient]:
+    """Cliente HTTP da API usando a sessão do teste: enxerga o que o teste gravou."""
+    app = create_app()
+    app.dependency_overrides[obter_sessao] = lambda: sessao
+    with TestClient(app) as c:
+        yield c
