@@ -32,11 +32,17 @@ Machine Learning.
 
 ## Como executar
 
-Pré-requisitos: [Docker Desktop](https://www.docker.com/products/docker-desktop/) e [uv](https://docs.astral.sh/uv/).
+Para só subir a API, basta o [Docker Desktop](https://www.docker.com/products/docker-desktop/):
+
+```bash
+docker compose up -d --build   # banco + API em http://localhost:8080 (aplica as migrações ao subir)
+```
+
+Para desenvolver no back-end, use também o [uv](https://docs.astral.sh/uv/) e suba só o banco:
 
 ```bash
 # 1. Banco (PostgreSQL no Docker, exposto na porta 55432)
-docker compose up -d
+docker compose up -d db
 
 # 2. Back-end
 cd backend
