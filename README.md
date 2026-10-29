@@ -73,6 +73,19 @@ Pode rodar de novo sem medo: dias que já estão no banco são atualizados, não
 O dia da coleta (preço ainda parcial) e linhas com preço ou volume inválido são descartados,
 e cada importação fica registrada em `execucao_coleta` com o tipo `importacao`.
 
+### Front-end
+
+Precisa do [Node.js](https://nodejs.org/) 24 e da API no ar (`docker compose up -d`):
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173 (as chamadas para /api vão para a API na 8080)
+```
+
+Quando a API mudar um contrato, regenere os tipos com `npm run api:tipos` (com a API no ar):
+o TypeScript passa a apontar no front-end tudo o que precisa acompanhar a mudança.
+
 ## Documentação
 
 ...
