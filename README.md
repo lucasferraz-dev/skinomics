@@ -59,6 +59,20 @@ direto na máquina. Para mudar a conexão, copie `.env.example` para `backend/.e
 Depois de alterar um modelo em `backend/app/models/`, gere a migração com
 `uv run alembic revision --autogenerate -m "descrição"` e revise o arquivo gerado antes de commitar.
 
+### Carregar o histórico de preços
+
+O histórico piloto (`tf2_historico.csv`, fora do git) é compartilhado à parte. Coloque-o em
+`ml/data/` e importe para o banco:
+
+```bash
+cd backend
+uv run python -m app.coleta.importar_csv ../ml/data/tf2_historico.csv
+```
+
+Pode rodar de novo sem medo: dias que já estão no banco são atualizados, não duplicados.
+O dia da coleta (preço ainda parcial) e linhas com preço ou volume inválido são descartados,
+e cada importação fica registrada em `execucao_coleta` com o tipo `importacao`.
+
 ## Documentação
 
 ...
