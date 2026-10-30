@@ -16,7 +16,7 @@ const icone = (d: string) => (
 const MENU: ItemMenu[] = [
   { rotulo: "Visão geral", icone: icone("M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z") },
   { rotulo: "Explorar itens", icone: icone("M3 17l6-6 4 4 8-8M15 7h6v6"), para: "/itens" },
-  { rotulo: "Minha lista", icone: icone("M6 3h12v18l-6-4-6 4z") },
+  { rotulo: "Minha lista", icone: icone("M6 3h12v18l-6-4-6 4z"), para: "/minha-lista" },
   { rotulo: "Alertas", icone: icone("M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4") },
 ];
 

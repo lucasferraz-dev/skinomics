@@ -11,7 +11,7 @@ from app.schemas.item import Direcao, FiltrosItens, Ordenacao
 JANELA_DIAS = 7
 
 
-def _resumo_dos_itens() -> Subquery:
+def resumo_dos_itens() -> Subquery:
     """Uma linha por item: catálogo + último preço, variação e volume da última semana.
 
     A semana é contada a partir do último dia com preço de cada item, não de hoje:
@@ -68,7 +68,7 @@ def _resumo_dos_itens() -> Subquery:
 
 def listar_itens(sessao: Session, filtros: FiltrosItens) -> tuple[Sequence[Row], int]:
     """Devolve a página pedida e o total de itens que passam nos filtros."""
-    resumo = _resumo_dos_itens()
+    resumo = resumo_dos_itens()
     consulta = select(resumo)
 
     if filtros.busca:
@@ -107,7 +107,7 @@ def listar_itens(sessao: Session, filtros: FiltrosItens) -> tuple[Sequence[Row],
 
 
 def buscar_item(sessao: Session, item_id: int) -> Row | None:
-    resumo = _resumo_dos_itens()
+    resumo = resumo_dos_itens()
     return sessao.execute(select(resumo).where(resumo.c.id == item_id)).one_or_none()
 
 

@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { ErroApi } from "../api/cliente";
 import { type ItemResumo, type PontoHistorico, useHistorico, useItem } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
+import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco } from "../lib/formato";
 
@@ -40,13 +41,16 @@ function Conteudo({ item }: { item: ItemResumo }) {
         ← Explorar itens
       </Link>
 
-      <header className="flex items-center gap-4">
-        <IconeItem url={item.icon_url} nome={item.nome} tamanho={56} />
-        <div className="min-w-0">
-          {/* Quebra em vez de cortar: no celular, o nome cortado escondia qual item era. */}
-          <h1 className="text-2xl leading-tight text-balance titulo sm:text-3xl">{item.nome}</h1>
-          <Rotulo>TF2 / {item.tipo ?? "Item"}</Rotulo>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <IconeItem url={item.icon_url} nome={item.nome} tamanho={56} />
+          <div className="min-w-0">
+            {/* Quebra em vez de cortar: no celular, o nome cortado escondia qual item era. */}
+            <h1 className="text-2xl leading-tight text-balance titulo sm:text-3xl">{item.nome}</h1>
+            <Rotulo>TF2 / {item.tipo ?? "Item"}</Rotulo>
+          </div>
         </div>
+        <BotaoAcompanhar itemId={item.id} />
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
