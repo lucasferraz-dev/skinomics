@@ -132,6 +132,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/minha-lista": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar
+         * @description Watchlist do usuário logado, com a variação desde que cada item entrou.
+         */
+        get: operations["listar_minha_lista_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/minha-lista/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Acompanhar
+         * @description Põe o item na lista; repetir não muda nada (idempotente).
+         */
+        put: operations["acompanhar_minha_lista__item_id__put"];
+        post?: never;
+        /** Deixar De Acompanhar */
+        delete: operations["deixar_de_acompanhar_minha_lista__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -145,6 +186,56 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ItemAcompanhadoResumo */
+        ItemAcompanhadoResumo: {
+            /** Id */
+            id: number;
+            /** Appid */
+            appid: number;
+            /** Market Hash Name */
+            market_hash_name: string;
+            /** Nome */
+            nome: string;
+            /** Tipo */
+            tipo: string | null;
+            /** Icon Url */
+            icon_url: string | null;
+            /**
+             * Preco Atual
+             * @description Último preço diário, em USD
+             */
+            preco_atual: number | null;
+            /**
+             * Data Preco
+             * @description Dia do último preço
+             */
+            data_preco: string | null;
+            /**
+             * Variacao 7D
+             * @description Variação contra 7 dias antes, em fração (0.05 = +5%)
+             */
+            variacao_7d: number | null;
+            /**
+             * Volume 7D
+             * @description Unidades negociadas nos últimos 7 dias
+             */
+            volume_7d: number | null;
+            /**
+             * Preco Inclusao
+             * @description Preço quando o item entrou na lista, em USD
+             */
+            preco_inclusao: number | null;
+            /**
+             * Incluido Em
+             * Format: date-time
+             */
+            incluido_em: string;
+            /**
+             * Variacao Desde Inclusao
+             * @description Preço atual contra o da inclusão, em fração (0.05 = +5%)
+             */
+            variacao_desde_inclusao: number | null;
         };
         /** ItemResumo */
         ItemResumo: {
@@ -448,6 +539,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PontoHistorico"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_minha_lista_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemAcompanhadoResumo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acompanhar_minha_lista__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deixar_de_acompanhar_minha_lista__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

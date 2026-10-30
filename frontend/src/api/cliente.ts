@@ -26,9 +26,9 @@ export async function obter<T>(caminho: string, parametros: Parametros = {}): Pr
   return resposta.json() as Promise<T>;
 }
 
-export async function enviar(caminho: string): Promise<void> {
-  const resposta = await fetch(BASE + caminho, { method: "POST" });
+export async function enviar(caminho: string, metodo: "POST" | "PUT" | "DELETE" = "POST"): Promise<void> {
+  const resposta = await fetch(BASE + caminho, { method: metodo });
   if (!resposta.ok) {
-    throw new ErroApi(resposta.status, `POST ${caminho} respondeu ${resposta.status}`);
+    throw new ErroApi(resposta.status, `${metodo} ${caminho} respondeu ${resposta.status}`);
   }
 }

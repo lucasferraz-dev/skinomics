@@ -46,6 +46,13 @@ export function formatarData(iso: string): string {
   return dataCompleta.format(paraData(iso));
 }
 
+const instante = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+
+/** Data e hora completas da API (ex.: quando entrou na lista), no fuso de quem está vendo. */
+export function formatarInstante(iso: string): string {
+  return instante.format(new Date(iso));
+}
+
 export function diasAntes(iso: string, dias: number): string {
   const data = paraData(iso);
   data.setUTCDate(data.getUTCDate() - dias);
