@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/api/:caminho*", "destination": "https://skinomics-api.onrender.com/:caminho*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
