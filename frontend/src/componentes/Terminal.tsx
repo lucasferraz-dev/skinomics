@@ -49,9 +49,10 @@ export function Terminal() {
     <div className="flex min-h-dvh flex-col">
       <header className="flex h-14 items-center justify-between border-b border-borda px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <Logo texto="Terminal" />
-          <span className="text-apagado">/</span>
-          <span className="text-sm text-suave">Team Fortress 2</span>
+          <Logo />
+          {/* No celular não cabe ao lado da conta; o jogo já aparece nos rótulos das telas. */}
+          <span className="hidden text-apagado sm:inline">/</span>
+          <span className="hidden text-sm text-suave sm:inline">Team Fortress 2</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="rounded border border-borda px-2 py-1 font-mono text-[11px] text-suave">USD</span>
