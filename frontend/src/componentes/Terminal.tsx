@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
 
 import { Rotulo } from "./Basicos";
+import { MenuConta } from "./Conta";
 import { Logo } from "./Logo";
 
 type ItemMenu = { rotulo: string; icone: ReactNode; para?: string };
@@ -52,7 +53,10 @@ export function Terminal() {
           <span className="text-apagado">/</span>
           <span className="text-sm text-suave">Team Fortress 2</span>
         </div>
-        <span className="rounded border border-borda px-2 py-1 font-mono text-[11px] text-suave">USD</span>
+        <div className="flex items-center gap-3">
+          <span className="rounded border border-borda px-2 py-1 font-mono text-[11px] text-suave">USD</span>
+          <MenuConta />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col md:flex-row">
