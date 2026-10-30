@@ -1,4 +1,5 @@
 import { Rotulo, Variacao } from "../../componentes/Basicos";
+import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarPreco } from "../../lib/formato";
@@ -45,8 +46,10 @@ function Navegacao() {
             </a>
           ))}
         </nav>
-        {/* "Entrar" volta quando existir o login com a Steam (módulo 4). */}
-        <BotaoPrimario para="/itens">Começar agora</BotaoPrimario>
+        <div className="flex items-center gap-3">
+          <MenuConta />
+          <BotaoPrimario para="/itens">Começar agora</BotaoPrimario>
+        </div>
       </Container>
     </header>
   );

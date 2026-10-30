@@ -1,6 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router";
 
-import { ErroApi, type ItemResumo, type PontoHistorico, useHistorico, useItem } from "../api/itens";
+import { ErroApi } from "../api/cliente";
+import { type ItemResumo, type PontoHistorico, useHistorico, useItem } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco } from "../lib/formato";

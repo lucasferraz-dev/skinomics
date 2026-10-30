@@ -10,6 +10,15 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "postgresql+psycopg://skinomics:skinomics@localhost:55432/skinomics"
     cors_origins: list[str] = ["http://localhost:5173"]
+    # Endereço público do site: a Steam devolve o usuário para cá depois do login.
+    site_url: str = "http://localhost:5173"
+    # Chave da Steam Web API, para buscar nome e avatar; sem ela, vêm da página pública do perfil.
+    steam_api_key: str | None = None
+    sessao_dias: int = 30
+
+    @property
+    def cookie_seguro(self) -> bool:
+        return self.site_url.startswith("https://")
 
 
 @lru_cache

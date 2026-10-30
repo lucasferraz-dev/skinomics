@@ -13,6 +13,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { MensagemErro } from "./componentes/Basicos";
 import { Terminal } from "./componentes/Terminal";
 import { DetalheItem } from "./paginas/DetalheItem";
+import { Entrar } from "./paginas/Entrar";
 import { ExplorarItens } from "./paginas/ExplorarItens";
 import { Inicio } from "./paginas/inicio/Inicio";
 
@@ -22,6 +23,7 @@ const clienteDeConsultas = new QueryClient({
 
 const rotas = createBrowserRouter([
   { path: "/", element: <Inicio /> },
+  { path: "/entrar", element: <Entrar /> },
   {
     element: <Terminal />,
     children: [
