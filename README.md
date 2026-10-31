@@ -142,6 +142,117 @@ uv sync --locked --group notebook
 uv run --group notebook jupyter lab notebooks/previsao_precos.ipynb
 ```
 
+### Aceleração por GPU (LightGBM)
+
+O argumento `--device` controla o backend dos modelos LightGBM e LightGBM + EMA.
+O padrão é `cpu`; HGB, ARIMA, SARIMA e o processamento de dados continuam na CPU.
+
+O projeto fixa o LightGBM em **4.6.0**, cujo pacote oficial para Windows inclui os
+backends CPU e GPU/OpenCL. Essa versão foi validada com uma NVIDIA GeForce RTX 5060;
+o pacote 4.7.0 anteriormente instalado não incluía suporte a GPU. O mesmo ambiente
+permite escolher CPU ou GPU, sem recompilar a biblioteca no Windows.
+
+```bash
+# Na raiz do repositório: instalar a versão registrada no lockfile
+uv sync --project ml --locked
+
+# CPU continua sendo o padrão, inclusive em máquinas com GPU
+uv run --project ml python -m ml.train
+
+# Na raiz do repositório: OpenCL, incluindo Windows
+uv run --project ml python -m ml.train --device gpu
+
+# Também funciona no experimento
+uv run --project ml python -m ml.train --sarima-experiment --device gpu
+
+# Seleção explícita em máquinas com várias plataformas/dispositivos OpenCL
+uv run --project ml python -m ml.train --device gpu --gpu-platform-id 0 --gpu-device-id 0
+
+# Backend CUDA em Linux, com instalação compatível do LightGBM
+uv run --project ml python -m ml.train --device cuda --gpu-device-id 0
+```
+
+Para `--device gpu`, é necessário um dispositivo OpenCL e o driver correspondente
+instalado; CPU não exige GPU nem esses drivers. No Windows, `gpu` é a opção suportada;
+o pacote fixado dispensa instalar o CUDA Toolkit para usar OpenCL. `cuda` requer uma
+compilação específica em Linux. Consulte as
+[instruções da versão 4.6.0](https://github.com/microsoft/LightGBM/blob/v4.6.0/python-package/README.rst#installation)
+e o [guia de compilação](https://lightgbm.readthedocs.io/en/stable/Installation-Guide.html#build-gpu-version).
+O argumento não instala drivers nem recompila a biblioteca. O script verifica o backend com
+um ajuste pequeno antes do CV e interrompe com uma mensagem de diagnóstico se ele falhar,
+sem trocar silenciosamente para CPU. Os IDs padrão `-1` deixam a seleção ao LightGBM.
+
+O backend e os IDs são registrados nos metadados. Os parâmetros de determinismo e layout
+exclusivos de CPU são mantidos somente em `--device cpu`; resultados em GPU podem apresentar
+diferenças numéricas. `--n-jobs` controla threads de CPU do LightGBM, não a quantidade de GPUs.
+A configuração de árvores e bins permanece igual, permitindo comparar CPU e GPU com o
+mesmo modelo; o ganho de tempo depende do volume de dados e do hardware.
+
+### Experimentos ARIMA/SARIMA
+
+O benchmark opcional compara três configurações estatísticas com os seis modelos do treino
+normal. Execute a partir da raiz:
+
+```bash
+uv sync --project ml --locked
+uv run --project ml python -m ml.train --sarima-experiment
+```
+
+A grade usa `statsmodels.SARIMAX`, sem regressores externos:
+
+| Nome | `(p,d,q)` | `(P,D,Q,s)` |
+|---|---|---|
+| `arima_111` | `(1,1,1)` | sem sazonalidade |
+| `sarima_111_100` | `(1,1,1)` | `(1,0,0,7)` |
+| `sarima_011_011` | `(0,1,1)` | `(0,1,1,7)` |
+
+O período sazonal padrão é semanal (`--sarima-period 7`), independente do horizonte.
+Cada configuração ajusta um modelo por item nos últimos 730 dias do treino, com pelo menos
+90 observações válidas e dois ciclos sazonais. `--sarima-history-days`,
+`--sarima-min-observations` e `--sarima-maxiter` controlam esses limites.
+
+Por padrão, cinco itens são selecionados em posições igualmente espaçadas no ranking de
+volume mediano do **primeiro conjunto de treino do walk-forward**, cobrindo diferentes níveis
+de liquidez sem consultar o teste. Use `--experiment-max-items 0` para todos, ou indique os
+nomes com `--experiment-items`. Os regressores continuam treinando com todos os itens, para
+preservar seu aprendizado compartilhado; todos os modelos são avaliados nas mesmas linhas da
+amostra. Seus tempos de treino, portanto, correspondem a essas cargas diferentes.
+
+```bash
+uv run --project ml python -m ml.train --sarima-experiment --experiment-items "Mann Co. Supply Crate Key" "Winter 2019 Cosmetic Case"
+uv run --project ml python -m ml.train --sarima-experiment --horizon 15
+uv run --project ml python -m ml.train --sarima-experiment --horizon 30
+```
+
+Os parâmetros são ajustados até o corte de treino de cada fold, respeitando o mesmo intervalo
+de embargo. Durante a avaliação, somente o estado do modelo é atualizado com preços já
+observados até cada data-base, usando `extend()`; não há novo ajuste dos parâmetros no holdout.
+As lacunas do calendário ficam como `NaN`, sem interpolação ou preenchimento com o futuro.
+O alvo continua sendo o preço médio de `t+H-W` a `t+H+W`: as previsões em log-preço são
+convertidas em preços esperados com `exp(mu + variância/2)` antes de calcular a média da janela.
+Esse cálculo assume a distribuição gaussiana em log-preço do modelo. Veja a
+[API SARIMAX](https://www.statsmodels.org/stable/generated/statsmodels.tsa.statespace.sarimax.SARIMAX.html)
+e o [guia de atualização e previsão](https://www.statsmodels.org/stable/examples/notebooks/generated/statespace_forecasting.html).
+
+Histórico insuficiente, ajuste sem convergência e falhas numéricas usam **EMA 10 como fallback**.
+Essas previsões continuam nas métricas; `fallback_pct` mostra quanto do resultado veio da EMA.
+A escolha das configurações termina no CV. O relatório do holdout compara todas, mas não altera
+o vencedor escolhido. Após a avaliação, os modelos são reajustados para as previsões mais recentes.
+
+As saídas ficam em `ml/artifacts/sarima_experiment/7d/` (ou `15d/`, `30d/`, conforme o horizonte):
+
+- `cv_folds.csv`, `cv_summary.csv`, `test_metrics.csv` e `metrics_per_item.csv`: comparação de
+  MAE de log-retorno, MAE/RMSE/MAPE de preço, direção, ganhos contra as baselines e fallback;
+- `predictions.csv`: previsões de CV/teste por item e data, incluindo motivo de fallback;
+- `diagnostics.csv`: convergência, observações, lacunas, falhas e tempo por ajuste/item;
+- `runtime.csv`: tempos e contagens de falhas/fallback por modelo e fase;
+- `previsao_7d.csv`: previsões recentes dos nove modelos para os itens selecionados;
+- `metadata.json`: amostra, configurações, versões das bibliotecas e escolhas feitas no CV.
+
+`--output-dir` permite preservar execuções em pastas diferentes. Repetir uma execução na mesma
+pasta substitui seus relatórios. O experimento não promove um modelo ativo nem substitui
+`ml/artifacts/price_model.joblib`; resultados da amostra não representam necessariamente toda a base.
+
 ### Front-end
 
 Precisa do [Node.js](https://nodejs.org/) 24 e da API no ar (`docker compose up -d`):

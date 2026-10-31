@@ -14,6 +14,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from lightgbm.basic import LightGBMError
 from sklearn.base import clone
 from sklearn.metrics import (
     mean_absolute_error,
@@ -26,7 +27,7 @@ from sklearn.metrics import (
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ml.models import EMA, NAIVE, get_models
+from ml.models import EMA, NAIVE, check_lightgbm_device, get_models, lightgbm_device_params
 
 ML_DIR = Path(__file__).resolve().parent
 KEY_ITEM = "Mann Co. Supply Crate Key"
@@ -54,8 +55,12 @@ class TrainingConfig:
     start_date: str | None = "2016-01-01"
     random_state: int = 42
     n_jobs: int = -1
+    device: str = "cpu"
+    gpu_platform_id: int = -1
+    gpu_device_id: int = -1
 
     def __post_init__(self):
+        lightgbm_device_params(self.device, self.gpu_platform_id, self.gpu_device_id)
         for name in ("horizon", "test_days", "cv_folds", "fold_days"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} deve ser positivo.")
@@ -363,7 +368,11 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
         ema_weight=config.ema_weight,
         target_clip=config.target_clip,
         n_jobs=config.n_jobs,
+        device=config.device,
+        gpu_platform_id=config.gpu_platform_id,
+        gpu_device_id=config.gpu_device_id,
     )
+    check_lightgbm_device(models["lightgbm"].estimator)
     cv_details, cv_summary = eval_models(train, features, config, models)
     best_name = cv_summary.iloc[0]["model"]
     print(f"\n{cv_summary.to_string(index=False)}\nModelo escolhido no CV: {best_name}")
@@ -410,7 +419,27 @@ def main():
     defaults = TrainingConfig()
     parser = argparse.ArgumentParser(description="Treina e compara previsores de preços de TF2.")
     parser.add_argument("--data", type=Path, default=ML_DIR / "data" / "tf2_historico.csv")
-    parser.add_argument("--output-dir", type=Path, default=ML_DIR / "artifacts")
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument(
+        "--device",
+        choices=("cpu", "gpu", "cuda"),
+        default=defaults.device,
+        help="Backend do LightGBM: cpu (padrão), gpu (OpenCL) ou cuda. HGB/SARIMA usam CPU.",
+    )
+    parser.add_argument(
+        "--gpu-platform-id", type=int, default=-1, help="Plataforma OpenCL; -1 = auto"
+    )
+    parser.add_argument("--gpu-device-id", type=int, default=-1, help="Dispositivo GPU; -1 = auto")
+    experiment = parser.add_argument_group("Experimento opcional ARIMA/SARIMA")
+    experiment.add_argument("--sarima-experiment", action="store_true")
+    experiment.add_argument(
+        "--experiment-max-items", type=int, default=5, help="0 = todos os itens"
+    )
+    experiment.add_argument("--experiment-items", nargs="+", help="Nomes exatos entre aspas")
+    experiment.add_argument("--sarima-history-days", type=int, default=730)
+    experiment.add_argument("--sarima-min-observations", type=int, default=90)
+    experiment.add_argument("--sarima-maxiter", type=int, default=100)
+    experiment.add_argument("--sarima-period", type=int, default=7)
     for option in (
         "horizon",
         "target_half_window",
@@ -433,11 +462,36 @@ def main():
     )
     args = vars(parser.parse_args())
     csv_path, output_dir = args.pop("data"), args.pop("output_dir")
+    run_sarima = args.pop("sarima_experiment")
+    max_items, items = args.pop("experiment_max_items"), args.pop("experiment_items")
+    sarima_options = {
+        "history_days": args.pop("sarima_history_days"),
+        "min_observations": args.pop("sarima_min_observations"),
+        "maxiter": args.pop("sarima_maxiter"),
+        "seasonal_period": args.pop("sarima_period"),
+    }
     if args["start_date"].lower() == "none":
         args["start_date"] = None
     try:
-        train_and_save(csv_path, output_dir, TrainingConfig(**args))
-    except (ValueError, FileNotFoundError) as error:
+        config = TrainingConfig(**args)
+        if run_sarima:
+            from ml.experiments import run_experiment
+            from ml.sarima import SarimaConfig
+
+            output_dir = (
+                output_dir or ML_DIR / "artifacts" / "sarima_experiment" / f"{config.horizon}d"
+            )
+            run_experiment(
+                csv_path,
+                output_dir,
+                config,
+                SarimaConfig(**sarima_options),
+                max_items=max_items,
+                items=items,
+            )
+        else:
+            train_and_save(csv_path, output_dir or ML_DIR / "artifacts", config)
+    except (ValueError, FileNotFoundError, LightGBMError) as error:
         parser.error(str(error))
 
 

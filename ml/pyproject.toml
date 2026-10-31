@@ -5,10 +5,13 @@ description = "Treinamento e previsão de preços de itens TF2"
 requires-python = ">=3.13"
 dependencies = [
     "joblib>=1.4,<2",
-    "lightgbm>=4.6,<5",
+    # O wheel 4.6.0 inclui OpenCL no Windows; o 4.7.0 testado não inclui GPU.
+    "lightgbm==4.6.0",
     "numpy>=2.1,<2.4",
     "pandas>=2.2,<3",
     "scikit-learn>=1.6,<2",
+    "scipy>=1.14,<2",
+    "statsmodels>=0.14.4,<0.16",
 ]
 
 [dependency-groups]
