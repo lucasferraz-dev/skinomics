@@ -3,8 +3,10 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+pytest-cache-files-*/
 .ruff_cache/
 .ipynb_checkpoints/
+.uv-cache/
 
 # Node
 node_modules/
@@ -13,6 +15,8 @@ dist/
 # Dados de ML (grandes demais para o git; compartilhados fora do repo)
 ml/data/*
 !ml/data/.gitkeep
+ml/artifacts/
+ml/**/*.joblib
 
 # Ambiente
 .env
