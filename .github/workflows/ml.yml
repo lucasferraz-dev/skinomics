@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: uv sync --locked --group integration
-      - run: uv run --group integration ruff check . ../tests/integration --config pyproject.toml
+      - run: uv run --group integration ruff check . ../tests/integration --config pyproject.toml --fix
       - run: uv run --group integration ruff format --check . ../tests/integration --config pyproject.toml
       - run: uv run --group integration pytest
       - run: uv run --group integration pytest ../tests/integration
