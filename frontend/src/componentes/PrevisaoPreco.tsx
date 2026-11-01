@@ -1,7 +1,7 @@
 import type { HorizontePrevisao, usePrevisao } from "../api/itens";
 import { formatarData, formatarInstante, formatarPreco } from "../lib/formato";
 import { Carregando, Painel, Rotulo, Variacao } from "./Basicos";
-import { IntervaloConfianca } from "./IntervaloConfianca";
+import { ConfiancaPrevisao } from "./ConfiancaPrevisao";
 
 export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
   consulta: ReturnType<typeof usePrevisao>;
@@ -48,7 +48,7 @@ export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
             </div>
           </>
         )}
-        <IntervaloConfianca previsao={data} carregando={isPending} erro={isError} />
+        <ConfiancaPrevisao previsao={data} carregando={isPending} erro={isError} />
         {disponivel && data && (
           <>
             {data.data_base && data.data_alvo && (
@@ -70,7 +70,7 @@ export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
             )}
             {data.data_base && data.preco_base != null && (
               <p className="text-xs text-suave">
-                  Variação em relação ao preço-base de {formatarPreco(data.preco_base)}.
+                Variação em relação ao preço-base de {formatarPreco(data.preco_base)}.
               </p>
             )}
             {data.desatualizada && (

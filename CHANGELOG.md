@@ -7,10 +7,9 @@
 - US007 (#21): seleção dos horizontes de 7, 15 e 30 dias, compartilhada pelo cartão e
   gráfico, com URL persistente e versões de modelo independentes.
 - US008 (#22): intervalo nominal de 80%, calibração temporal separada, avaliação de
-  cobertura e aviso “Incerteza elevada”. Limites inferior/superior ficam destacados e
-  permanentemente visíveis no cartão e abaixo do gráfico existente.
-- Confiança nominal e cobertura observada no teste visíveis por horizonte, com data-base,
-  data-alvo e janela da média futura identificadas na página do item.
+  cobertura e aviso “Incerteza elevada”. A faixa aparece no gráfico existente.
+- Exibição simplificada da taxa de confiança nominal no cartão, com data-base, data-alvo
+  e janela da média futura identificadas. Cobertura de teste permanece nos relatórios e API.
 - Migração aditiva, contrato OpenAPI, testes de ML, API, gráfico e integração por horizonte.
 
 ### Alterado

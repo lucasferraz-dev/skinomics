@@ -137,8 +137,8 @@ administrativos são locais; não há endpoint público para carregar ou ativar 
   janela do alvo, versão/nome do modelo, data de geração e flags de histórico curto/atraso.
 - `intervalo_inferior`, `intervalo_superior` em USD, `nivel_confianca=0.8` e
   `incerteza_elevada`. Sem calibração, os três primeiros campos são nulos.
-- `cobertura_teste`: fração de alvos contidos na faixa no teste temporal; aparece
-  permanentemente junto da confiança nominal e pode diferir de 80%. Nulo para versões
+- `cobertura_teste`: fração de alvos contidos na faixa no teste temporal; disponível
+  na API e nos relatórios, pode diferir de 80%. Nulo para versões
   sem essa avaliação. É uma medida conjunta do modelo por horizonte, não uma
   probabilidade de acerto para a previsão individual do item.
 - `desatualizada=true` quando a data-base é anterior a ontem em UTC ou ao último preço
@@ -146,16 +146,14 @@ administrativos são locais; não há endpoint público para carregar ou ativar 
 
 O alvo padrão é a **média dos preços entre t+5 e t+9**, não o preço exato de t+7.
 Para 15 e 30 dias, a janela padrão é t+13..t+17 e t+28..t+32, respectivamente.
-O cartão mostra janela, variação, limites e aviso de incerteza. No gráfico, a linha histórica
+O cartão mostra janela, variação, taxa de confiança nominal e aviso de incerteza. No gráfico, a linha histórica
 continua sólida, a ligação futura é tracejada e a faixa sombreada ocupa os limites de preço
 na janela do alvo. Ela representa a incerteza da **média**, não uma trajetória diária.
-O bloco “Intervalo de confiança” fica permanentemente visível logo abaixo do preço estimado
-e abaixo do gráfico, com nível de 80% e limites inferior/superior identificados. A consulta
-dos valores não depende de tooltip ou de abrir “Sobre esta previsão”. Durante carregamento,
-falha ou ausência de calibração, o cartão mantém a seção e explica o estado sem inventar limites.
-“Confiança nominal” mostra o nível retornado pela API; “Cobertura no teste” mostra a
-proporção observada nos testes do modelo daquele horizonte. Sem avaliação, aparece
-“Não avaliada”. O cartão identifica a data-base e a data-alvo (`data_base + horizonte`)
+O cartão exibe apenas a taxa “Confiança nominal”, retornada pela API, logo abaixo do preço
+estimado, sem bloco duplicado sob o gráfico, cobertura de teste ou explicações adicionais.
+A seção informa carregamento ou indisponibilidade quando necessário, sem inventar uma taxa
+para versões sem calibração. O intervalo permanece representado pela faixa no gráfico.
+O cartão identifica a data-base e a data-alvo (`data_base + horizonte`)
 separadamente da janela da média futura. Os dias são contados da data-base, não de hoje.
 Não há opção de ocultar a faixa. Cores, fontes, painéis e controles seguem o site existente.
 
