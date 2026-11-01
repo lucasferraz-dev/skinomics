@@ -149,6 +149,56 @@ def test_rejeita_horizontes_nao_suportados(cliente, previsao, horizon):
     assert cliente.get(f"/itens/{item.id}/previsao?horizonte={horizon}").status_code == 422
 
 
+def test_troca_horizonte_nao_mistura_preco_versao_datas_ou_cobertura(cliente, sessao, previsao):
+    item, seven = previsao
+    expected = {7: (seven.modelo_id, 2.5, None)}
+    for horizon, price, coverage in ((15, 3.1, 0.74), (30, 4.2, 0.95)):
+        model = ModeloVersao(
+            id=str(uuid4()),
+            nome="hgb",
+            horizonte=horizon,
+            meia_janela=2,
+            artefato=f"{horizon}/model.joblib",
+            sha256=str(horizon) * 32,
+            metadados={"metrics": {"interval_test": {"coverage": coverage}}},
+        )
+        sessao.add(model)
+        sessao.flush()
+        execution = ExecucaoPrevisao(
+            id=str(uuid4()), modelo_id=model.id, data_limite=seven.data_base, status="sucesso"
+        )
+        sessao.add(execution)
+        sessao.flush()
+        sessao.add(ModeloAtivo(horizonte=horizon, modelo_id=model.id))
+        sessao.add(
+            Previsao(
+                item_id=item.id,
+                modelo_id=model.id,
+                data_base=seven.data_base,
+                preco_base=2,
+                preco_previsto=price,
+                intervalo_inferior=1,
+                intervalo_superior=5,
+                nivel_confianca=0.8,
+                historico_curto=False,
+                execucao_id=execution.id,
+            )
+        )
+        expected[horizon] = (model.id, price, coverage)
+    sessao.flush()
+    # O mesmo item possui os três modelos ativos simultaneamente; alternar não deve misturá-los.
+    for horizon in (7, 15, 30, 15, 7):
+        data = cliente.get(f"/itens/{item.id}/previsao?horizonte={horizon}").json()
+        version, price, coverage = expected[horizon]
+        assert data["horizonte"] == horizon
+        assert data["modelo_versao"] == version
+        assert data["preco_previsto"] == price
+        assert data["cobertura_teste"] == coverage
+        assert data["data_alvo"] == (seven.data_base + timedelta(days=horizon)).isoformat()
+        assert data["janela_inicio"] == (seven.data_base + timedelta(days=horizon - 2)).isoformat()
+        assert data["janela_fim"] == (seven.data_base + timedelta(days=horizon + 2)).isoformat()
+
+
 @pytest.mark.parametrize(
     "low,high,level",
     [

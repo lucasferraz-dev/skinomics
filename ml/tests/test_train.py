@@ -72,6 +72,20 @@ def test_single_day_target(csv_path):
     assert item.iloc[0]["target_price"] == item.iloc[3]["price"]
 
 
+@pytest.mark.parametrize("horizon", [7, 15, 30])
+def test_horizon_target_uses_its_own_future_window(csv_path, horizon):
+    data = load_data(csv_path)
+    config = TrainingConfig(horizon=horizon, target_half_window=2)
+    targets = build_targets(data, config)
+    item = targets[targets["market_hash_name"] == "Case A"]
+    origin = 40
+    expected = item.iloc[origin + horizon - 2 : origin + horizon + 3]["price"].mean()
+    assert item.iloc[origin]["target_price"] == pytest.approx(expected)
+    assert item.iloc[origin]["target_logret"] == pytest.approx(
+        np.log(expected / item.iloc[origin]["price"])
+    )
+
+
 def test_features_do_not_use_future_prices_or_targets(csv_path):
     data = load_data(csv_path)
     original = build_features(data)

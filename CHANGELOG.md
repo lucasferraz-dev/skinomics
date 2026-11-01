@@ -9,6 +9,8 @@
 - US008 (#22): intervalo nominal de 80%, calibração temporal separada, avaliação de
   cobertura e aviso “Incerteza elevada”. Limites inferior/superior ficam destacados e
   permanentemente visíveis no cartão e abaixo do gráfico existente.
+- Confiança nominal e cobertura observada no teste visíveis por horizonte, com data-base,
+  data-alvo e janela da média futura identificadas na página do item.
 - Migração aditiva, contrato OpenAPI, testes de ML, API, gráfico e integração por horizonte.
 
 ### Alterado

@@ -51,6 +51,18 @@ export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
         <IntervaloConfianca previsao={data} carregando={isPending} erro={isError} />
         {disponivel && data && (
           <>
+            {data.data_base && data.data_alvo && (
+              <dl className="grid grid-cols-2 gap-3">
+                <div>
+                  <dt className="text-xs text-suave">Data-base</dt>
+                  <dd className="mt-1 font-mono text-xs">{formatarData(data.data_base)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-suave">Data-alvo (+{data.horizonte} dias)</dt>
+                  <dd className="mt-1 font-mono text-xs">{formatarData(data.data_alvo)}</dd>
+                </div>
+              </dl>
+            )}
             {data.janela_inicio && data.janela_fim && (
               <p className="text-sm text-suave">
                 Média prevista entre {formatarData(data.janela_inicio)} e {formatarData(data.janela_fim)}.
@@ -58,7 +70,7 @@ export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
             )}
             {data.data_base && data.preco_base != null && (
               <p className="text-xs text-suave">
-                Variação em relação a {formatarPreco(data.preco_base)} em {formatarData(data.data_base)}.
+                  Variação em relação ao preço-base de {formatarPreco(data.preco_base)}.
               </p>
             )}
             {data.desatualizada && (
@@ -82,12 +94,6 @@ export function PrevisaoPreco({ consulta, horizonte, aoMudarHorizonte }: {
             <details className="text-xs text-apagado">
               <summary className="cursor-pointer">Sobre esta previsão</summary>
               <p className="mt-2 break-all">Versão: {data.modelo_versao}</p>
-              {data.cobertura_teste != null && (
-                <p className="mt-2">
-                  Cobertura observada no teste: {(data.cobertura_teste * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%.
-                  {" "}80% é o nível estimado; a cobertura futura pode variar.
-                </p>
-              )}
               {data.gerada_em && <p>Gerada em {formatarInstante(data.gerada_em)}.</p>}
             </details>
           </>
