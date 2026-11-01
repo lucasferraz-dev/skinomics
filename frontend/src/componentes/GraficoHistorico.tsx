@@ -15,6 +15,7 @@ import {
 import type { PontoHistorico, PrevisaoItem } from "../api/itens";
 import { formatarData, formatarDiaMes, formatarInteiro, formatarPreco } from "../lib/formato";
 import { intervaloValido, type PontoGrafico, prepararGrafico } from "../lib/grafico";
+import { IntervaloConfianca } from "./IntervaloConfianca";
 
 const EIXO = { fill: "var(--color-apagado)", fontSize: 11, fontFamily: "var(--font-mono)" };
 
@@ -75,7 +76,7 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
           {futuro.previsao.desatualizada && <span className="text-apagado">Previsão desatualizada</span>}
           {futuro.intervalo && (
             <span className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-5 rounded-sm bg-destaque/15 ring-1 ring-destaque/40" aria-hidden="true" />Faixa de 80%
+              <span className="h-2.5 w-5 rounded-sm bg-destaque/15 ring-1 ring-destaque/40" aria-hidden="true" />Intervalo de confiança (80%)
             </span>
           )}
         </div>
@@ -170,6 +171,11 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
           )}
         </LineChart>
       </ResponsiveContainer>
+      {futuro && (
+        <div className="mt-5">
+          <IntervaloConfianca previsao={futuro.previsao} compacto />
+        </div>
+      )}
       {futuro && (
         <p className="mt-3 text-xs leading-relaxed text-suave">
           {futuro.inicio === futuro.fim

@@ -7,7 +7,8 @@
 - US007 (#21): seleção dos horizontes de 7, 15 e 30 dias, compartilhada pelo cartão e
   gráfico, com URL persistente e versões de modelo independentes.
 - US008 (#22): intervalo nominal de 80%, calibração temporal separada, avaliação de
-  cobertura e aviso “Incerteza elevada”. Faixa e limites aparecem no gráfico existente.
+  cobertura e aviso “Incerteza elevada”. Limites inferior/superior ficam destacados e
+  permanentemente visíveis no cartão e abaixo do gráfico existente.
 - Migração aditiva, contrato OpenAPI, testes de ML, API, gráfico e integração por horizonte.
 
 ### Alterado

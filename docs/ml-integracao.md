@@ -147,6 +147,10 @@ Para 15 e 30 dias, a janela padrão é t+13..t+17 e t+28..t+32, respectivamente.
 O cartão mostra janela, variação, limites e aviso de incerteza. No gráfico, a linha histórica
 continua sólida, a ligação futura é tracejada e a faixa sombreada ocupa os limites de preço
 na janela do alvo. Ela representa a incerteza da **média**, não uma trajetória diária.
+O bloco “Intervalo de confiança” fica permanentemente visível logo abaixo do preço estimado
+e abaixo do gráfico, com nível de 80% e limites inferior/superior identificados. A consulta
+dos valores não depende de tooltip ou de abrir “Sobre esta previsão”. Durante carregamento,
+falha ou ausência de calibração, o cartão mantém a seção e explica o estado sem inventar limites.
 Não há opção de ocultar a faixa. Cores, fontes, painéis e controles seguem o site existente.
 
 ## Intervalo nominal de 80% (US008)
