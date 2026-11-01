@@ -12,6 +12,8 @@ dependencies = [
     "scikit-learn>=1.6,<2",
     "scipy>=1.14,<2",
     "statsmodels>=0.14.4,<0.16",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.2,<4",
 ]
 
 [dependency-groups]
@@ -24,6 +26,12 @@ notebook = [
     "ipykernel>=6.29",
     "jupyterlab>=4.3",
     "matplotlib>=3.9",
+]
+integration = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "httpx2>=2.16.0",
+    "pydantic-settings>=2.6",
 ]
 
 [tool.uv]

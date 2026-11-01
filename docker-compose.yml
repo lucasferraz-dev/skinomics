@@ -27,5 +27,20 @@ services:
       db:
         condition: service_healthy
 
+  ml-worker:
+    profiles: [ml]
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    environment:
+      SKINOMICS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-skinomics}:${POSTGRES_PASSWORD:-skinomics}@db:5432/${POSTGRES_DB:-skinomics}
+      SKINOMICS_MODEL_DIR: /models
+    volumes:
+      - ./ml/artifacts:/models:ro
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   db-data:

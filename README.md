@@ -75,6 +75,9 @@ e cada importação fica registrada em `execucao_coleta` com o tipo `importacao`
 
 ### Treinar os modelos de previsão
 
+Para publicar as previsões na aplicação, veja o [guia de integração do ML](docs/ml-integracao.md):
+treino a partir do PostgreSQL, versões, ativação/reversão, atualização após coleta e API.
+
 O código de `ml/notebooks/previsao_precos.ipynb` está disponível em `ml/models.py` e
 `ml/train.py`. O módulo de ML tem ambiente próprio, gerenciado pelo uv:
 
@@ -120,12 +123,14 @@ preços inválidos e volumes negativos são removidos. As features prontas do CS
 O histórico deve cobrir treino, folds e teste; dados insuficientes geram uma mensagem para
 ajustar as janelas. Itens recentes continuam nas previsões com `historico_curto=True`.
 
-As saídas ficam em `ml/artifacts/` (fora do git), sem servidor de rastreamento:
+Cada treino cria uma pasta exclusiva `ml/artifacts/<version_id>/` (fora do git), sem
+sobrescrever as versões anteriores e sem servidor de rastreamento:
 
 - `price_model.joblib`: modelo final, ordem das features, configuração e versões das bibliotecas;
 - `metadata.json`: metadados e limites temporais da execução;
 - `cv_folds.csv` e `cv_summary.csv`: comparação dos modelos na validação;
 - `test_metrics.csv` e `metrics_per_item.csv`: erros de preço/retorno e comparação com as baselines;
+- `metrics_per_price_range.csv`: métricas por modelo e faixa de preço-base em USD;
 - `previsao_7d.csv` (ou o horizonte configurado): previsão mais recente por item.
 
 Para inferência, carregue o artefato a partir da raiz do repositório, usando o ambiente de ML.
@@ -251,7 +256,7 @@ As saídas ficam em `ml/artifacts/sarima_experiment/7d/` (ou `15d/`, `30d/`, con
 
 `--output-dir` permite preservar execuções em pastas diferentes. Repetir uma execução na mesma
 pasta substitui seus relatórios. O experimento não promove um modelo ativo nem substitui
-`ml/artifacts/price_model.joblib`; resultados da amostra não representam necessariamente toda a base.
+os artefatos das versões de produção; resultados da amostra não representam necessariamente toda a base.
 
 ### Front-end
 

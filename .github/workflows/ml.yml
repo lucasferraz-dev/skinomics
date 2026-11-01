@@ -3,9 +3,9 @@ name: ml
 on:
   push:
     branches: [main, develop]
-    paths: ["ml/**", ".github/workflows/ml.yml"]
+    paths: ["ml/**", "backend/**", "tests/integration/**", "docker-compose.yml", ".github/workflows/ml.yml"]
   pull_request:
-    paths: ["ml/**", ".github/workflows/ml.yml"]
+    paths: ["ml/**", "backend/**", "tests/integration/**", "docker-compose.yml", ".github/workflows/ml.yml"]
 
 defaults:
   run:
@@ -14,12 +14,28 @@ defaults:
 jobs:
   qualidade:
     runs-on: ubuntu-latest
+    env:
+      SKINOMICS_DATABASE_URL: postgresql+psycopg://skinomics:skinomics@localhost:55432/skinomics_integration
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: skinomics
+          POSTGRES_PASSWORD: skinomics
+          POSTGRES_DB: skinomics_integration
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U skinomics"
+          --health-interval 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
-      - run: uv sync --locked
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run pytest
+      - run: uv sync --locked --group integration
+      - run: uv run --group integration ruff check . ../tests/integration --config pyproject.toml
+      - run: uv run --group integration ruff format --check . ../tests/integration --config pyproject.toml
+      - run: uv run --group integration pytest
+      - run: uv run --group integration pytest ../tests/integration

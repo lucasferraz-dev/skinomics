@@ -183,6 +183,7 @@ def test_full_training_exports_reusable_model_and_forecast(csv_path, tmp_path, c
     output = tmp_path / "artifacts"
     with threadpool_limits(limits=1):
         metadata = train.train_and_save(csv_path, output, config)
+    output = output / metadata["version_id"]
     artifact = joblib.load(output / "price_model.joblib")
     labeled, latest, features = prepare_data(csv_path, config)
     assert artifact["features"] == features

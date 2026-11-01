@@ -8,8 +8,10 @@ import argparse
 import json
 import sys
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
+from uuid import uuid4
 
 import joblib
 import numpy as np
@@ -84,7 +86,14 @@ class TrainingConfig:
 
 def load_data(csv_path: Path) -> pd.DataFrame:
     """Lê as colunas-base; descarta dias parciais, duplicatas e dados inválidos."""
-    raw = pd.read_csv(csv_path, low_memory=False)
+    raw = (
+        csv_path if isinstance(csv_path, pd.DataFrame) else pd.read_csv(csv_path, low_memory=False)
+    )
+    return clean_history(raw)
+
+
+def clean_history(raw: pd.DataFrame) -> pd.DataFrame:
+    """Contrato de limpeza compartilhado entre CSV, banco, treino e inferência."""
     missing = set(REQUIRED_COLUMNS) - set(raw.columns)
     if missing:
         raise ValueError(f"Colunas ausentes no CSV: {', '.join(sorted(missing))}")
@@ -378,18 +387,41 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
     print(f"\n{cv_summary.to_string(index=False)}\nModelo escolhido no CV: {best_name}")
     test_metrics, predictions = eval_final(train, test, features, models)
     per_item = eval_per_item(test, predictions, best_name)
+    price_ranges = []
+    ranges = pd.cut(test["price"], [0, 0.5, 2, 10, np.inf], right=False)
+    for band in ranges.cat.categories:
+        mask = ranges.eq(band)
+        if not mask.any():
+            continue
+        for name, prediction in predictions.items():
+            price_ranges.append(
+                {
+                    "model": name,
+                    "faixa_usd": str(band),
+                    "n": int(mask.sum()),
+                    **price_metrics(
+                        test.loc[mask, "target_logret"],
+                        np.asarray(prediction)[mask],
+                        test.loc[mask, "price"],
+                    ),
+                }
+            )
     print(f"\n{test_metrics.to_string(index=False)}")
 
     # A escolha precede o teste. Só depois da avaliação retreina com todos os alvos.
     final_model = clone(models[best_name]).fit(labeled[features], labeled["target_logret"])
     forecast = make_forecast(final_model, latest, features, config)
     metadata = {
+        "version_id": str(uuid4()),
+        "trained_at": datetime.now(UTC).isoformat(),
         "model_name": best_name,
         "features": features,
         "config": asdict(config),
         "target": "log(media_preco_t+H-W_a_t+H+W / preco_atual)",
         "selection_metric": "ganho médio de MAE de log-retorno vs ingênuo no walk-forward",
-        "data_path": str(Path(csv_path).resolve()),
+        "data_path": "postgresql:TF2"
+        if isinstance(csv_path, pd.DataFrame)
+        else str(Path(csv_path).resolve()),
         "labeled_rows": len(labeled),
         "train_end": str(train["observation_date"].max().date()),
         "test_start": str(test["observation_date"].min().date()),
@@ -399,18 +431,25 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
             package: version(package)
             for package in ("numpy", "pandas", "scikit-learn", "lightgbm", "joblib")
         },
+        "metrics": {
+            "cv": json.loads(cv_summary.to_json(orient="records")),
+            "test": json.loads(test_metrics.to_json(orient="records")),
+            "price_ranges": json.loads(pd.DataFrame(price_ranges).to_json(orient="records")),
+        },
     }
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(output_dir) / metadata["version_id"]
+    output_dir.mkdir(parents=True, exist_ok=False)
     cv_details.to_csv(output_dir / "cv_folds.csv", index=False)
     cv_summary.to_csv(output_dir / "cv_summary.csv", index=False)
     test_metrics.to_csv(output_dir / "test_metrics.csv", index=False)
     per_item.to_csv(output_dir / "metrics_per_item.csv", index=False)
+    pd.DataFrame(price_ranges).to_csv(output_dir / "metrics_per_price_range.csv", index=False)
     forecast.to_csv(output_dir / f"previsao_{config.horizon}d.csv", index=False)
     (output_dir / "metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     joblib.dump({"model": final_model, **metadata}, output_dir / "price_model.joblib")
+    print(f"\nVersão {metadata['version_id']} salva em {output_dir.resolve()}", flush=True)
     print(f"\nModelo, métricas e previsões salvos em {output_dir.resolve()}")
     return metadata
 
@@ -419,6 +458,12 @@ def main():
     defaults = TrainingConfig()
     parser = argparse.ArgumentParser(description="Treina e compara previsores de preços de TF2.")
     parser.add_argument("--data", type=Path, default=ML_DIR / "data" / "tf2_historico.csv")
+    parser.add_argument(
+        "--database", action="store_true", help="Treina com o histórico do PostgreSQL"
+    )
+    parser.add_argument(
+        "--register", action="store_true", help="Cadastra a versão no banco sem ativá-la"
+    )
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
         "--device",
@@ -462,7 +507,10 @@ def main():
     )
     args = vars(parser.parse_args())
     csv_path, output_dir = args.pop("data"), args.pop("output_dir")
+    from_database, register = args.pop("database"), args.pop("register")
     run_sarima = args.pop("sarima_experiment")
+    if run_sarima and (from_database or register):
+        parser.error("O experimento SARIMA usa CSV e não cadastra versões de produção.")
     max_items, items = args.pop("experiment_max_items"), args.pop("experiment_items")
     sarima_options = {
         "history_days": args.pop("sarima_history_days"),
@@ -490,7 +538,27 @@ def main():
                 items=items,
             )
         else:
-            train_and_save(csv_path, output_dir or ML_DIR / "artifacts", config)
+            from ml.database import artifact_root, database_engine, load_history
+
+            output_dir = output_dir or artifact_root()
+            if from_database:
+                engine = database_engine()
+                try:
+                    with engine.connect() as connection:
+                        csv_path = load_history(connection)
+                finally:
+                    engine.dispose()
+            metadata = train_and_save(csv_path, output_dir, config)
+            if register:
+                from ml.registry import register_model
+
+                engine = database_engine()
+                try:
+                    register_model(
+                        engine, output_dir / metadata["version_id"] / "price_model.joblib"
+                    )
+                finally:
+                    engine.dispose()
     except (ValueError, FileNotFoundError, LightGBMError) as error:
         parser.error(str(error))
 
