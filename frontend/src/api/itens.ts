@@ -8,6 +8,7 @@ import type { components, paths } from "./esquema";
 export type ItemResumo = components["schemas"]["ItemResumo"];
 export type PaginaItens = components["schemas"]["PaginaItens"];
 export type PontoHistorico = components["schemas"]["PontoHistorico"];
+export type PrevisaoItem = components["schemas"]["PrevisaoItem"];
 export type FiltrosItens = NonNullable<paths["/itens"]["get"]["parameters"]["query"]>;
 
 export function useItens(filtros: FiltrosItens) {
@@ -23,6 +24,14 @@ export function useItem(id: number) {
   return useQuery({
     queryKey: ["item", id],
     queryFn: () => obter<ItemResumo>(`/itens/${id}`),
+  });
+}
+
+export function usePrevisao(id: number, horizonte = 7) {
+  return useQuery({
+    queryKey: ["previsao", id, horizonte],
+    queryFn: () => obter<PrevisaoItem>(`/itens/${id}/previsao`, { horizonte }),
+    staleTime: 5 * 60_000,
   });
 }
 

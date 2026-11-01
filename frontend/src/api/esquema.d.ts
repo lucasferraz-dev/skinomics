@@ -75,6 +75,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/itens/{item_id}/previsao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Previsao Do Item
+         * @description Estimativa da média de preços na janela futura, publicada pelo modelo ativo.
+         */
+        get: operations["previsao_do_item_itens__item_id__previsao_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/itens": {
         parameters: {
             query?: never;
@@ -305,6 +325,53 @@ export interface components {
              */
             preenchido: boolean;
         };
+        /** PrevisaoItem */
+        PrevisaoItem: {
+            /** Item Id */
+            item_id: number;
+            /** Horizonte */
+            horizonte: number;
+            /** Disponivel */
+            disponivel: boolean;
+            /** Motivo */
+            motivo?: ("sem_modelo_ativo" | "aguardando_previsao") | null;
+            /** Modelo Versao */
+            modelo_versao?: string | null;
+            /** Modelo Nome */
+            modelo_nome?: string | null;
+            /**
+             * Moeda
+             * @default USD
+             * @constant
+             */
+            moeda: "USD";
+            /** Data Base */
+            data_base?: string | null;
+            /** Data Alvo */
+            data_alvo?: string | null;
+            /** Janela Inicio */
+            janela_inicio?: string | null;
+            /** Janela Fim */
+            janela_fim?: string | null;
+            /** Preco Base */
+            preco_base?: number | null;
+            /** Preco Previsto */
+            preco_previsto?: number | null;
+            /** Variacao Prevista */
+            variacao_prevista?: number | null;
+            /**
+             * Historico Curto
+             * @default false
+             */
+            historico_curto: boolean;
+            /**
+             * Desatualizada
+             * @default false
+             */
+            desatualizada: boolean;
+            /** Gerada Em */
+            gerada_em?: string | null;
+        };
         /** UsuarioAtual */
         UsuarioAtual: {
             /** Id */
@@ -434,6 +501,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    previsao_do_item_itens__item_id__previsao_get: {
+        parameters: {
+            query?: {
+                horizonte?: number;
+            };
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrevisaoItem"];
+                };
             };
             /** @description Validation Error */
             422: {

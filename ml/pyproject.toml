@@ -1,0 +1,53 @@
+[project]
+name = "skinomics-ml"
+version = "0.1.0"
+description = "Treinamento e previsão de preços de itens TF2"
+requires-python = ">=3.13"
+dependencies = [
+    "joblib>=1.4,<2",
+    # O wheel 4.6.0 inclui OpenCL no Windows; o 4.7.0 testado não inclui GPU.
+    "lightgbm==4.6.0",
+    "numpy>=2.1,<2.4",
+    "pandas>=2.2,<3",
+    "scikit-learn>=1.6,<2",
+    "scipy>=1.14,<2",
+    "statsmodels>=0.14.4,<0.16",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.2,<4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "threadpoolctl>=3.5",
+]
+notebook = [
+    "ipykernel>=6.29",
+    "jupyterlab>=4.3",
+    "matplotlib>=3.9",
+]
+integration = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "httpx2>=2.16.0",
+    "pydantic-settings>=2.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".."]

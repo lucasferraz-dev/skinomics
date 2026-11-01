@@ -1,10 +1,11 @@
 import { Link, useParams, useSearchParams } from "react-router";
 
 import { ErroApi } from "../api/cliente";
-import { type ItemResumo, type PontoHistorico, useHistorico, useItem } from "../api/itens";
+import { type ItemResumo, type PontoHistorico, useHistorico, useItem, usePrevisao } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
+import { PrevisaoPreco } from "../componentes/PrevisaoPreco";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco } from "../lib/formato";
 
 const PERIODOS = { "7d": 7, "30d": 30, "90d": 90, "1a": 365, tudo: null } as const;
@@ -34,6 +35,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
   // A janela conta a partir do último preço do item, como a variação da API.
   const inicio = item.data_preco && dias ? diasAntes(item.data_preco, dias) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
+  const previsao = usePrevisao(item.id);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -86,18 +88,12 @@ function Conteudo({ item }: { item: ItemResumo }) {
           ) : historico.isError ? (
             <MensagemErro titulo="Não foi possível carregar o histórico." />
           ) : (
-            <GraficoHistorico pontos={historico.data} />
+            <GraficoHistorico pontos={historico.data} previsao={previsao.data} />
           )}
         </Painel>
 
         <aside className="space-y-4">
-          <Painel className="p-5">
-            <Rotulo>Cenário / 7 dias</Rotulo>
-            <p className="mt-3 text-lg">Previsão em breve</p>
-            <p className="mt-2 text-sm text-suave">
-              A faixa de preço estimada pelo modelo aparece aqui quando ele entrar em produção.
-            </p>
-          </Painel>
+          <PrevisaoPreco itemId={item.id} />
           {historico.data && historico.data.length > 0 && <ResumoPeriodo pontos={historico.data} />}
         </aside>
       </div>
