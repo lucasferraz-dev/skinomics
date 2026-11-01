@@ -105,10 +105,14 @@ usam peso 0,5 para a EMA. O LightGBM usa erro absoluto, árvores de 7 folhas e 6
 ([parâmetros oficiais](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html)).
 
 A escolha automática usa o ganho médio de MAE do log-retorno em quatro janelas temporais
-de 180 dias. O teste fica nos últimos 180 dias e não participa da seleção. Cada divisão
+de 180 dias. O teste fica nos últimos 180 dias e não participa da seleção. Os 90 dias
+anteriores, separados por embargo, calibram um intervalo nominal de 80%. Cada divisão
 respeita um intervalo de `horizon + target_half_window` dias para impedir que os alvos
-do treino alcancem a validação ou o teste. Depois da avaliação, o vencedor é retreinado
-com todos os dados rotulados para gerar as previsões mais recentes.
+do treino alcancem a calibração, validação ou teste. O artefato preserva o modelo avaliado;
+não há retreino sobre a calibração ou o teste, pois isso invalidaria os resíduos usados na faixa.
+Na página do item, os horizontes de 7, 15 e 30 dias usam versões independentes. O tracejado
+liga o histórico à média futura e a faixa de 80% indica sua incerteza, no visual existente.
+Veja [calibração, publicação e limitações](docs/ml-integracao.md).
 
 Configurações podem ser alteradas pela CLI (`--help` lista todas):
 
@@ -120,7 +124,7 @@ uv run python train.py --data data/outro_historico.csv --test-days 90 --cv-folds
 O CSV precisa das colunas `observation_date`, `market_hash_name`, `price`, `volume`,
 `is_filled`, `days_since_first_obs` e `scrape_timestamp_utc`. Dias parciais, duplicatas,
 preços inválidos e volumes negativos são removidos. As features prontas do CSV são ignoradas.
-O histórico deve cobrir treino, folds e teste; dados insuficientes geram uma mensagem para
+O histórico deve cobrir treino, folds, calibração e teste; dados insuficientes geram uma mensagem para
 ajustar as janelas. Itens recentes continuam nas previsões com `historico_curto=True`.
 
 Cada treino cria uma pasta exclusiva `ml/artifacts/<version_id>/` (fora do git), sem

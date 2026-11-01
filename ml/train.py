@@ -7,7 +7,7 @@ Ou em ml/: uv run python train.py --help
 import argparse
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
@@ -29,6 +29,7 @@ from sklearn.metrics import (
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from ml.intervals import add_intervals, calibrate, interval_metrics
 from ml.models import EMA, NAIVE, check_lightgbm_device, get_models, lightgbm_device_params
 
 ML_DIR = Path(__file__).resolve().parent
@@ -51,6 +52,7 @@ class TrainingConfig:
     target_clip: float = 0.7
     ema_weight: float = 0.5
     test_days: int = 180
+    calibration_days: int = 90
     cv_folds: int = 4
     fold_days: int = 180
     min_history: int = 30
@@ -63,7 +65,7 @@ class TrainingConfig:
 
     def __post_init__(self):
         lightgbm_device_params(self.device, self.gpu_platform_id, self.gpu_device_id)
-        for name in ("horizon", "test_days", "cv_folds", "fold_days"):
+        for name in ("horizon", "test_days", "calibration_days", "cv_folds", "fold_days"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} deve ser positivo.")
         if not 0 <= self.target_half_window < self.horizon:
@@ -248,6 +250,15 @@ def walk_forward_folds(dates: pd.Series, config: TrainingConfig):
         yield label, fit_mask, eval_mask
 
 
+def calibration_split(labeled, config):
+    """Treino → embargo → calibração → embargo → teste; sem misturar datas."""
+    before_test, test = temporal_split(labeled, config)
+    train, calibration = temporal_split(
+        before_test, replace(config, test_days=config.calibration_days)
+    )
+    return train, calibration, test
+
+
 def percentage_gain(error, baseline):
     """Ganho indefinido quando a baseline já tem erro zero."""
     return 100 * (1 - error / baseline) if baseline > 0 else np.nan
@@ -315,10 +326,11 @@ def price_metrics(y_true, y_pred, price_now) -> dict:
 
 
 def eval_final(train, test, features, models):
-    predictions, rows = {}, {}
+    predictions, rows, fitted = {}, {}, {}
     for name, candidate in models.items():
         print(f"Teste: {name}", flush=True)
         model = clone(candidate).fit(train[features], train["target_logret"])
+        fitted[name] = model
         predictions[name] = model.predict(test[features])
         rows[name] = price_metrics(test["target_logret"], predictions[name], test["price"])
     results = pd.DataFrame.from_dict(rows, orient="index").rename_axis("model")
@@ -326,7 +338,7 @@ def eval_final(train, test, features, models):
         results[column] = results["MAE"].map(
             lambda error, baseline=baseline: percentage_gain(error, results.loc[baseline, "MAE"])
         )
-    return results.reset_index(), predictions
+    return results.reset_index(), predictions, fitted
 
 
 def eval_per_item(test, predictions, best_name):
@@ -370,8 +382,12 @@ def make_forecast(model, latest, features, config):
 
 def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
     labeled, latest, features = prepare_data(csv_path, config)
-    train, test = temporal_split(labeled, config)
-    print(f"{len(features)} features | treino: {len(train)} | teste: {len(test)}", flush=True)
+    train, calibration, test = calibration_split(labeled, config)
+    print(
+        f"{len(features)} features | treino: {len(train)} | "
+        f"calibração: {len(calibration)} | teste: {len(test)}",
+        flush=True,
+    )
     models = get_models(
         config.random_state,
         ema_weight=config.ema_weight,
@@ -385,7 +401,16 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
     cv_details, cv_summary = eval_models(train, features, config, models)
     best_name = cv_summary.iloc[0]["model"]
     print(f"\n{cv_summary.to_string(index=False)}\nModelo escolhido no CV: {best_name}")
-    test_metrics, predictions = eval_final(train, test, features, models)
+    test_metrics, predictions, fitted = eval_final(train, test, features, models)
+    final_model = fitted[best_name]
+    interval = calibrate(
+        calibration["target_logret"].to_numpy(), final_model.predict(calibration[features])
+    )
+    interval["start"] = str(calibration["observation_date"].min().date())
+    interval["end"] = str(calibration["observation_date"].max().date())
+    interval_test = interval_metrics(
+        test["target_logret"], predictions[best_name], test["price"], interval
+    )
     per_item = eval_per_item(test, predictions, best_name)
     price_ranges = []
     ranges = pd.cut(test["price"], [0, 0.5, 2, 10, np.inf], right=False)
@@ -408,9 +433,8 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
             )
     print(f"\n{test_metrics.to_string(index=False)}")
 
-    # A escolha precede o teste. Só depois da avaliação retreina com todos os alvos.
-    final_model = clone(models[best_name]).fit(labeled[features], labeled["target_logret"])
-    forecast = make_forecast(final_model, latest, features, config)
+    # Preserva o mesmo modelo avaliado e calibrado; refit invalidaria seus resíduos.
+    forecast = add_intervals(make_forecast(final_model, latest, features, config), interval)
     metadata = {
         "version_id": str(uuid4()),
         "trained_at": datetime.now(UTC).isoformat(),
@@ -426,7 +450,12 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
         "train_end": str(train["observation_date"].max().date()),
         "test_start": str(test["observation_date"].min().date()),
         "test_end": str(test["observation_date"].max().date()),
-        "refit_end": str(labeled["observation_date"].max().date()),
+        "refit_end": str(train["observation_date"].max().date()),
+        "inference_after": str(
+            (calibration["observation_date"].max() + pd.Timedelta(days=config.gap_days)).date()
+        ),
+        "fit_policy": "preserve_training_model_after_calibration",
+        "interval": interval,
         "versions": {
             package: version(package)
             for package in ("numpy", "pandas", "scikit-learn", "lightgbm", "joblib")
@@ -435,6 +464,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
             "cv": json.loads(cv_summary.to_json(orient="records")),
             "test": json.loads(test_metrics.to_json(orient="records")),
             "price_ranges": json.loads(pd.DataFrame(price_ranges).to_json(orient="records")),
+            "interval_test": interval_test,
         },
     }
     output_dir = Path(output_dir) / metadata["version_id"]
@@ -444,6 +474,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
     test_metrics.to_csv(output_dir / "test_metrics.csv", index=False)
     per_item.to_csv(output_dir / "metrics_per_item.csv", index=False)
     pd.DataFrame(price_ranges).to_csv(output_dir / "metrics_per_price_range.csv", index=False)
+    pd.DataFrame([interval_test]).to_csv(output_dir / "interval_test_metrics.csv", index=False)
     forecast.to_csv(output_dir / f"previsao_{config.horizon}d.csv", index=False)
     (output_dir / "metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -489,6 +520,7 @@ def main():
         "horizon",
         "target_half_window",
         "test_days",
+        "calibration_days",
         "cv_folds",
         "fold_days",
         "min_history",

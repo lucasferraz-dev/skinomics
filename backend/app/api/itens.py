@@ -9,7 +9,7 @@ from app.consultas.previsoes import buscar_previsao
 from app.db.session import obter_sessao
 from app.models import Item
 from app.schemas.item import FiltrosItens, ItemResumo, PaginaItens, PontoHistorico
-from app.schemas.previsao import PrevisaoItem
+from app.schemas.previsao import HorizontePrevisao, PrevisaoItem
 
 router = APIRouter(prefix="/itens", tags=["itens"])
 
@@ -18,7 +18,7 @@ SessaoDep = Annotated[Session, Depends(obter_sessao)]
 
 @router.get("/{item_id}/previsao")
 def previsao_do_item(
-    sessao: SessaoDep, item_id: int, horizonte: Annotated[int, Query(ge=7, le=30)] = 7
+    sessao: SessaoDep, item_id: int, horizonte: HorizontePrevisao = HorizontePrevisao.SEMANA
 ) -> PrevisaoItem:
     """Estimativa da média de preços na janela futura, publicada pelo modelo ativo."""
     if sessao.get(Item, item_id) is None:

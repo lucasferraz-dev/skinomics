@@ -10,6 +10,7 @@ import pandas as pd
 from sqlalchemy import text
 
 from ml.database import artifact_root, closed_day, database_engine, latest_collection, load_history
+from ml.intervals import add_intervals, validate_interval
 from ml.registry import active_model, resolve_artifact
 from ml.train import TrainingConfig, build_features, clean_history, make_forecast
 
@@ -20,6 +21,8 @@ def load_artifact(path):
     if not isinstance(artifact, dict) or not required.issubset(artifact):
         raise ValueError("Artefato inválido: modelo, features, configuração ou período ausentes.")
     TrainingConfig(**artifact["config"])
+    if artifact.get("interval") is not None:
+        validate_interval(artifact["interval"])
     if not callable(getattr(artifact["model"], "predict", None)):
         raise ValueError("O artefato não contém um previsor.")
     return artifact
@@ -35,6 +38,8 @@ def predict_history(artifact, history):
     latest = data.groupby("market_hash_name").tail(1).copy()
     # Não publica uma previsão histórica que usaria preços futuros vistos no treinamento.
     last_training_target = pd.Timestamp(artifact["refit_end"]) + pd.Timedelta(days=config.gap_days)
+    if artifact.get("inference_after"):
+        last_training_target = max(last_training_target, pd.Timestamp(artifact["inference_after"]))
     latest = latest[latest["observation_date"] >= last_training_target]
     if latest.empty:
         raise ValueError("Nenhum item tem dados posteriores ao período de treinamento do modelo.")
@@ -42,7 +47,7 @@ def predict_history(artifact, history):
     prices = forecast["preco_previsto"].to_numpy()
     if not np.isfinite(prices).all() or (prices < 1e-8).any() or (prices >= 1e12).any():
         raise ValueError("O modelo gerou preços inválidos ou fora da precisão do banco.")
-    return forecast
+    return add_intervals(forecast, artifact.get("interval"))
 
 
 def run_batch(engine, *, horizon=7, root=None, only_pending=False):
@@ -116,6 +121,10 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False):
                     "base": float(row["preco_atual"]),
                     "price": float(row["preco_previsto"]),
                     "short": bool(row["historico_curto"]),
+                    "low": row["intervalo_inferior"],
+                    "high": row["intervalo_superior"],
+                    "confidence": row["nivel_confianca"],
+                    "uncertain": bool(row["incerteza_elevada"]),
                     "execution": execution_id,
                 }
                 for row in forecast.to_dict("records")
@@ -124,11 +133,17 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False):
                 text("""
                 INSERT INTO previsao
                     (item_id, modelo_id, data_base, preco_base, preco_previsto,
-                     historico_curto, execucao_id)
-                VALUES (:item, :model, :date, :base, :price, :short, :execution)
+                     historico_curto, intervalo_inferior, intervalo_superior, nivel_confianca,
+                     incerteza_elevada, execucao_id)
+                VALUES (:item, :model, :date, :base, :price, :short, :low, :high, :confidence,
+                        :uncertain, :execution)
                 ON CONFLICT (item_id, modelo_id, data_base) DO UPDATE SET
                     preco_base = EXCLUDED.preco_base, preco_previsto = EXCLUDED.preco_previsto,
                     historico_curto = EXCLUDED.historico_curto,
+                    intervalo_inferior = EXCLUDED.intervalo_inferior,
+                    intervalo_superior = EXCLUDED.intervalo_superior,
+                    nivel_confianca = EXCLUDED.nivel_confianca,
+                    incerteza_elevada = EXCLUDED.incerteza_elevada,
                     execucao_id = EXCLUDED.execucao_id, gerada_em = now()
             """),
                 rows,

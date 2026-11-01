@@ -1,13 +1,14 @@
 {
   "name": "skinomics-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "verificar": "tsc",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "api:tipos": "openapi-typescript http://localhost:8080/openapi.json -o src/api/esquema.d.ts"
   },
   "dependencies": {

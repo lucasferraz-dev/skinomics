@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -85,6 +86,14 @@ def test_import_train_register_predict_and_api(database, trained, api):
             expected.loc[name, "preco_previsto"], abs=1e-8
         )
         assert "artefato" not in payload
+        assert payload["nivel_confianca"] == 0.8
+        assert payload["intervalo_inferior"] == pytest.approx(
+            expected.loc[name, "intervalo_inferior"], abs=1e-8
+        )
+        assert payload["intervalo_superior"] == pytest.approx(
+            expected.loc[name, "intervalo_superior"], abs=1e-8
+        )
+        assert payload["incerteza_elevada"] == bool(expected.loc[name, "incerteza_elevada"])
     with threadpool_limits(limits=1):
         predict.run_batch(database)
     assert count(database, "previsao") == 3
@@ -205,3 +214,27 @@ def test_failed_write_rolls_back_entire_batch(database, trained, monkeypatch):
             == 1
         )
     np.testing.assert_equal(before, after)
+
+
+@pytest.mark.parametrize("horizon", [15, 30])
+def test_independent_horizons_train_calibrate_and_publish(database, trained, api, config, horizon):
+    original_id, path, history = trained
+    root = path.parent.parent
+    with threadpool_limits(limits=1):
+        metadata = train.train_and_save(
+            history, root, replace(config, horizon=horizon, cv_folds=1, fold_days=10)
+        )
+        new_id = register_model(database, root / metadata["version_id"] / "price_model.joblib")
+        activate_model(database, new_id, reason="Validar horizonte independente")
+        worker.tick(database)
+    with database.connect() as connection:
+        item_id = connection.scalar(text("SELECT id FROM item LIMIT 1"))
+    seven = api.get(f"/itens/{item_id}/previsao?horizonte=7").json()
+    other = api.get(f"/itens/{item_id}/previsao?horizonte={horizon}").json()
+    assert seven["modelo_versao"] == original_id
+    assert other["modelo_versao"] == new_id
+    assert other["horizonte"] == horizon
+    assert other["nivel_confianca"] == seven["nivel_confianca"] == 0.8
+    assert other["intervalo_inferior"] <= other["preco_previsto"] <= other["intervalo_superior"]
+    assert (pd.Timestamp(other["data_alvo"]) - pd.Timestamp(other["data_base"])).days == horizon
+    assert count(database, "previsao") == 6

@@ -67,6 +67,15 @@ class Previsao(Base):
     __tablename__ = "previsao"
     __table_args__ = (
         CheckConstraint("preco_base > 0 AND preco_previsto > 0", name="precos_positivos"),
+        CheckConstraint(
+            "(intervalo_inferior IS NULL AND intervalo_superior IS NULL "
+            "AND nivel_confianca IS NULL) OR "
+            "(intervalo_inferior IS NOT NULL AND intervalo_superior IS NOT NULL "
+            "AND nivel_confianca IS NOT NULL AND nivel_confianca = 0.8 "
+            "AND intervalo_inferior > 0 AND intervalo_inferior <= preco_previsto "
+            "AND intervalo_superior >= preco_previsto AND intervalo_superior < 1000000000000)",
+            name="intervalo_valido",
+        ),
     )
 
     item_id: Mapped[int] = mapped_column(ForeignKey("item.id"), primary_key=True)
@@ -74,6 +83,10 @@ class Previsao(Base):
     data_base: Mapped[date] = mapped_column(primary_key=True)
     preco_base: Mapped[Decimal] = mapped_column(Numeric(20, 8))
     preco_previsto: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    intervalo_inferior: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    intervalo_superior: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    nivel_confianca: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
+    incerteza_elevada: Mapped[bool] = mapped_column(server_default="false")
     historico_curto: Mapped[bool]
     execucao_id: Mapped[str] = mapped_column(ForeignKey("execucao_previsao.id"))
     gerada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

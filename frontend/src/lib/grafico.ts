@@ -9,6 +9,17 @@ export type PontoGrafico = {
   preenchido: boolean;
 };
 
+export function intervaloValido(previsao?: PrevisaoItem) {
+  const inferior = previsao?.intervalo_inferior;
+  const superior = previsao?.intervalo_superior;
+  const preco = previsao?.preco_previsto;
+  if (!previsao?.disponivel || previsao.nivel_confianca !== 0.8
+    || inferior == null || superior == null || preco == null
+    || !Number.isFinite(inferior) || !Number.isFinite(superior) || !Number.isFinite(preco)
+    || inferior <= 0 || inferior > preco || superior < preco) return null;
+  return { inferior, superior };
+}
+
 export function prepararGrafico(pontos: PontoHistorico[], previsao?: PrevisaoItem) {
   const dados: PontoGrafico[] = pontos.map((ponto) => ({
     ...ponto,
@@ -37,5 +48,5 @@ export function prepararGrafico(pontos: PontoHistorico[], previsao?: PrevisaoIte
     data: previsao.data_alvo!, instante: alvo, preco: null,
     precoPrevisto: previsao.preco_previsto!, volume: null, preenchido: false,
   });
-  return { dados, futuro: { base: ultimo.instante, inicio, alvo, fim, previsao } };
+  return { dados, futuro: { base: ultimo.instante, inicio, alvo, fim, previsao, intervalo: intervaloValido(previsao) } };
 }

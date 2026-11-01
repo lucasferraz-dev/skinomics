@@ -72,6 +72,20 @@ def test_single_day_target(csv_path):
     assert item.iloc[0]["target_price"] == item.iloc[3]["price"]
 
 
+@pytest.mark.parametrize("horizon", [7, 15, 30])
+def test_horizon_target_uses_its_own_future_window(csv_path, horizon):
+    data = load_data(csv_path)
+    config = TrainingConfig(horizon=horizon, target_half_window=2)
+    targets = build_targets(data, config)
+    item = targets[targets["market_hash_name"] == "Case A"]
+    origin = 40
+    expected = item.iloc[origin + horizon - 2 : origin + horizon + 3]["price"].mean()
+    assert item.iloc[origin]["target_price"] == pytest.approx(expected)
+    assert item.iloc[origin]["target_logret"] == pytest.approx(
+        np.log(expected / item.iloc[origin]["price"])
+    )
+
+
 def test_features_do_not_use_future_prices_or_targets(csv_path):
     data = load_data(csv_path)
     original = build_features(data)
@@ -135,6 +149,7 @@ def test_short_history_fails_with_actionable_error():
         {"target_clip": np.inf},
         {"cv_folds": 0},
         {"test_days": 0},
+        {"calibration_days": 0},
         {"n_jobs": 0},
     ],
 )
@@ -200,6 +215,20 @@ def test_full_training_exports_reusable_model_and_forecast(csv_path, tmp_path, c
         expected = latest["price"] * np.exp(artifact["model"].predict(latest[features]))
     np.testing.assert_allclose(forecast.loc[latest["market_hash_name"], "preco_previsto"], expected)
     assert forecast["preco_previsto"].gt(0).all()
+    assert forecast["intervalo_inferior"].le(forecast["preco_previsto"]).all()
+    assert forecast["intervalo_superior"].ge(forecast["preco_previsto"]).all()
+    assert forecast["nivel_confianca"].eq(0.8).all()
+    training, calibration, test = train.calibration_split(labeled, config)
+    assert metadata["refit_end"] == str(training.observation_date.max().date())
+    assert metadata["interval"]["n"] == len(calibration)
+    with threadpool_limits(limits=1):
+        prediction = artifact["model"].predict(test[features])
+    expected_metric = price_metrics(test.target_logret, prediction, test.price)
+    reported = next(
+        row for row in metadata["metrics"]["test"] if row["model"] == metadata["model_name"]
+    )
+    assert reported["MAE"] == pytest.approx(expected_metric["MAE"])
+    assert metadata["metrics"]["interval_test"]["n"] == len(test)
     target_delta = pd.to_datetime(forecast["data_alvo"]) - pd.to_datetime(forecast["data_base"])
     assert target_delta.eq(pd.Timedelta(days=7)).all()
 

@@ -52,6 +52,9 @@ def test_previsao_retorna_janela_moeda_variacao_e_versao(cliente, previsao):
     assert data["janela_inicio"] == (forecast.data_base + timedelta(days=5)).isoformat()
     assert data["janela_fim"] == (forecast.data_base + timedelta(days=9)).isoformat()
     assert data["desatualizada"] is False
+    assert data["intervalo_inferior"] is None
+    assert data["intervalo_superior"] is None
+    assert data["nivel_confianca"] is None
 
 
 def test_sinaliza_previsao_antiga_e_historico_curto(cliente, sessao, previsao):
@@ -62,6 +65,7 @@ def test_sinaliza_previsao_antiga_e_historico_curto(cliente, sessao, previsao):
     data = cliente.get(f"/itens/{item.id}/previsao").json()
     assert data["desatualizada"] is True
     assert data["historico_curto"] is True
+    assert data["incerteza_elevada"] is True
 
 
 def test_ignora_dia_parcial_ao_verificar_atualizacao(cliente, sessao, previsao):
@@ -107,3 +111,112 @@ def test_horizonte_sem_modelo_e_item_inexistente(cliente, previsao):
     assert data["motivo"] == "sem_modelo_ativo"
     assert cliente.get("/itens/999999/previsao").status_code == 404
     assert cliente.get(f"/itens/{item.id}/previsao?horizonte=0").status_code == 422
+
+
+@pytest.mark.parametrize("horizon", [7, 15, 30])
+def test_horizontes_independentes_com_intervalo(cliente, sessao, previsao, horizon):
+    item, forecast = previsao
+    active = sessao.get(ModeloAtivo, 7)
+    model = sessao.get(ModeloVersao, forecast.modelo_id)
+    active.horizonte = model.horizonte = horizon
+    model.metadados = {"metrics": {"interval_test": {"coverage": 0.75}}}
+    forecast.intervalo_inferior = 2
+    forecast.intervalo_superior = 3.5
+    forecast.nivel_confianca = 0.8
+    forecast.incerteza_elevada = True
+    sessao.flush()
+    response = cliente.get(f"/itens/{item.id}/previsao?horizonte={horizon}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["horizonte"] == horizon
+    assert data["data_alvo"] == (forecast.data_base + timedelta(days=horizon)).isoformat()
+    assert data["janela_inicio"] == (forecast.data_base + timedelta(days=horizon - 2)).isoformat()
+    assert data["intervalo_inferior"] == 2
+    assert data["intervalo_superior"] == 3.5
+    assert data["nivel_confianca"] == 0.8
+    assert data["cobertura_teste"] == 0.75
+    assert data["incerteza_elevada"] is True
+    other = 15 if horizon == 7 else 7
+    assert (
+        cliente.get(f"/itens/{item.id}/previsao?horizonte={other}").json()["motivo"]
+        == "sem_modelo_ativo"
+    )
+
+
+@pytest.mark.parametrize("horizon", [8, 14, 29, 31, "abc"])
+def test_rejeita_horizontes_nao_suportados(cliente, previsao, horizon):
+    item, _ = previsao
+    assert cliente.get(f"/itens/{item.id}/previsao?horizonte={horizon}").status_code == 422
+
+
+def test_troca_horizonte_nao_mistura_preco_versao_datas_ou_cobertura(cliente, sessao, previsao):
+    item, seven = previsao
+    expected = {7: (seven.modelo_id, 2.5, None)}
+    for horizon, price, coverage in ((15, 3.1, 0.74), (30, 4.2, 0.95)):
+        model = ModeloVersao(
+            id=str(uuid4()),
+            nome="hgb",
+            horizonte=horizon,
+            meia_janela=2,
+            artefato=f"{horizon}/model.joblib",
+            sha256=str(horizon) * 32,
+            metadados={"metrics": {"interval_test": {"coverage": coverage}}},
+        )
+        sessao.add(model)
+        sessao.flush()
+        execution = ExecucaoPrevisao(
+            id=str(uuid4()), modelo_id=model.id, data_limite=seven.data_base, status="sucesso"
+        )
+        sessao.add(execution)
+        sessao.flush()
+        sessao.add(ModeloAtivo(horizonte=horizon, modelo_id=model.id))
+        sessao.add(
+            Previsao(
+                item_id=item.id,
+                modelo_id=model.id,
+                data_base=seven.data_base,
+                preco_base=2,
+                preco_previsto=price,
+                intervalo_inferior=1,
+                intervalo_superior=5,
+                nivel_confianca=0.8,
+                historico_curto=False,
+                execucao_id=execution.id,
+            )
+        )
+        expected[horizon] = (model.id, price, coverage)
+    sessao.flush()
+    # O mesmo item possui os três modelos ativos simultaneamente; alternar não deve misturá-los.
+    for horizon in (7, 15, 30, 15, 7):
+        data = cliente.get(f"/itens/{item.id}/previsao?horizonte={horizon}").json()
+        version, price, coverage = expected[horizon]
+        assert data["horizonte"] == horizon
+        assert data["modelo_versao"] == version
+        assert data["preco_previsto"] == price
+        assert data["cobertura_teste"] == coverage
+        assert data["data_alvo"] == (seven.data_base + timedelta(days=horizon)).isoformat()
+        assert data["janela_inicio"] == (seven.data_base + timedelta(days=horizon - 2)).isoformat()
+        assert data["janela_fim"] == (seven.data_base + timedelta(days=horizon + 2)).isoformat()
+
+
+@pytest.mark.parametrize(
+    "low,high,level",
+    [
+        (3, 4, 0.8),
+        (1, 2, 0.8),
+        (0, 3, 0.8),
+        (1, None, 0.8),
+        (None, None, 0.8),
+        (1, 3, None),
+        (1, 3, 0.9),
+    ],
+)
+def test_banco_rejeita_intervalos_invalidos(sessao, previsao, low, high, level):
+    from sqlalchemy.exc import IntegrityError
+
+    _, forecast = previsao
+    with pytest.raises(IntegrityError), sessao.begin_nested():
+        forecast.intervalo_inferior = low
+        forecast.intervalo_superior = high
+        forecast.nivel_confianca = level
+        sessao.flush()

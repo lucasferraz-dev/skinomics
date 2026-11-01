@@ -75,3 +75,18 @@ def test_loading_rejects_missing_metadata():
     stream.seek(0)
     with pytest.raises(ValueError, match="Artefato inválido"):
         load_artifact(stream)
+
+
+def test_calibration_end_blocks_backcast_even_after_training_end(history, csv_path):
+    artifact = artifact_for(history, csv_path)
+    artifact["inference_after"] = "2020-09-01"
+    with pytest.raises(ValueError, match="posteriores"):
+        predict_history(artifact, history)
+
+
+def test_legacy_artifact_keeps_interval_unavailable(history, csv_path):
+    artifact = artifact_for(history, csv_path)
+    artifact["config"].pop("calibration_days")
+    result = predict_history(artifact, history)
+    assert result["intervalo_inferior"].isna().all()
+    assert result["nivel_confianca"].isna().all()
