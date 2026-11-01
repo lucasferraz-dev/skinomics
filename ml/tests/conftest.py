@@ -37,4 +37,4 @@ def csv_path(tmp_path, history):
 
 @pytest.fixture
 def config():
-    return TrainingConfig(test_days=30, cv_folds=2, fold_days=30, n_jobs=1)
+    return TrainingConfig(test_days=30, calibration_days=30, cv_folds=2, fold_days=30, n_jobs=1)

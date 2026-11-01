@@ -14,7 +14,7 @@ import {
 
 import type { PontoHistorico, PrevisaoItem } from "../api/itens";
 import { formatarData, formatarDiaMes, formatarInteiro, formatarPreco } from "../lib/formato";
-import { type PontoGrafico, prepararGrafico } from "../lib/grafico";
+import { intervaloValido, type PontoGrafico, prepararGrafico } from "../lib/grafico";
 
 const EIXO = { fill: "var(--color-apagado)", fontSize: 11, fontFamily: "var(--font-mono)" };
 
@@ -24,6 +24,7 @@ function Dica({ active, payload, previsao }: TooltipContentProps<TooltipValueTyp
   const ponto = payload?.[0]?.payload as PontoGrafico | undefined;
   if (!active || !ponto) return null;
   const futuro = ponto.preco === null && ponto.precoPrevisto != null;
+  const intervalo = intervaloValido(previsao);
   return (
     <div className="max-w-60 rounded-lg border border-borda bg-painel-alto px-3 py-2 shadow-xl">
       <p className="font-mono text-[11px] text-suave">{formatarData(ponto.data)}</p>
@@ -37,6 +38,12 @@ function Dica({ active, payload, previsao }: TooltipContentProps<TooltipValueTyp
             </p>
           )}
           {previsao?.desatualizada && <p className="mt-1 text-xs text-suave">Previsão desatualizada.</p>}
+          {intervalo && (
+            <p className="mt-1 font-mono text-[11px] text-suave">
+              Faixa de 80%: {formatarPreco(intervalo.inferior)} – {formatarPreco(intervalo.superior)}
+            </p>
+          )}
+          {previsao?.incerteza_elevada && <p className="mt-1 text-xs text-destaque">Incerteza elevada</p>}
         </>
       ) : (
         <p className="font-mono text-[11px] text-apagado">
@@ -66,6 +73,11 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
             <span className="w-5 border-t-2 border-dashed border-destaque" aria-hidden="true" />Previsão
           </span>
           {futuro.previsao.desatualizada && <span className="text-apagado">Previsão desatualizada</span>}
+          {futuro.intervalo && (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-5 rounded-sm bg-destaque/15 ring-1 ring-destaque/40" aria-hidden="true" />Faixa de 80%
+            </span>
+          )}
         </div>
       )}
       <ResponsiveContainer width="100%" height={altura}>
@@ -94,11 +106,27 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
           />
           {futuro && futuro.inicio !== futuro.fim && (
             <ReferenceArea
+              className={futuro.intervalo ? "faixa-previsao" : "janela-previsao"}
               x1={futuro.inicio}
               x2={futuro.fim}
+              y1={futuro.intervalo?.inferior}
+              y2={futuro.intervalo?.superior}
+              ifOverflow="extendDomain"
               fill="var(--color-destaque)"
-              fillOpacity={0.06}
-              strokeOpacity={0}
+              fillOpacity={futuro.intervalo ? 0.14 : 0.06}
+              stroke="var(--color-destaque)"
+              strokeOpacity={futuro.intervalo ? 0.4 : 0}
+              strokeDasharray="3 3"
+            />
+          )}
+          {futuro?.intervalo && (
+            <ReferenceLine
+              className="limites-previsao"
+              segment={[
+                { x: futuro.alvo, y: futuro.intervalo.inferior },
+                { x: futuro.alvo, y: futuro.intervalo.superior },
+              ]}
+              ifOverflow="extendDomain" stroke="var(--color-destaque)" strokeOpacity={0.7}
             />
           )}
           {futuro && (
@@ -146,7 +174,10 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
         <p className="mt-3 text-xs leading-relaxed text-suave">
           {futuro.inicio === futuro.fim
             ? `Ponto previsto para ${formatarData(futuro.previsao.data_alvo!)}.`
-            : `O ponto representa a média prevista entre ${formatarData(futuro.previsao.janela_inicio!)} e ${formatarData(futuro.previsao.janela_fim!)}; a área sombreada marca essa janela.`}
+            : `O ponto representa a média prevista entre ${formatarData(futuro.previsao.janela_inicio!)} e ${formatarData(futuro.previsao.janela_fim!)}.`}
+          {futuro.intervalo
+            ? " Os limites indicam a faixa de 80% para essa média, sem garantir o preço futuro."
+            : " A área sombreada marca a janela de datas; esta versão não possui intervalo calibrado."}
           {" "}O tracejado liga o preço-base à estimativa, sem prever os preços de cada dia.
         </p>
       )}

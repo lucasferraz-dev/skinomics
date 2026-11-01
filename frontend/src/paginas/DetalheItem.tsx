@@ -1,7 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router";
 
 import { ErroApi } from "../api/cliente";
-import { type ItemResumo, type PontoHistorico, useHistorico, useItem, usePrevisao } from "../api/itens";
+import { type HorizontePrevisao, type ItemResumo, type PontoHistorico, useHistorico, useItem, usePrevisao } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
@@ -30,12 +30,21 @@ export function DetalheItem() {
 
 function Conteudo({ item }: { item: ItemResumo }) {
   const [parametros, setParametros] = useSearchParams();
+  const horizonteUrl = Number(parametros.get("horizonte"));
+  const horizonte: HorizontePrevisao = horizonteUrl === 15 || horizonteUrl === 30 ? horizonteUrl : 7;
+  function alterarParametro(nome: string, valor: string) {
+    setParametros((atuais) => {
+      const novos = new URLSearchParams(atuais);
+      novos.set(nome, valor);
+      return novos;
+    }, { replace: true });
+  }
   const periodo: Periodo = (parametros.get("periodo") as Periodo | null) ?? "30d";
   const dias = PERIODOS[periodo] ?? null;
   // A janela conta a partir do último preço do item, como a variação da API.
   const inicio = item.data_preco && dias ? diasAntes(item.data_preco, dias) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
-  const previsao = usePrevisao(item.id);
+  const previsao = usePrevisao(item.id, horizonte);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -70,7 +79,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
                   key={opcao}
                   type="button"
                   aria-pressed={opcao === periodo}
-                  onClick={() => setParametros({ periodo: opcao }, { replace: true })}
+                  onClick={() => alterarParametro("periodo", opcao)}
                   className={`rounded-md px-2.5 py-1 font-mono text-xs transition-colors ${
                     opcao === periodo ? "bg-painel-alto text-texto ring-1 ring-borda" : "text-apagado hover:text-texto"
                   }`}
@@ -93,7 +102,10 @@ function Conteudo({ item }: { item: ItemResumo }) {
         </Painel>
 
         <aside className="space-y-4">
-          <PrevisaoPreco itemId={item.id} />
+          <PrevisaoPreco
+            consulta={previsao} horizonte={horizonte}
+            aoMudarHorizonte={(valor) => alterarParametro("horizonte", String(valor))}
+          />
           {historico.data && historico.data.length > 0 && <ResumoPeriodo pontos={historico.data} />}
         </aside>
       </div>

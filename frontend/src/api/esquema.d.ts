@@ -207,6 +207,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * HorizontePrevisao
+         * @enum {integer}
+         */
+        HorizontePrevisao: 7 | 15 | 30;
         /** ItemAcompanhadoResumo */
         ItemAcompanhadoResumo: {
             /** Id */
@@ -329,8 +334,7 @@ export interface components {
         PrevisaoItem: {
             /** Item Id */
             item_id: number;
-            /** Horizonte */
-            horizonte: number;
+            horizonte: components["schemas"]["HorizontePrevisao"];
             /** Disponivel */
             disponivel: boolean;
             /** Motivo */
@@ -357,6 +361,25 @@ export interface components {
             preco_base?: number | null;
             /** Preco Previsto */
             preco_previsto?: number | null;
+            /** Intervalo Inferior */
+            intervalo_inferior?: number | null;
+            /** Intervalo Superior */
+            intervalo_superior?: number | null;
+            /**
+             * Nivel Confianca
+             * @description Cobertura nominal da faixa da média futura; não é garantia.
+             */
+            nivel_confianca?: 0.8 | null;
+            /**
+             * Incerteza Elevada
+             * @default false
+             */
+            incerteza_elevada: boolean;
+            /**
+             * Cobertura Teste
+             * @description Cobertura observada no teste temporal do modelo.
+             */
+            cobertura_teste?: number | null;
             /** Variacao Prevista */
             variacao_prevista?: number | null;
             /**
@@ -516,7 +539,7 @@ export interface operations {
     previsao_do_item_itens__item_id__previsao_get: {
         parameters: {
             query?: {
-                horizonte?: number;
+                horizonte?: components["schemas"]["HorizontePrevisao"];
             };
             header?: never;
             path: {
