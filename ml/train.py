@@ -5,6 +5,7 @@ Ou em ml/: uv run python train.py --help
 """
 
 import argparse
+import hashlib
 import json
 import sys
 from dataclasses import asdict, dataclass, replace
@@ -24,6 +25,7 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 # Mantém ml.models como caminho de importação no artefato, inclusive via python train.py.
 if __package__ in (None, ""):
@@ -34,6 +36,7 @@ from ml.models import EMA, NAIVE, check_lightgbm_device, get_models, lightgbm_de
 
 ML_DIR = Path(__file__).resolve().parent
 KEY_ITEM = "Mann Co. Supply Crate Key"
+PRICE_ACCURACY_TOLERANCE = 0.15
 REQUIRED_COLUMNS = (
     "observation_date",
     "market_hash_name",
@@ -311,17 +314,40 @@ def price_metrics(y_true, y_pred, price_now) -> dict:
     y_true, y_pred, price_now = map(np.asarray, (y_true, y_pred, price_now))
     true_price = price_now * np.exp(y_true)
     predicted_price = price_now * np.exp(y_pred)
+    relative_error = np.abs(predicted_price - true_price) / true_price
+    correct_price = (relative_error <= PRICE_ACCURACY_TOLERANCE) | np.isclose(
+        relative_error, PRICE_ACCURACY_TOLERANCE, rtol=0, atol=1e-12
+    )
     moved = y_true != 0
     direction = np.nan
     if moved.any() and not np.allclose(y_pred, 0):
         direction = 100 * np.mean(np.sign(y_pred[moved]) == np.sign(y_true[moved]))
     return {
+        "n": len(y_true),
         "MAE": mean_absolute_error(true_price, predicted_price),
         "RMSE": np.sqrt(mean_squared_error(true_price, predicted_price)),
         "MAPE_%": 100 * mean_absolute_percentage_error(true_price, predicted_price),
         "MAE_logret": mean_absolute_error(y_true, y_pred),
         "R2_retorno": r2_score(y_true, y_pred) if len(y_true) > 1 else np.nan,
         "acerto_direcao_%": direction,
+        "acerto_preco_%": 100 * np.mean(correct_price),
+    }
+
+
+def evaluation_metadata(test: pd.DataFrame) -> dict:
+    """Identifica o conjunto de teste para comparar versões sobre os mesmos alvos."""
+    columns = ["market_hash_name", "observation_date", "price", "target_price"]
+    canonical = (
+        test[columns]
+        .sort_values(columns[:2])
+        .to_csv(index=False, float_format="%.17g", date_format="%Y-%m-%d", lineterminator="\n")
+    )
+    return {
+        "test_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "test_rows": len(test),
+        "price_accuracy_tolerance": PRICE_ACCURACY_TOLERANCE,
+        "price_accuracy_definition": "abs(preco_previsto - preco_real) / preco_real <= tolerancia",
+        "price_band_basis": "preco_base_usd",
     }
 
 
@@ -456,6 +482,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
         ),
         "fit_policy": "preserve_training_model_after_calibration",
         "interval": interval,
+        "evaluation": evaluation_metadata(test),
         "versions": {
             package: version(package)
             for package in ("numpy", "pandas", "scikit-learn", "lightgbm", "joblib")
@@ -493,7 +520,10 @@ def main():
         "--database", action="store_true", help="Treina com o histórico do PostgreSQL"
     )
     parser.add_argument(
-        "--register", action="store_true", help="Cadastra a versão no banco sem ativá-la"
+        "--register",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Cadastra sem ativar; padrão com --database. CSV exige --register.",
     )
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
@@ -540,6 +570,8 @@ def main():
     args = vars(parser.parse_args())
     csv_path, output_dir = args.pop("data"), args.pop("output_dir")
     from_database, register = args.pop("database"), args.pop("register")
+    if register is None:
+        register = from_database
     run_sarima = args.pop("sarima_experiment")
     if run_sarima and (from_database or register):
         parser.error("O experimento SARIMA usa CSV e não cadastra versões de produção.")
@@ -586,9 +618,16 @@ def main():
 
                 engine = database_engine()
                 try:
-                    register_model(
-                        engine, output_dir / metadata["version_id"] / "price_model.joblib"
-                    )
+                    artifact_path = output_dir / metadata["version_id"] / "price_model.joblib"
+                    try:
+                        registered_id = register_model(engine, artifact_path)
+                    except SQLAlchemyError:
+                        parser.error(
+                            f"O treino foi salvo em {artifact_path}, mas o cadastro falhou. "
+                            "Verifique o banco e execute: python -m ml.registry register "
+                            f'"{artifact_path}"'
+                        )
+                    print(f"Versão cadastrada no PostgreSQL: {registered_id}", flush=True)
                 finally:
                     engine.dispose()
     except (ValueError, FileNotFoundError, LightGBMError) as error:

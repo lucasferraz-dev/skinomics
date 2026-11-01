@@ -210,6 +210,11 @@ def test_full_training_exports_reusable_model_and_forecast(csv_path, tmp_path, c
     assert set(pd.read_csv(output / "test_metrics.csv")["model"]) == set(get_models())
     assert len(pd.read_csv(output / "cv_folds.csv")) == 12
     assert len(pd.read_csv(output / "metrics_per_item.csv")) == 3
+    bands = pd.read_csv(output / "metrics_per_price_range.csv")
+    assert bands["acerto_preco_%"].between(0, 100).all()
+    assert bands.groupby("model")["n"].sum().eq(metadata["evaluation"]["test_rows"]).all()
+    assert len(metadata["evaluation"]["test_sha256"]) == 64
+    assert metadata["evaluation"]["price_accuracy_tolerance"] == 0.15
     forecast = pd.read_csv(output / "previsao_7d.csv").set_index("market_hash_name")
     with threadpool_limits(limits=1):
         expected = latest["price"] * np.exp(artifact["model"].predict(latest[features]))
