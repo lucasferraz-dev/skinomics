@@ -1,6 +1,7 @@
 import { Rotulo, Variacao } from "../../componentes/Basicos";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
+import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarPreco } from "../../lib/formato";
 import { useItemVitrine } from "./dados";
@@ -39,7 +40,7 @@ function Navegacao() {
     <header className="sticky top-0 z-10 border-b border-borda bg-fundo/85 backdrop-blur">
       <Container className="flex h-16 items-center justify-between">
         <Logo />
-        <nav className="hidden gap-8 text-sm text-suave md:flex">
+        <nav className="hidden gap-8 text-sm text-suave lg:flex">
           {LINKS.map(([rotulo, ancora]) => (
             <a key={ancora} href={ancora} className="hover:text-texto">
               {rotulo}
@@ -47,8 +48,9 @@ function Navegacao() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <AcessoAnalise hamburguer />
           <MenuConta />
-          <BotaoPrimario para="/itens">Começar agora</BotaoPrimario>
+          <span className="hidden sm:inline-flex"><BotaoPrimario para="/itens">Começar agora</BotaoPrimario></span>
         </div>
       </Container>
     </header>

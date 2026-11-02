@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import Date, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
@@ -44,7 +44,7 @@ def listar_oportunidades(
     )
     total_catalogo = sessao.scalar(select(func.count()).select_from(catalogo.subquery())) or 0
     margem = (Previsao.preco_previsto / ultimo.c.preco - 1).label("margem")
-    atualizadas = (
+    compativeis = (
         select(Item, Previsao, margem)
         .join(ultimo, ultimo.c.item_id == Item.id)
         .join(
@@ -56,18 +56,27 @@ def listar_oportunidades(
         .where(
             Item.ativo.is_(True),
             Item.appid == 440,
-            ultimo.c.data == ontem,
             func.abs(Previsao.preco_base - ultimo.c.preco) <= Decimal("0.00000001"),
         )
     )
-    quantidade = sessao.scalar(select(func.count()).select_from(atualizadas.subquery())) or 0
-    resposta.itens_sem_previsao_atualizada = total_catalogo - quantidade
+    quantidade = sessao.scalar(select(func.count()).select_from(compativeis.subquery())) or 0
+    resposta.itens_sem_previsao_compativel = total_catalogo - quantidade
     if not quantidade:
-        resposta.motivo = "aguardando_previsoes_atualizadas"
+        resposta.motivo = "aguardando_previsoes"
         return resposta
-    resposta.data_base = ontem
-    consulta = atualizadas.where(Previsao.preco_previsto > ultimo.c.preco)
-    resposta.total = sessao.scalar(select(func.count()).select_from(consulta.subquery())) or 0
+    consulta = compativeis.where(Previsao.preco_previsto > ultimo.c.preco)
+    resumo = consulta.subquery()
+    total, primeira_data, ultima_data, antigos = sessao.execute(
+        select(
+            func.count(),
+            func.min(resumo.c.data_base),
+            func.max(resumo.c.data_base),
+            func.count().filter(resumo.c.data_base < ontem),
+        ).select_from(resumo)
+    ).one()
+    resposta.total = total
+    resposta.itens_desatualizados = antigos
+    resposta.data_base = primeira_data if primeira_data == ultima_data else None
     if not resposta.total:
         resposta.motivo = "sem_margem_positiva"
         return resposta
@@ -81,8 +90,15 @@ def listar_oportunidades(
         # Consulta única da janela de risco dos itens da página; sem consulta por linha.
         pontos = sessao.scalars(
             select(PrecoDiario).where(
-                PrecoDiario.item_id.in_([item.id for item, _, _ in linhas]),
-                PrecoDiario.data.between(ontem - timedelta(days=30), ontem),
+                or_(
+                    *[
+                        (PrecoDiario.item_id == item.id)
+                        & PrecoDiario.data.between(
+                            previsao.data_base - timedelta(days=30), previsao.data_base
+                        )
+                        for item, previsao, _ in linhas
+                    ]
+                ),
                 PrecoDiario.data < dia_coleta,
             )
         )
@@ -93,7 +109,7 @@ def listar_oportunidades(
     ):
         risco = avaliar_risco(
             historicos[item.id],
-            data_base=ontem,
+            data_base=previsao.data_base,
             preco_base=float(previsao.preco_base),
             preco_previsto=float(previsao.preco_previsto),
             inferior=float(previsao.intervalo_inferior)
@@ -105,7 +121,7 @@ def listar_oportunidades(
             historico_curto=previsao.historico_curto,
             incerteza_elevada=previsao.incerteza_elevada,
         )
-        alvo = ontem + timedelta(days=horizonte)
+        alvo = previsao.data_base + timedelta(days=horizonte)
         resposta.itens.append(
             Oportunidade(
                 posicao=posicao,
@@ -121,7 +137,8 @@ def listar_oportunidades(
                 motivos_risco=risco.motivos,
                 volume_medio_7d=risco.volume_medio_7d,
                 volatilidade_30d=risco.volatilidade_30d,
-                data_base=ontem,
+                data_base=previsao.data_base,
+                desatualizada=previsao.data_base < ontem,
                 data_alvo=alvo,
                 janela_inicio=alvo - timedelta(days=modelo.meia_janela),
                 janela_fim=alvo + timedelta(days=modelo.meia_janela),

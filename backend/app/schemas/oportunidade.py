@@ -13,10 +13,10 @@ class Oportunidade(BaseModel):
     nome: str
     tipo: str | None
     icon_url: str | None
-    preco_atual: float
+    preco_atual: float = Field(description="Preço disponível na data-base, que pode ser histórica.")
     preco_previsto: float
     margem_estimada: float = Field(description="Margem bruta como fração: 0.10 = 10%; sem taxas.")
-    diferenca_estimada: float = Field(description="Preço previsto menos preço atual, em USD.")
+    diferenca_estimada: float = Field(description="Preço previsto menos preço-base, em USD.")
     risco: NivelRisco
     motivos_risco: list[str]
     volume_medio_7d: float | None
@@ -24,6 +24,7 @@ class Oportunidade(BaseModel):
         description="Desvio dos log-retornos diários, sem anualizar."
     )
     data_base: date
+    desatualizada: bool = Field(description="Data-base anterior a ontem em UTC.")
     data_alvo: date
     janela_inicio: date
     janela_fim: date
@@ -39,8 +40,6 @@ class RankingOportunidades(BaseModel):
     por_pagina: int
     modelo_versao: str | None = None
     data_base: date | None = None
-    itens_sem_previsao_atualizada: int = 0
-    motivo: (
-        Literal["sem_modelo_ativo", "aguardando_previsoes_atualizadas", "sem_margem_positiva"]
-        | None
-    ) = None
+    itens_sem_previsao_compativel: int = 0
+    itens_desatualizados: int = 0
+    motivo: Literal["sem_modelo_ativo", "aguardando_previsoes", "sem_margem_positiva"] | None = None

@@ -329,7 +329,10 @@ export interface components {
             tipo: string | null;
             /** Icon Url */
             icon_url: string | null;
-            /** Preco Atual */
+            /**
+             * Preco Atual
+             * @description Preço disponível na data-base, que pode ser histórica.
+             */
             preco_atual: number;
             /** Preco Previsto */
             preco_previsto: number;
@@ -340,7 +343,7 @@ export interface components {
             margem_estimada: number;
             /**
              * Diferenca Estimada
-             * @description Preço previsto menos preço atual, em USD.
+             * @description Preço previsto menos preço-base, em USD.
              */
             diferenca_estimada: number;
             /**
@@ -362,6 +365,11 @@ export interface components {
              * Format: date
              */
             data_base: string;
+            /**
+             * Desatualizada
+             * @description Data-base anterior a ontem em UTC.
+             */
+            desatualizada: boolean;
             /**
              * Data Alvo
              * Format: date
@@ -506,12 +514,17 @@ export interface components {
             /** Data Base */
             data_base?: string | null;
             /**
-             * Itens Sem Previsao Atualizada
+             * Itens Sem Previsao Compativel
              * @default 0
              */
-            itens_sem_previsao_atualizada: number;
+            itens_sem_previsao_compativel: number;
+            /**
+             * Itens Desatualizados
+             * @default 0
+             */
+            itens_desatualizados: number;
             /** Motivo */
-            motivo?: ("sem_modelo_ativo" | "aguardando_previsoes_atualizadas" | "sem_margem_positiva") | null;
+            motivo?: ("sem_modelo_ativo" | "aguardando_previsoes" | "sem_margem_positiva") | null;
         };
         /** UsuarioAtual */
         UsuarioAtual: {

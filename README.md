@@ -265,7 +265,8 @@ os artefatos das versões de produção; resultados da amostra não representam 
 ### Front-end
 
 O menu **Oportunidades** abre `/oportunidades`, com ranking por margem bruta prevista,
-risco explicável e cenários de 7, 15 e 30 dias. O ranking exige preços e previsões atualizados.
+risco explicável e cenários de 7, 15 e 30 dias. O ranking aceita o histórico disponível para
+testes, com aviso de dados antigos e datas reais de cada previsão.
 Veja as regras, operação e amostra retrospectiva em [docs/oportunidades.md](docs/oportunidades.md).
 Esta entrega atualiza backend, frontend e ferramentas de ML para **0.3.0**.
 

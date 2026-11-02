@@ -8,12 +8,16 @@
   página no menu do site para os horizontes de 7, 15 e 30 dias.
 - Indicador de risco com motivos, baseado em liquidez, volatilidade e intervalo da previsão.
 - Validação retrospectiva em amostra, com relatório local, testes de causalidade e integração.
-- Estados explícitos para falta de modelo, dados atrasados ou ausência de margem positiva.
+- Estados explícitos para falta de modelo, previsões incompatíveis ou ausência de margem positiva.
+- Menu Área de análise compartilhado em todas as páginas, incluindo início e login,
+  com acesso a Oportunidades e retorno ao catálogo pela opção Visão geral; menu hambúrguer na landing page.
 
 ### Alterado
 
 - Backend, frontend e ferramentas ML atualizados para 0.3.0; contrato OpenAPI regenerado.
 - Proxy de desenvolvimento do frontend aceita `SKINOMICS_API_PROXY`, preservando a porta padrão.
+- Ranking aceita dados históricos para testes, com aviso, data-base e janela originais;
+  o risco usa o histórico anterior à data-base de cada previsão.
 
 ## [0.2.0] - 2026-11-01
 

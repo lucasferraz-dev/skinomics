@@ -3,6 +3,7 @@ import { Navigate, useSearchParams } from "react-router";
 import { URL_LOGIN_STEAM, useUsuario } from "../api/auth";
 import { Carregando, Rotulo } from "../componentes/Basicos";
 import { Logo } from "../componentes/Logo";
+import { AcessoAnalise } from "../componentes/MenuAnalise";
 
 const O_QUE_LEMOS = [
   ["Lemos", "Seu SteamID e o perfil público: nome e avatar."],
@@ -14,19 +15,19 @@ export function Entrar() {
   const [parametros] = useSearchParams();
   const { data: usuario, isPending } = useUsuario();
 
-  if (isPending) return <Carregando />;
   if (usuario) return <Navigate to="/itens" replace />;
 
   const falhou = parametros.has("erro");
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-16 items-center px-4 sm:px-6">
+      <header className="flex h-16 items-center justify-between px-4 sm:px-6">
         <Logo />
+        <AcessoAnalise />
       </header>
 
       <main className="grid flex-1 place-items-center px-4 pb-16">
-        <div className="w-full max-w-md space-y-8">
+        {isPending ? <Carregando /> : <div className="w-full max-w-md space-y-8">
           <div className="space-y-4">
             <Rotulo destaque>Acesso à plataforma</Rotulo>
             <h1 className="text-4xl leading-[1.05] titulo sm:text-5xl">
@@ -62,7 +63,7 @@ export function Entrar() {
             Ao continuar, você concorda que o Skinomics guarde esses dados enquanto sua conta existir. Projeto acadêmico,
             não afiliado à Valve nem à Steam.
           </p>
-        </div>
+        </div>}
       </main>
     </div>
   );

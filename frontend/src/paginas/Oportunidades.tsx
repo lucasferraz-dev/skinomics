@@ -54,6 +54,12 @@ export function Oportunidades() {
           </span>
         </div>
 
+        {data && data.itens_desatualizados > 0 && (
+          <p role="status" className="border-b border-borda px-4 py-3 text-xs leading-relaxed text-suave">
+            Exibindo dados históricos para teste: {formatarInteiro(data.itens_desatualizados)} oportunidades usam preços anteriores ao último dia completo. Consulte a data-base e a janela de cada previsão.
+          </p>
+        )}
+
         {isPending ? <Carregando texto="Buscando oportunidades…" /> : isError ? (
           <div className="pb-6 text-center">
             <MensagemErro titulo="Não foi possível carregar o ranking." />
@@ -67,7 +73,7 @@ export function Oportunidades() {
               <table className="w-full min-w-[880px] text-left">
                 <caption className="sr-only">Ranking de oportunidades para {horizonte} dias, ordenado pela margem estimada</caption>
                 <thead><tr className="border-b border-borda">
-                  {["#", "Item", "Preço atual", "Média prevista", "Margem bruta ↓", "Risco"].map((titulo, i) => (
+                  {["#", "Item", "Preço-base", "Média prevista", "Margem bruta ↓", "Risco"].map((titulo, i) => (
                     <th scope="col" key={titulo} className={`px-4 py-3 ${i >= 2 && i <= 4 ? "text-right" : ""}`}>
                       <Rotulo>{titulo}</Rotulo>
                     </th>
@@ -93,7 +99,7 @@ export function Oportunidades() {
                     <NomeItem item={item} horizonte={horizonte} />
                   </div>
                   <dl className="grid grid-cols-2 gap-3 text-sm">
-                    <div><dt className="mb-1 text-xs text-suave">Preço atual</dt><dd className="font-mono">{formatarPreco(item.preco_atual)}</dd></div>
+                    <div><dt className="mb-1 text-xs text-suave">Preço-base</dt><dd className="font-mono">{formatarPreco(item.preco_atual)}</dd></div>
                     <div><dt className="mb-1 text-xs text-suave">Média prevista</dt><dd className="font-mono">{formatarPreco(item.preco_previsto)}</dd></div>
                     <div><dt className="mb-1 text-xs text-suave">Margem bruta</dt><dd><Margem item={item} /></dd></div>
                     <div><dt className="mb-1 text-xs text-suave">Risco</dt><dd><Risco item={item} /></dd></div>
@@ -116,13 +122,13 @@ export function Oportunidades() {
       </Painel>
 
       {data?.data_base && (
-        <p className="text-xs text-suave">Preços de {formatarData(data.data_base)}. A previsão corresponde à média da janela futura indicada em cada item.</p>
+        <p className="text-xs text-suave">Preços de {formatarData(data.data_base)}. A previsão corresponde à média da janela indicada em cada item, contada a partir dessa data.</p>
       )}
-      {data && data.total > 0 && data.itens_sem_previsao_atualizada > 0 && (
-        <p className="text-xs text-suave">{formatarInteiro(data.itens_sem_previsao_atualizada)} itens aguardam preços ou previsões atualizados para entrar na análise.</p>
+      {data && data.total > 0 && data.itens_sem_previsao_compativel > 0 && (
+        <p className="text-xs text-suave">{formatarInteiro(data.itens_sem_previsao_compativel)} itens ainda não têm previsão correspondente ao preço disponível.</p>
       )}
       <Painel className="px-4 py-3 text-xs leading-relaxed text-suave">
-        <p>Margem bruta estimada = (preço previsto ÷ preço atual − 1). Valores em US$, sem taxas de negociação. A margem é uma estimativa, não um retorno garantido.</p>
+        <p>Margem bruta estimada = (preço previsto ÷ preço-base − 1). Valores em US$, sem taxas de negociação. A margem é uma estimativa, não um retorno garantido.</p>
         <details className="mt-2">
           <summary className="cursor-pointer text-texto">Como o risco é calculado</summary>
           <p className="mt-2">O indicador combina volume médio dos últimos 7 dias, oscilação diária dos últimos 30 dias e a faixa da previsão. Clique no risco de um item para ver os motivos.</p>
@@ -138,6 +144,7 @@ function NomeItem({ item, horizonte }: { item: Oportunidade; horizonte: Horizont
     <IconeItem url={item.icon_url} nome={item.nome} />
     <div className="min-w-0">
       <Link to={`/itens/${item.item_id}?horizonte=${horizonte}`} className="block text-sm hover:text-destaque">{item.nome} <span aria-hidden>↗</span></Link>
+      <p className="mt-1 text-[11px] text-suave">Base: {formatarData(item.data_base)}{item.desatualizada && " · Dados históricos"}</p>
       <p className="mt-1 text-[11px] text-suave">Média entre {formatarData(item.janela_inicio)} e {formatarData(item.janela_fim)}</p>
     </div>
   </div>;
@@ -161,9 +168,9 @@ function Risco({ item }: { item: Oportunidade }) {
 
 function EstadoVazio({ data, voltar }: { data: RankingOportunidades; voltar: () => void }) {
   const mensagens = {
-    sem_modelo_ativo: ["Previsão ainda indisponível para este horizonte.", "O ranking aparecerá quando houver um modelo ativo e previsões atualizadas."],
-    aguardando_previsoes_atualizadas: ["Aguardando previsões atualizadas.", "O ranking precisa dos preços do último dia completo e das previsões correspondentes. Aguarde a atualização da coleta e das estimativas."],
-    sem_margem_positiva: ["Nenhuma oportunidade neste cenário.", "Os itens com previsões atualizadas não apresentam margem positiva neste horizonte."],
+    sem_modelo_ativo: ["Previsão ainda indisponível para este horizonte.", "O ranking aparecerá quando houver um modelo ativo e previsões disponíveis."],
+    aguardando_previsoes: ["Aguardando previsões para os preços disponíveis.", "Ainda não há previsões correspondentes ao histórico carregado neste cenário."],
+    sem_margem_positiva: ["Nenhuma oportunidade neste cenário.", "Os itens com previsões disponíveis não apresentam margem positiva neste horizonte."],
   } as const;
   const [titulo, detalhe] = data.motivo ? mensagens[data.motivo] : ["Nenhum item nesta página.", "Volte ao início do ranking."] as const;
   return <div className="pb-6 text-center"><MensagemErro titulo={titulo} detalhe={detalhe} />

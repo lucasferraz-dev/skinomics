@@ -5,29 +5,40 @@ com preço abaixo da média prevista. Mantém os componentes, cores e tipografia
 com tabela no desktop e cartões no celular. O horizonte de 7, 15 ou 30 dias fica na URL
 e acompanha o link para a página do item.
 
+O menu Área de análise é compartilhado por todas as páginas. No início e no login, ele
+fica no cabeçalho (menu hambúrguer na landing page); nas páginas de análise, permanece na navegação existente. A opção
+Visão geral retorna ao catálogo de itens de TF2 (`/itens`).
+
 ## Regras do ranking
 
 `GET /oportunidades?horizonte=7&pagina=1&por_pagina=20` retorna:
 
-- Nome/imagem, preço atual, média prevista, margem bruta percentual e diferença em USD.
+- Nome/imagem, preço-base (`preco_atual` na API), média prevista, margem bruta percentual e diferença em USD.
 - Posição, risco baixo/moderado/alto e motivos, volume médio e volatilidade observada.
 - Data-base, data-alvo, janela da média futura, geração da previsão e versão do modelo.
-- Total, paginação e quantidade de itens aguardando preços ou previsões atualizados.
+- Total, paginação, itens sem previsão compatível e quantidade de oportunidades com dados antigos.
 
 A margem é `(preco_previsto / preco_atual) - 1`, como fração na API. São aceitas somente
 margens estritamente positivas, ordenadas da maior para a menor; o ID do item desempata.
 Ela não desconta taxas ou spread e não representa lucro garantido ou uma cotação executável.
 
 Entram somente itens ativos de TF2 e previsões do **modelo ativo do horizonte solicitado**.
-O último preço completo e a data-base da previsão precisam corresponder a ontem em UTC.
+O último preço completo disponível e a data-base da previsão precisam corresponder entre si.
 A coleta precisa ter ocorrido após o fechamento do dia; registros parciais de hoje não
 entram. A previsão também precisa usar o mesmo preço-base da série: uma correção do preço
-exige nova inferência. Não se substitui um horizonte por outro nem se usa previsão antiga.
+exige nova inferência. Não se substitui um horizonte por outro.
 
-Estados vazios são explícitos: sem modelo ativo, aguardando previsões atualizadas ou sem
-margem positiva. Quando a coleta está atrasada, execute a coleta/importação e depois a
-inferência/worker descritos no [guia de integração](ml-integracao.md). Reexecutar apenas a
-inferência sobre preços antigos não torna o ranking atual.
+Para facilitar os testes, dados antigos também entram, preservando a data-base e a janela
+original, inclusive quando ela já passou. A API marca cada item com `desatualizada` quando
+a base antecede ontem em UTC e retorna `itens_desatualizados` para todo o ranking, antes da
+paginação. A tela mostra um aviso, a data-base e a janela de cada item. A data-base geral
+só é preenchida quando todas as oportunidades compartilham a mesma data.
+
+Estados vazios são explícitos: sem modelo ativo, aguardando previsões compatíveis ou sem
+margem positiva. Para atualizar os resultados, execute a coleta/importação e depois a
+inferência/worker descritos no [guia de integração](ml-integracao.md). Preços mais recentes
+sem previsão correspondente continuam fora do ranking; não se mistura uma previsão antiga
+com um preço de outra data.
 
 Não há armazenamento de histórico de oportunidades nem filtros por jogo, preço ou risco.
 A API é de leitura e reutiliza as tabelas existentes; nenhuma migração é necessária.
@@ -48,7 +59,8 @@ do item. Os limites são referências explícitas da primeira versão, não otim
 O volume só é calculado com os sete dias disponíveis. A volatilidade é o desvio populacional,
 sem anualizar: usa pares de dias consecutivos e exclui pares com preço preenchido. Lacunas
 ou preços carregados do dia anterior não são interpretados como estabilidade. Somente
-observações até a data-base são usadas. Sem sinais moderados/altos, a classificação é baixa,
+observações até a data-base de cada previsão são usadas, inclusive com dados antigos.
+Sem sinais moderados/altos, a classificação é baixa,
 sem garantir valorização. A regra está em `backend/app/servicos/risco_oportunidade.py`.
 
 ## Validação retrospectiva em uma amostra

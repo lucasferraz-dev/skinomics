@@ -258,7 +258,7 @@ def test_ranking_matches_published_forecasts(database, trained, api, config, mon
             activate_model(database, model_id, reason="Teste do ranking por horizonte")
         predict.run_batch(database, horizon=horizon)
     last_day = history["observation_date"].max().date()
-    now = datetime.combine(last_day + timedelta(days=1), datetime.min.time(), UTC)
+    now = datetime.combine(last_day + timedelta(days=45), datetime.min.time(), UTC)
     monkeypatch.setattr(oportunidades, "datetime", SimpleNamespace(now=lambda zone: now))
     response = api.get(f"/oportunidades?horizonte={horizon}")
     assert response.status_code == 200
@@ -273,11 +273,14 @@ def test_ranking_matches_published_forecasts(database, trained, api, config, mon
             """),
             {"model": model_id, "day": last_day},
         ).all()
-    assert payload["itens_sem_previsao_atualizada"] == 0
+    assert payload["itens_sem_previsao_compativel"] == 0
+    assert payload["itens_desatualizados"] == len(expected)
     assert payload["motivo"] == (None if expected else "sem_margem_positiva")
     assert payload["total"] == len(expected)
     assert [item["item_id"] for item in payload["itens"]] == [row.item_id for row in expected]
     for item, row in zip(payload["itens"], expected, strict=True):
+        assert item["desatualizada"] is True
+        assert item["data_base"] == last_day.isoformat()
         assert item["margem_estimada"] == pytest.approx(float(row.margem))
         assert item["motivos_risco"]
         assert item["data_alvo"] == (last_day + timedelta(days=horizon)).isoformat()

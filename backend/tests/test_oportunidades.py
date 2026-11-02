@@ -92,12 +92,14 @@ def test_ranking_margem_ordem_desempate_paginacao_e_link(cliente, mercado):
     assert cliente.get(f"/itens/{melhor['item_id']}").status_code == 200
 
 
-def test_ranking_ignora_inativos_outros_jogos_precos_antigos_e_corrigidos(cliente, sessao, mercado):
+def test_ranking_aceita_antigos_mas_ignora_inativos_outros_jogos_e_precos_corrigidos(
+    cliente, sessao, mercado
+):
     adicionar, _ = mercado
     valido, previsao = adicionar("Válido")
     adicionar("Inativo", ativo=False)
     adicionar("CS2", appid=730)
-    adicionar("Antigo", atraso=2)
+    antigo, _ = adicionar("Antigo", atraso=2)
     corrigido, _ = adicionar("Preço revisado")
     sessao.get(PrecoDiario, (corrigido.id, previsao.data_base)).preco = 2.1
     # O preço parcial de hoje não substitui o último dia fechado.
@@ -112,9 +114,40 @@ def test_ranking_ignora_inativos_outros_jogos_precos_antigos_e_corrigidos(client
     )
     sessao.flush()
     resposta = cliente.get("/oportunidades").json()
-    assert resposta["total"] == 1
-    assert resposta["itens"][0]["item_id"] == valido.id
-    assert resposta["itens_sem_previsao_atualizada"] == 2
+    assert resposta["total"] == 2
+    assert [item["item_id"] for item in resposta["itens"]] == [valido.id, antigo.id]
+    assert resposta["itens"][0]["desatualizada"] is False
+    assert resposta["itens"][1]["desatualizada"] is True
+    assert resposta["data_base"] is None  # Datas diferentes não recebem uma base comum.
+    assert resposta["itens_desatualizados"] == 1
+    assert resposta["itens_sem_previsao_compativel"] == 1
+
+
+@pytest.mark.parametrize("horizonte", [7, 15, 30])
+def test_historico_preserva_datas_risco_e_contagem_entre_paginas(cliente, mercado, horizonte):
+    adicionar, modelos = mercado
+    _, previsao = adicionar("Histórico A", atraso=45, horizonte=horizonte)
+    adicionar("Histórico B", atraso=45, horizonte=horizonte)
+    base = previsao.data_base
+    for pagina in (1, 2):
+        data = cliente.get(
+            f"/oportunidades?horizonte={horizonte}&por_pagina=1&pagina={pagina}"
+        ).json()
+        assert data["modelo_versao"] == modelos[horizonte][0].id
+        assert data["total"] == data["itens_desatualizados"] == 2
+        assert data["itens_sem_previsao_compativel"] == 0
+        assert data["data_base"] == base.isoformat()
+        item = data["itens"][0]
+        assert item["posicao"] == pagina
+        assert item["desatualizada"] is True
+        assert item["data_base"] == base.isoformat()
+        assert item["data_alvo"] == (base + timedelta(days=horizonte)).isoformat()
+        assert item["janela_inicio"] == (base + timedelta(days=horizonte - 2)).isoformat()
+        assert item["janela_fim"] == (base + timedelta(days=horizonte + 2)).isoformat()
+        # Risco usa os dias anteriores à previsão, mesmo com janela já encerrada.
+        assert item["risco"] == "baixo"
+        assert item["volume_medio_7d"] == 200
+        assert item["volatilidade_30d"] == 0
 
 
 def test_previsao_mais_antiga_e_coleta_parcial_nao_entram(cliente, sessao, mercado):
@@ -127,7 +160,7 @@ def test_previsao_mais_antiga_e_coleta_parcial_nao_entram(cliente, sessao, merca
     sessao.flush()
     data = cliente.get("/oportunidades").json()
     assert data["total"] == 0
-    assert data["motivo"] == "aguardando_previsoes_atualizadas"
+    assert data["motivo"] == "aguardando_previsoes"
 
 
 @pytest.mark.parametrize("horizonte", [7, 15, 30])
@@ -165,9 +198,7 @@ def test_estados_vazios_sao_explicitos(cliente, mercado):
     adicionar, _ = mercado
     adicionar("Sem alta", previsto=2)
     assert cliente.get("/oportunidades").json()["motivo"] == "sem_margem_positiva"
-    assert cliente.get("/oportunidades?horizonte=15").json()["motivo"] == (
-        "aguardando_previsoes_atualizadas"
-    )
+    assert cliente.get("/oportunidades?horizonte=15").json()["motivo"] == ("aguardando_previsoes")
 
 
 def test_sem_modelo_ativo(cliente):
