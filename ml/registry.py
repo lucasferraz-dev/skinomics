@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from ml.database import artifact_root, database_engine
 
@@ -148,7 +149,9 @@ def activate_model(engine, version_id=None, *, horizon=7, rollback=False, reason
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Registra, promove ou reverte modelos locais.")
+    parser = argparse.ArgumentParser(
+        description="Registra, consulta, compara e ativa modelos locais."
+    )
     commands = parser.add_subparsers(dest="command", required=True)
     register = commands.add_parser("register")
     register.add_argument("artifact", type=Path)
@@ -158,12 +161,22 @@ def main():
     rollback = commands.add_parser("rollback")
     rollback.add_argument("--horizon", type=int, default=7)
     rollback.add_argument("--reason", required=True)
+    listing = commands.add_parser("list", help="Lista versões e métricas do modelo selecionado")
+    listing.add_argument("--horizon", type=int)
+    listing.add_argument("--limit", type=int, default=20)
+    listing.add_argument("--json", action="store_true")
+    show = commands.add_parser("show", help="Detalha uma versão, baselines e faixas de preço")
+    show.add_argument("version")
+    show.add_argument("--json", action="store_true")
+    compare = commands.add_parser("compare", help="Compara versões e avisa sobre testes distintos")
+    compare.add_argument("versions", nargs="+")
+    compare.add_argument("--json", action="store_true")
     args = parser.parse_args()
     engine = database_engine()
     try:
         if args.command == "register":
             result = register_model(engine, args.artifact)
-        else:
+        elif args.command in ("activate", "rollback"):
             result = activate_model(
                 engine,
                 getattr(args, "version", None),
@@ -171,9 +184,35 @@ def main():
                 rollback=args.command == "rollback",
                 reason=args.reason,
             )
+        else:
+            from ml.model_reports import (
+                compare_versions,
+                list_versions,
+                render_comparison,
+                render_detail,
+                render_versions,
+                show_version,
+            )
+
+            if args.command == "list":
+                result = list_versions(engine, horizon=args.horizon, limit=args.limit)
+                render = render_versions
+            elif args.command == "show":
+                result = show_version(engine, args.version)
+                render = render_detail
+            else:
+                result = compare_versions(engine, args.versions)
+                render = render_comparison
+            result = (
+                json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)
+                if args.json
+                else render(result)
+            )
         print(result)
     except (ValueError, OSError) as error:
         parser.error(str(error))
+    except SQLAlchemyError:
+        parser.error("Não foi possível acessar o registro. Verifique o banco e suas migrações.")
     finally:
         engine.dispose()
 
