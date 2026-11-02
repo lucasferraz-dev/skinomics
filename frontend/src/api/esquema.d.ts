@@ -193,6 +193,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oportunidades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ranking
+         * @description Margens brutas positivas, ordenadas da maior para a menor, com risco descritivo.
+         */
+        get: operations["ranking_oportunidades_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -297,6 +317,80 @@ export interface components {
              */
             volume_7d: number | null;
         };
+        /** Oportunidade */
+        Oportunidade: {
+            /** Posicao */
+            posicao: number;
+            /** Item Id */
+            item_id: number;
+            /** Nome */
+            nome: string;
+            /** Tipo */
+            tipo: string | null;
+            /** Icon Url */
+            icon_url: string | null;
+            /**
+             * Preco Atual
+             * @description Preço disponível na data-base, que pode ser histórica.
+             */
+            preco_atual: number;
+            /** Preco Previsto */
+            preco_previsto: number;
+            /**
+             * Margem Estimada
+             * @description Margem bruta como fração: 0.10 = 10%; sem taxas.
+             */
+            margem_estimada: number;
+            /**
+             * Diferenca Estimada
+             * @description Preço previsto menos preço-base, em USD.
+             */
+            diferenca_estimada: number;
+            /**
+             * Risco
+             * @enum {string}
+             */
+            risco: "baixo" | "moderado" | "alto";
+            /** Motivos Risco */
+            motivos_risco: string[];
+            /** Volume Medio 7D */
+            volume_medio_7d: number | null;
+            /**
+             * Volatilidade 30D
+             * @description Desvio dos log-retornos diários, sem anualizar.
+             */
+            volatilidade_30d: number | null;
+            /**
+             * Data Base
+             * Format: date
+             */
+            data_base: string;
+            /**
+             * Desatualizada
+             * @description Data-base anterior a ontem em UTC.
+             */
+            desatualizada: boolean;
+            /**
+             * Data Alvo
+             * Format: date
+             */
+            data_alvo: string;
+            /**
+             * Janela Inicio
+             * Format: date
+             */
+            janela_inicio: string;
+            /**
+             * Janela Fim
+             * Format: date
+             */
+            janela_fim: string;
+            /**
+             * Gerada Em
+             * Format: date-time
+             */
+            gerada_em: string;
+        };
         /**
          * Ordenacao
          * @enum {string}
@@ -394,6 +488,43 @@ export interface components {
             desatualizada: boolean;
             /** Gerada Em */
             gerada_em?: string | null;
+        };
+        /** RankingOportunidades */
+        RankingOportunidades: {
+            /** Itens */
+            itens: components["schemas"]["Oportunidade"][];
+            horizonte: components["schemas"]["HorizontePrevisao"];
+            /**
+             * Moeda
+             * @default USD
+             * @constant
+             */
+            moeda: "USD";
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /** Pagina */
+            pagina: number;
+            /** Por Pagina */
+            por_pagina: number;
+            /** Modelo Versao */
+            modelo_versao?: string | null;
+            /** Data Base */
+            data_base?: string | null;
+            /**
+             * Itens Sem Previsao Compativel
+             * @default 0
+             */
+            itens_sem_previsao_compativel: number;
+            /**
+             * Itens Desatualizados
+             * @default 0
+             */
+            itens_desatualizados: number;
+            /** Motivo */
+            motivo?: ("sem_modelo_ativo" | "aguardando_previsoes" | "sem_margem_positiva") | null;
         };
         /** UsuarioAtual */
         UsuarioAtual: {
@@ -755,6 +886,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ranking_oportunidades_get: {
+        parameters: {
+            query?: {
+                horizonte?: components["schemas"]["HorizontePrevisao"];
+                pagina?: number;
+                por_pagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingOportunidades"];
+                };
             };
             /** @description Validation Error */
             422: {

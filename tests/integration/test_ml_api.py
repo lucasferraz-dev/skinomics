@@ -1,5 +1,7 @@
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import joblib
@@ -7,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from app.coleta.importar_csv import importar_csv
+from app.consultas import oportunidades
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -239,6 +242,49 @@ def test_independent_horizons_train_calibrate_and_publish(database, trained, api
     assert other["intervalo_inferior"] <= other["preco_previsto"] <= other["intervalo_superior"]
     assert (pd.Timestamp(other["data_alvo"]) - pd.Timestamp(other["data_base"])).days == horizon
     assert count(database, "previsao") == 6
+
+
+@pytest.mark.parametrize("horizon", [7, 15, 30])
+def test_ranking_matches_published_forecasts(database, trained, api, config, monkeypatch, horizon):
+    model_id, path, history = trained
+    root = path.parent.parent
+    with threadpool_limits(limits=1):
+        if horizon != 7:
+            metadata = train.train_and_save(
+                history, root, replace(config, horizon=horizon, cv_folds=1, fold_days=10)
+            )
+            model_id = register_model(
+                database, root / metadata["version_id"] / "price_model.joblib"
+            )
+            activate_model(database, model_id, reason="Teste do ranking por horizonte")
+        predict.run_batch(database, horizon=horizon)
+    last_day = history["observation_date"].max().date()
+    now = datetime.combine(last_day + timedelta(days=45), datetime.min.time(), UTC)
+    monkeypatch.setattr(oportunidades, "datetime", SimpleNamespace(now=lambda zone: now))
+    response = api.get(f"/oportunidades?horizonte={horizon}")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["modelo_versao"] == model_id
+    with database.connect() as connection:
+        expected = connection.execute(
+            text("""
+                SELECT item_id, preco_previsto / preco_base - 1 AS margem
+                FROM previsao WHERE modelo_id = :model AND data_base = :day
+                  AND preco_previsto > preco_base ORDER BY margem DESC, item_id
+            """),
+            {"model": model_id, "day": last_day},
+        ).all()
+    assert payload["itens_sem_previsao_compativel"] == 0
+    assert payload["itens_desatualizados"] == len(expected)
+    assert payload["motivo"] == (None if expected else "sem_margem_positiva")
+    assert payload["total"] == len(expected)
+    assert [item["item_id"] for item in payload["itens"]] == [row.item_id for row in expected]
+    for item, row in zip(payload["itens"], expected, strict=True):
+        assert item["desatualizada"] is True
+        assert item["data_base"] == last_day.isoformat()
+        assert item["margem_estimada"] == pytest.approx(float(row.margem))
+        assert item["motivos_risco"]
+        assert item["data_alvo"] == (last_day + timedelta(days=horizon)).isoformat()
 
 
 def test_database_training_registers_automatically_and_versions_are_queryable(

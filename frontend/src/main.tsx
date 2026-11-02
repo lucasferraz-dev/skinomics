@@ -17,6 +17,7 @@ import { Entrar } from "./paginas/Entrar";
 import { ExplorarItens } from "./paginas/ExplorarItens";
 import { Inicio } from "./paginas/inicio/Inicio";
 import { MinhaLista } from "./paginas/MinhaLista";
+import { Oportunidades } from "./paginas/Oportunidades";
 
 const clienteDeConsultas = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } },
@@ -31,6 +32,7 @@ const rotas = createBrowserRouter([
       { path: "itens", element: <ExplorarItens /> },
       { path: "itens/:id", element: <DetalheItem /> },
       { path: "minha-lista", element: <MinhaLista /> },
+      { path: "oportunidades", element: <Oportunidades /> },
       { path: "*", element: <MensagemErro titulo="Página não encontrada." /> },
     ],
   },
