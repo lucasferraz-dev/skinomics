@@ -33,7 +33,7 @@ uv run --directory backend python -m app.coleta.importar_csv ../ml/data/tf2_hist
 
 ```powershell
 # CPU é o padrão; acrescente --device gpu para treinar LightGBM em OpenCL.
-uv run --project ml python -m ml.train --database --register
+uv run --project ml python -m ml.train --database
 ```
 
 Cada treino cria `ml/artifacts/<version_id>/`, com o artefato, metadados, relatórios de
@@ -41,6 +41,11 @@ validação/teste, métricas por item e por faixa de preço-base: `[0, 0.5)`, `[
 `[2, 10)` e `[10, infinito)` USD. O registro guarda horizonte, janela, métricas,
 versões das bibliotecas, período de treino, caminho relativo e SHA-256 do artefato.
 A escolha continua baseada no CV temporal; o teste não seleciona o vencedor.
+
+O treino com `--database` cadastra automaticamente a versão em `modelo_versao`, sem ativá-la.
+Use `--no-register` para um experimento local. O treino por CSV só acessa o registro com
+`--register`. Se o cadastro falhar após o treino, o artefato permanece salvo e a mensagem
+indica o comando para tentar apenas o cadastro novamente, sem repetir o treinamento.
 
 O cadastro não ativa a versão. Revise os relatórios e a comparação com as baselines antes
 de publicar. Use o identificador impresso pelo treino:
@@ -80,6 +85,58 @@ conhecidos pela equipe: carregá-los executa código Python.
 
 O SHA-256 é conferido antes da ativação e da inferência. Cadastrar o mesmo arquivo novamente
 retorna a mesma versão. Outra versão nunca sobrescreve o arquivo já registrado.
+
+## Consultar e comparar versões — US018 (#19)
+
+As versões e suas métricas ficam na tabela `modelo_versao`, no campo `metadados`.
+Os comandos abaixo consultam somente o banco; não precisam abrir os artefatos nem iniciar
+uma tela de gestão. Execute na raiz do repositório:
+
+```powershell
+# Versões mais recentes de um mesmo horizonte (padrão: até 20).
+uv run --project ml python -m ml.registry list --horizon 7 --limit 20
+
+# Métricas de teste de todos os candidatos/baselines e faixas do modelo selecionado.
+uv run --project ml python -m ml.registry show <version_id>
+
+# Comparação de duas ou mais versões, com verificação do conjunto de avaliação.
+uv run --project ml python -m ml.registry compare <version_id_1> <version_id_2>
+
+# Saída estruturada para análise por outro script.
+uv run --project ml python -m ml.registry show <version_id> --json
+```
+
+`--json` também funciona em `list` e `compare`. Cada execução de treino normal registra
+uma versão do modelo selecionado, seu identificador, configuração e resultados dos seis
+candidatos: ingênuo, EMA 10, HGB, HGB + EMA, LightGBM e LightGBM + EMA. Os dois primeiros
+são as baselines. Os erros e acertos são calculados nas mesmas observações do teste temporal,
+reservado antes da seleção, tanto no agregado quanto em cada faixa de preço-base.
+
+| Métrica | Interpretação |
+|---|---|
+| `MAE` | Erro absoluto médio do preço-alvo, em USD; menor é melhor. |
+| `MAPE_%` | Erro percentual absoluto médio; menor é melhor. |
+| `acerto_preco_%` | Percentual de previsões com erro relativo de preço **até 15%**, inclusive; maior é melhor. |
+| `acerto_direcao_%` | Percentual de acertos de alta/queda entre os alvos com variação real. Sem direção prevista, fica indisponível. |
+| `n` | Quantidade de observações avaliadas no total ou na faixa. |
+
+A tolerância de 15% é o critério explícito deste relatório: `abs(previsto - real) / real <= 0.15`.
+Ela é armazenada nos metadados, não representa probabilidade de acerto de uma previsão futura
+e não equivale a `100 - MAPE`. O preço real avaliado é a média da janela do alvo; as faixas
+usam o **preço-base** em USD. Faixas sem observações não têm métricas; `N/D`/`null` significa
+ausência de informação, nunca erro zero. Cada treino também mantém os relatórios completos
+em CSV, incluindo os resultados por faixa de todos os candidatos.
+
+O comparador confere horizonte, janela/definição do alvo, datas, tolerância e critério das
+faixas. Uma impressão SHA-256 dos itens, datas, preços-base e preços-alvo identifica o
+conjunto de teste; datas iguais com amostras diferentes não bastam para uma comparação direta.
+Quando houver divergência ou metadados antigos sem essa identificação, o comando mostra
+uma ressalva e `comparable=false` no JSON, sem declarar uma versão superior.
+
+Versões antigas continuam consultáveis: o acerto de preço não registrado aparece como `N/D`.
+É necessário um novo treino para obter essa métrica e a identificação do conjunto de teste.
+O experimento ARIMA/SARIMA permanece separado das versões de produção. Nenhuma consulta ou
+comparação altera o modelo ativo.
 
 ## Atualização após a coleta
 
@@ -210,7 +267,9 @@ uv run --project ml pytest ml/tests
 
 Eles cobrem importação, igualdade das features para preços com a mesma precisão, treino,
 cadastro, inferência sem retreino, API, promoção/reversão, repetição, concorrência e falhas
-com preservação das previsões anteriores. O CI executa o fluxo com PostgreSQL 17.
+com preservação das previsões anteriores. Também verificam o cadastro automático do treino,
+a consulta/comparação de versões e a proteção contra sobrescrita de métricas.
+O CI executa o fluxo com PostgreSQL 17.
 
 No frontend, `npm test` verifica a construção dos pontos, os três horizontes e a rejeição
 de intervalos inválidos; `npm run build` verifica TypeScript e o build de produção.

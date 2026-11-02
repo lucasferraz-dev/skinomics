@@ -14,6 +14,7 @@ from threadpoolctl import threadpool_limits
 
 from ml import predict, train, worker
 from ml.database import load_history
+from ml.model_reports import compare_versions, list_versions, show_version
 from ml.models import get_models
 from ml.registry import activate_model, register_model
 
@@ -238,3 +239,64 @@ def test_independent_horizons_train_calibrate_and_publish(database, trained, api
     assert other["intervalo_inferior"] <= other["preco_previsto"] <= other["intervalo_superior"]
     assert (pd.Timestamp(other["data_alvo"]) - pd.Timestamp(other["data_base"])).days == horizon
     assert count(database, "previsao") == 6
+
+
+def test_database_training_registers_automatically_and_versions_are_queryable(
+    database, trained, monkeypatch, tmp_path
+):
+    import sys
+
+    original_id, path, _ = trained
+    monkeypatch.setenv("SKINOMICS_DATABASE_URL", database.url.render_as_string(hide_password=False))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "train",
+            "--database",
+            "--output-dir",
+            str(tmp_path / "new-training"),
+            "--test-days",
+            "30",
+            "--calibration-days",
+            "30",
+            "--cv-folds",
+            "2",
+            "--fold-days",
+            "30",
+            "--n-jobs",
+            "1",
+        ],
+    )
+    with threadpool_limits(limits=1):
+        train.main()
+    versions = list_versions(database, horizon=7)
+    assert len(versions) == 2
+    assert list_versions(database, horizon=30) == []
+    assert len(list_versions(database, limit=1)) == 1
+    assert sum(version["active"] for version in versions) == 1
+    comparison = compare_versions(database, [v["version_id"] for v in versions])
+    assert comparison["comparable"] is True
+    assert comparison["warnings"] == []
+    detail = show_version(database, original_id)
+    assert {row["model"] for row in detail["metrics_test"]} == set(get_models())
+    assert detail["metrics"]["model"] == detail["model"]
+    assert all(0 <= row["acerto_preco_%"] <= 100 for row in detail["price_ranges"])
+    # Consultas dependem somente da tabela: continuam funcionando sem abrir o artefato.
+    path.rename(path.with_suffix(".hidden"))
+    assert show_version(database, original_id) == detail
+    with pytest.raises(ValueError, match="não cadastrada"):
+        show_version(database, str(uuid4()))
+
+
+def test_registry_rejects_overwriting_version_and_preserves_metrics(database, trained, tmp_path):
+    original_id, path, _ = trained
+    before = show_version(database, original_id)
+    modified = joblib.load(path)
+    modified["metrics"]["test"][0]["MAE"] = 999
+    candidate = tmp_path / "changed.joblib"
+    joblib.dump(modified, candidate)
+    with pytest.raises(ValueError, match="já existe com outro conteúdo"):
+        register_model(database, candidate)
+    assert show_version(database, original_id) == before
+    assert count(database, "modelo_versao") == 1
