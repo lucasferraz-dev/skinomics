@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] - 2026-11-01
+
+### Adicionado
+
+- US013 (#23): ranking de oportunidades por margem bruta positiva, com API paginada e
+  página no menu do site para os horizontes de 7, 15 e 30 dias.
+- Indicador de risco com motivos, baseado em liquidez, volatilidade e intervalo da previsão.
+- Validação retrospectiva em amostra, com relatório local, testes de causalidade e integração.
+- Estados explícitos para falta de modelo, dados atrasados ou ausência de margem positiva.
+
+### Alterado
+
+- Backend, frontend e ferramentas ML atualizados para 0.3.0; contrato OpenAPI regenerado.
+- Proxy de desenvolvimento do frontend aceita `SKINOMICS_API_PROXY`, preservando a porta padrão.
+
 ## [0.2.0] - 2026-11-01
 
 ### Adicionado
