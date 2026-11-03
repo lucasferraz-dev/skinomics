@@ -8,7 +8,11 @@ from app.db.base import Base
 
 
 class PrecoDiario(Base):
-    """Série histórica: preço e volume de um item em um dia (preços em USD)."""
+    """Série histórica: preço e volume de um item em um dia.
+
+    Preços em BRL, como a Steam mostra para uma carteira em reais: o histórico inteiro vem
+    convertido pelo câmbio do dia da coleta, por isso a série é sempre regravada inteira.
+    """
 
     __tablename__ = "preco_diario"
     __table_args__ = (

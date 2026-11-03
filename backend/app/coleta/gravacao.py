@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -68,3 +68,9 @@ def gravar_precos(sessao: Session, precos: Sequence[PrecoDia]) -> None:
     for inicio in range(0, len(precos), TAMANHO_DO_LOTE):
         lote = precos[inicio : inicio + TAMANHO_DO_LOTE]
         sessao.execute(comando, [asdict(preco) for preco in lote])
+
+
+def substituir_serie(sessao: Session, item_id: int, precos: Sequence[PrecoDia]) -> None:
+    """Troca a série inteira do item: um dia que a fonte nova não tem não sobra da antiga."""
+    sessao.execute(delete(PrecoDiario).where(PrecoDiario.item_id == item_id))
+    gravar_precos(sessao, precos)
