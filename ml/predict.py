@@ -50,7 +50,7 @@ def predict_history(artifact, history):
     return add_intervals(forecast, artifact.get("interval"))
 
 
-def run_batch(engine, *, horizon=7, root=None, only_pending=False):
+def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=None):
     """Publica todo o lote em uma transação e registra erros sem perder o lote anterior."""
     with engine.connect() as connection:
         locked = connection.scalar(text("SELECT pg_try_advisory_lock(442, :h)"), {"h": horizon})
@@ -59,8 +59,19 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False):
             return None
         execution_id = None
         try:
-            record = active_model(connection, horizon)
+            record = (
+                connection.execute(
+                    text("SELECT * FROM modelo_versao WHERE id = :id AND horizonte = :h"),
+                    {"id": version_id, "h": horizon},
+                )
+                .mappings()
+                .first()
+                if version_id
+                else active_model(connection, horizon)
+            )
             if record is None:
+                if version_id:
+                    raise ValueError("Versão não cadastrada para o horizonte informado.")
                 if only_pending:
                     return None
                 raise ValueError(f"Não há modelo ativo para {horizon} dias.")
@@ -184,12 +195,15 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False):
 def main():
     parser = argparse.ArgumentParser(description="Gera previsões com um modelo já treinado.")
     parser.add_argument("--horizon", type=int, default=7)
+    parser.add_argument("--model-version", help="Prepara o lote de uma versão sem ativá-la")
     parser.add_argument("--data", type=Path, help="CSV; se omitido, publica a partir do banco")
     parser.add_argument("--artifact", type=Path, help="Artefato local para previsão via CSV")
     parser.add_argument("--output", type=Path, default=artifact_root() / "previsao.csv")
     args = parser.parse_args()
     if bool(args.data) != bool(args.artifact):
         parser.error("--data e --artifact devem ser usados juntos; o banco usa o modelo ativo.")
+    if args.data and args.model_version:
+        parser.error("--model-version é usado somente com o banco.")
     try:
         if args.data:
             forecast = predict_history(load_artifact(args.artifact), pd.read_csv(args.data))
@@ -199,7 +213,7 @@ def main():
         else:
             engine = database_engine()
             try:
-                print(run_batch(engine, horizon=args.horizon))
+                print(run_batch(engine, horizon=args.horizon, version_id=args.model_version))
             finally:
                 engine.dispose()
     except (ValueError, OSError) as error:

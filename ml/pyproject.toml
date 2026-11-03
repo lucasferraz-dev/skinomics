@@ -1,6 +1,6 @@
 [project]
 name = "skinomics-ml"
-version = "0.3.0"
+version = "0.3.1"
 description = "Treinamento e previsão de preços de itens TF2"
 requires-python = ">=3.13"
 dependencies = [

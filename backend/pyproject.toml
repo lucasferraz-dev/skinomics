@@ -1,6 +1,6 @@
 [project]
 name = "skinomics-backend"
-version = "0.3.0"
+version = "0.3.1"
 description = "API e serviços de dados do Skinomics"
 requires-python = ">=3.13"
 dependencies = [

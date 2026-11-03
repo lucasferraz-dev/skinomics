@@ -1,5 +1,7 @@
 # Skinomics
 
+Deploy Vercel/Render e publicação dos modelos: [guia de implantação](docs/deploy.md).
+
 Sistema web de análise e previsão de preços
 de itens do mercado da Steam utilizando
 Machine Learning.
@@ -78,7 +80,7 @@ e cada importação fica registrada em `execucao_coleta` com o tipo `importacao`
 Para publicar as previsões na aplicação, veja o [guia de integração do ML](docs/ml-integracao.md):
 treino a partir do PostgreSQL, versões, ativação/reversão, atualização após coleta e API.
 
-O módulo ML **0.3.0** cadastra cada treino com `--database` automaticamente. Os comandos
+O módulo ML **0.3.1** cadastra cada treino com `--database` automaticamente. Os comandos
 `python -m ml.registry list`, `show` e `compare` consultam as versões e seus erros/acertos
 por faixa de preço, com resultados das baselines e saída opcional `--json`.
 Veja os critérios e exemplos no [guia de comparação de versões](docs/ml-integracao.md#consultar-e-comparar-versões--us018-19).
@@ -273,7 +275,7 @@ O menu **Oportunidades** abre `/oportunidades`, com ranking por margem bruta pre
 risco explicável e cenários de 7, 15 e 30 dias. O ranking aceita o histórico disponível para
 testes, com aviso de dados antigos e datas reais de cada previsão.
 Veja as regras, operação e amostra retrospectiva em [docs/oportunidades.md](docs/oportunidades.md).
-Esta entrega atualiza backend, frontend e ferramentas de ML para **0.3.0**.
+Esta entrega atualiza backend, frontend e ferramentas de ML para **0.3.1**.
 
 Precisa do [Node.js](https://nodejs.org/) 24 e da API no ar (`docker compose up -d`):
 

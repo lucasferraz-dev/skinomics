@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.1] - 2026-11-02
+
+### Corrigido
+
+- Publicação dos modelos de 7, 15 e 30 dias com prévia, validação de intervalos de 80%,
+  preparação dos lotes e promoção atômica; versões anteriores preservadas em caso de falha.
+- Inferência pode preparar uma versão específica sem ativá-la (`--model-version`).
+- Respostas da API e do proxy Vercel usam `no-store`; configurações de build explícitas.
+- API informa sua versão no OpenAPI, oferece `/health/ready` para verificar o banco e
+  respeita a variável `PORT` no container.
+- Diagnóstico público compara proxy, modelos, datas, intervalos e rankings entre ambientes.
+- Guia de deploy Vercel/Render esclarece publicação de dados e artefatos, cookies e workers.
+- Teste de importação compara timestamps em UTC independentemente do fuso do PostgreSQL.
+
 ## [0.3.0] - 2026-11-01
 
 ### Adicionado

@@ -92,60 +92,87 @@ def active_model(connection, horizon):
 
 
 def activate_model(engine, version_id=None, *, horizon=7, rollback=False, reason, root=None):
+    with engine.begin() as connection:
+        return _activate_model(
+            connection, version_id, horizon=horizon, rollback=rollback, reason=reason, root=root
+        )
+
+
+def _activate_model(connection, version_id=None, *, horizon=7, rollback=False, reason, root=None):
     from ml.predict import load_artifact
 
     if not reason.strip():
         raise ValueError("Informe o motivo da promoção ou reversão.")
-    with engine.begin() as connection:
-        if not rollback:
-            horizon = connection.scalar(
-                text("SELECT horizonte FROM modelo_versao WHERE id = :id"), {"id": version_id}
-            )
-            if horizon is None:
-                raise ValueError("Versão não cadastrada.")
-        # Serializa as mudanças no mesmo horizonte, inclusive a leitura do anterior.
-        connection.execute(text("SELECT pg_advisory_xact_lock(441, :h)"), {"h": horizon})
-        previous = active_model(connection, horizon)
-        if rollback:
-            version_id = connection.scalar(
-                text("""
-                SELECT anterior_id FROM ativacao_modelo WHERE horizonte = :h
-                ORDER BY id DESC LIMIT 1
-            """),
-                {"h": horizon},
-            )
-            if version_id is None:
-                raise ValueError("Não existe uma versão anterior para este horizonte.")
-        record = (
-            connection.execute(
-                text("SELECT * FROM modelo_versao WHERE id = :id"), {"id": version_id}
-            )
-            .mappings()
-            .one()
+    if not rollback:
+        horizon = connection.scalar(
+            text("SELECT horizonte FROM modelo_versao WHERE id = :id"), {"id": version_id}
         )
-        load_artifact(resolve_artifact(record, root or artifact_root()))
-        if previous and previous["id"] == version_id:
-            return version_id
-        connection.execute(
+        if horizon is None:
+            raise ValueError("Versão não cadastrada.")
+    # Serializa as mudanças no mesmo horizonte, inclusive a leitura do anterior.
+    connection.execute(text("SELECT pg_advisory_xact_lock(441, :h)"), {"h": horizon})
+    previous = active_model(connection, horizon)
+    if rollback:
+        version_id = connection.scalar(
             text("""
-            INSERT INTO modelo_ativo (horizonte, modelo_id) VALUES (:h, :id)
-            ON CONFLICT (horizonte) DO UPDATE SET modelo_id = EXCLUDED.modelo_id
+            SELECT anterior_id FROM ativacao_modelo WHERE horizonte = :h
+            ORDER BY id DESC LIMIT 1
         """),
-            {"h": horizon, "id": version_id},
+            {"h": horizon},
         )
-        connection.execute(
-            text("""
-            INSERT INTO ativacao_modelo (horizonte, modelo_id, anterior_id, motivo)
-            VALUES (:h, :id, :previous, :reason)
-        """),
-            {
-                "h": horizon,
-                "id": version_id,
-                "previous": previous["id"] if previous else None,
-                "reason": reason,
-            },
-        )
+        if version_id is None:
+            raise ValueError("Não existe uma versão anterior para este horizonte.")
+    record = (
+        connection.execute(text("SELECT * FROM modelo_versao WHERE id = :id"), {"id": version_id})
+        .mappings()
+        .one()
+    )
+    load_artifact(resolve_artifact(record, root or artifact_root()))
+    if previous and previous["id"] == version_id:
+        return version_id
+    connection.execute(
+        text("""
+        INSERT INTO modelo_ativo (horizonte, modelo_id) VALUES (:h, :id)
+        ON CONFLICT (horizonte) DO UPDATE SET modelo_id = EXCLUDED.modelo_id
+    """),
+        {"h": horizon, "id": version_id},
+    )
+    connection.execute(
+        text("""
+        INSERT INTO ativacao_modelo (horizonte, modelo_id, anterior_id, motivo)
+        VALUES (:h, :id, :previous, :reason)
+    """),
+        {
+            "h": horizon,
+            "id": version_id,
+            "previous": previous["id"] if previous else None,
+            "reason": reason,
+        },
+    )
     return version_id
+
+
+def activate_models(engine, versions, *, expected, reason, root=None):
+    """Troca os horizontes em uma transação, apenas após preparar todos os lotes."""
+    with engine.begin() as connection:
+        for horizon in sorted(versions):
+            connection.execute(text("SELECT pg_advisory_xact_lock(441, :h)"), {"h": horizon})
+        for horizon, version_id in sorted(versions.items()):
+            current = active_model(connection, horizon)
+            if (current["id"] if current else None) != expected[horizon]:
+                raise ValueError(
+                    "O modelo ativo mudou durante a preparação; revise e tente novamente."
+                )
+            ready = connection.scalar(
+                text("""
+                    SELECT count(*) FROM previsao p JOIN modelo_versao v ON v.id = p.modelo_id
+                    WHERE v.id = :id AND v.horizonte = :h AND p.nivel_confianca = 0.8
+                """),
+                {"id": version_id, "h": horizon},
+            )
+            if not ready:
+                raise ValueError(f"Versão sem lote calibrado preparado para {horizon} dias.")
+            _activate_model(connection, version_id, reason=reason, root=root)
 
 
 def main():
