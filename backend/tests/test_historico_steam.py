@@ -189,6 +189,9 @@ def test_somente_os_itens_pedidos_e_cria_os_novos(sessao: Session) -> None:
 
     def steam(pedido: httpx.Request) -> httpx.Response:
         pedidos.append(pedido)
+        if pedido.url.path.startswith("/market/listings/"):
+            # Página de anúncios: o JSON dos itens vem escapado dentro do HTML.
+            return httpx.Response(200, text='<script>{\\"icon_url\\":\\"abc-123_X\\"}</script>')
         return _resposta([["Nov 01 2026 01: +0", 1.5, "20"]])
 
     resumo = baixar_historico(
@@ -196,7 +199,8 @@ def test_somente_os_itens_pedidos_e_cria_os_novos(sessao: Session) -> None:
     )
 
     assert resumo.itens_ok == 2
-    assert sorted(p.url.params["market_hash_name"] for p in pedidos) == [
+    historicos = [p for p in pedidos if p.url.path == "/market/pricehistory/"]
+    assert sorted(p.url.params["market_hash_name"] for p in historicos) == [
         KEY,
         "Taunt: The Schadenfreude",
     ]
@@ -205,11 +209,20 @@ def test_somente_os_itens_pedidos_e_cria_os_novos(sessao: Session) -> None:
     ).one()
     assert (taunt.appid, taunt.nome) == (440, "Taunt: The Schadenfreude")
     assert _serie(sessao, taunt.id)
+    assert taunt.icon_url == "https://community.cloudflare.steamstatic.com/economy/image/abc-123_X"
+    assert "/listings/440/Taunt%3A%20The%20Schadenfreude" in str(pedidos[-1].url)
 
 
 def test_item_novo_sem_vendas_nao_fica_no_catalogo(sessao: Session) -> None:
     _catalogo(sessao)
-    respostas = iter([_resposta([["Nov 01 2026 01: +0", 2.2, "50"]]), _resposta([])])
+    respostas = iter(
+        [
+            _resposta([["Nov 01 2026 01: +0", 2.2, "50"]]),
+            _resposta([]),
+            # Página de anúncios da Key, sem ícone: o item fica sem imagem, sem erro.
+            httpx.Response(200, text="<html></html>"),
+        ]
+    )
 
     resumo = baixar_historico(
         sessao, _mercado(lambda _: next(respostas)), AGORA, somente=[KEY, "Nome Errado"]
@@ -219,3 +232,4 @@ def test_item_novo_sem_vendas_nao_fica_no_catalogo(sessao: Session) -> None:
     assert (
         sessao.scalars(select(Item).where(Item.market_hash_name == "Nome Errado")).first() is None
     )
+    assert sessao.scalars(select(Item).where(Item.market_hash_name == KEY)).one().icon_url is None

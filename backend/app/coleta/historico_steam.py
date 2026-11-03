@@ -109,6 +109,8 @@ def baixar_historico(
         for item in itens:
             if item.id in novos and item.market_hash_name in resumo.falhas:
                 sessao.delete(item)
+        if somente and not resumo.interrompida_por:
+            _buscar_icones(mercado, [i for i in itens if i.market_hash_name not in resumo.falhas])
 
         if not resumo.itens_ok:
             raise ValueError(f"nenhum item coletado: {resumo.falhas}")
@@ -117,6 +119,23 @@ def baixar_historico(
         execucao.erro = resumo.interrompida_por
 
     return resumo
+
+
+def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
+    """Completa a imagem de quem entrou no catálogo pelo histórico, que não a traz.
+
+    Sem imagem o item ainda funciona; por isso uma falha aqui não derruba a coleta.
+    """
+    for item in itens:
+        if item.icon_url:
+            continue
+        try:
+            item.icon_url = mercado.icone(item.appid, item.market_hash_name)
+        except ColetaInterrompidaError as erro:
+            log.warning("ícones interrompidos: %s", erro)
+            return
+        except httpx.HTTPError as erro:
+            log.warning("%s: sem ícone (%s)", item.market_hash_name, erro)
 
 
 def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str]) -> set[int]:

@@ -5,11 +5,13 @@ algumas horas, e o bloqueio se estende se o cliente insistir. Por isso o cliente
 intervalo fixo entre as chamadas e, no 429, desiste em vez de tentar de novo.
 """
 
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from urllib.parse import quote
 
 import httpx2 as httpx
 
@@ -17,7 +19,10 @@ TF2 = 440
 
 _HISTORICO = "https://steamcommunity.com/market/pricehistory/"
 _BUSCA = "https://steamcommunity.com/market/search/render/"
+_ANUNCIOS = "https://steamcommunity.com/market/listings/{appid}/{nome}"
 _IMAGENS = "https://community.cloudflare.steamstatic.com/economy/image/"
+# Na página de anúncios, o JSON vem escapado dentro do HTML: icon_url\":\"<código>.
+_ICONE_NA_PAGINA = re.compile(r'icon_url\\?":\\?"([A-Za-z0-9_-]+)')
 # A busca ignora `count` maior que 10, com ou sem login.
 ITENS_POR_PAGINA = 10
 
@@ -111,7 +116,28 @@ class MercadoSteam:
         )
         return [_anunciado(resultado) for resultado in corpo.get("results") or []]
 
+    def icone(self, appid: int, market_hash_name: str) -> str | None:
+        """URL do ícone do item, para quem entrou no catálogo pelo histórico, que não traz imagem.
+
+        Lido da página de anúncios do item, que embute os dados em JSON escapado no HTML:
+        não é uma API, então a Steam pode mudar a página. Sem ícone nela, devolve `None`.
+        """
+        resposta = self._requisitar(
+            _ANUNCIOS.format(appid=appid, nome=quote(market_hash_name, safe=""))
+        )
+        encontrado = _ICONE_NA_PAGINA.search(resposta.text)
+        return f"{_IMAGENS}{encontrado.group(1)}" if encontrado else None
+
     def _get(self, url: str, parametros: dict[str, str | int]) -> dict:
+        resposta = self._requisitar(url, parametros)
+        corpo = resposta.json()
+        if not isinstance(corpo, dict) or not corpo.get("success"):
+            raise ValueError(f"resposta sem sucesso: {resposta.url}")
+        return corpo
+
+    def _requisitar(
+        self, url: str, parametros: dict[str, str | int] | None = None
+    ) -> httpx.Response:
         if not self._primeira:
             self._esperar(self._intervalo)
         self._primeira = False
@@ -123,11 +149,7 @@ class MercadoSteam:
         if resposta.status_code == 400 and resposta.text.strip() == "[]":
             raise LoginSteamError("a Steam não reconheceu o cookie steamLoginSecure")
         resposta.raise_for_status()
-
-        corpo = resposta.json()
-        if not isinstance(corpo, dict) or not corpo.get("success"):
-            raise ValueError(f"resposta sem sucesso: {resposta.url}")
-        return corpo
+        return resposta
 
 
 def _ponto(momento: str, preco: float, volume: str) -> PontoHistorico:
