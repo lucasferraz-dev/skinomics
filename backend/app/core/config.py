@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     site_url: str = "http://localhost:5173"
     # Chave da Steam Web API, para buscar nome e avatar; sem ela, vêm da página pública do perfil.
     steam_api_key: str | None = None
+    # Cookie steamLoginSecure do steamcommunity.com, de uma conta em BRL. Só o histórico
+    # completo de preços (app.coleta.historico_steam) precisa dele, e ele vence em ~24 h.
+    steam_login_secure: str | None = None
     sessao_dias: int = 30
 
     @property
