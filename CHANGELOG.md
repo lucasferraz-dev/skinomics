@@ -13,6 +13,7 @@
 - Diagnóstico público compara proxy, modelos, datas, intervalos e rankings entre ambientes.
 - Guia de deploy Vercel/Render esclarece publicação de dados e artefatos, cookies e workers.
 - Teste de importação compara timestamps em UTC independentemente do fuso do PostgreSQL.
+- Lint de ML usa os mesmos grupos de imports na raiz e em `ml/`; CI verifica sem alterar arquivos.
 
 ## [0.3.0] - 2026-11-01
 
