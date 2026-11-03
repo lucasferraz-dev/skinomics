@@ -16,10 +16,102 @@ from sqlalchemy.orm import Session
 from threadpoolctl import threadpool_limits
 
 from ml import predict, train, worker
+from ml import publish as publication
 from ml.database import load_history
 from ml.model_reports import compare_versions, list_versions, show_version
 from ml.models import get_models
 from ml.registry import activate_model, register_model
+
+
+@pytest.fixture
+def publication_paths(database, trained, config, tmp_path):
+    _, original, history = trained
+    paths = []
+    # Nova identidade para provar que uma falha mantém a versão anterior visível.
+    artifact = joblib.load(original)
+    artifact["version_id"] = str(uuid4())
+    seven = tmp_path / "candidate-7.joblib"
+    joblib.dump(artifact, seven)
+    paths.append(seven)
+    with threadpool_limits(limits=1):
+        for horizon in (15, 30):
+            metadata = train.train_and_save(
+                history, tmp_path, replace(config, horizon=horizon, cv_folds=1, fold_days=10)
+            )
+            paths.append(tmp_path / metadata["version_id"] / "price_model.joblib")
+    return paths
+
+
+def test_publication_previews_stages_all_horizons_and_is_repeatable(
+    database, trained, publication_paths, tmp_path
+):
+    original, _, _ = trained
+    with threadpool_limits(limits=1):
+        plan = publication.prepare(database, publication_paths)
+        assert count(database, "modelo_versao") == 1
+        assert count(database, "previsao") == 0
+        assert [entry["previous"] for entry in plan] == [original, None, None]
+        assert [entry["horizon"] for entry in plan] == [7, 15, 30]
+        versions = publication.publish(database, plan, reason="Publicação testada", root=tmp_path)
+        with database.connect() as con:
+            assert (
+                dict(con.execute(text("SELECT horizonte, modelo_id FROM modelo_ativo")).all())
+                == versions
+            )
+            assert (
+                con.scalar(text("SELECT count(*) FROM previsao WHERE nivel_confianca = 0.8")) == 9
+            )
+        assert count(database, "ativacao_modelo") == 4
+        second = publication.prepare(database, publication_paths)
+        assert publication.publish(database, second, reason="Repetição", root=tmp_path) == versions
+        assert count(database, "ativacao_modelo") == 4
+        assert count(database, "previsao") == 9
+
+
+@pytest.mark.parametrize("failure", ["inference", "promotion"])
+def test_publication_failure_preserves_all_previous_active_models(
+    database, trained, publication_paths, tmp_path, monkeypatch, failure
+):
+    original, _, _ = trained
+    if failure == "inference":
+        original_run = publication.run_batch
+
+        def fail_second(*args, **kwargs):
+            if kwargs["horizon"] == 15:
+                raise ValueError("Falha simulada de inferência")
+            return original_run(*args, **kwargs)
+
+        monkeypatch.setattr(publication, "run_batch", fail_second)
+    else:
+        original_activate = publication.activate_models
+
+        def conflicting(*args, **kwargs):
+            kwargs["expected"][30] = "alterado"
+            return original_activate(*args, **kwargs)
+
+        monkeypatch.setattr(publication, "activate_models", conflicting)
+    with threadpool_limits(limits=1):
+        plan = publication.prepare(database, publication_paths)
+        with pytest.raises(ValueError):
+            publication.publish(database, plan, reason="Teste de falha", root=tmp_path)
+    with database.connect() as con:
+        assert dict(con.execute(text("SELECT horizonte, modelo_id FROM modelo_ativo")).all()) == {
+            7: original
+        }
+    assert count(database, "ativacao_modelo") == 1
+
+
+def test_publication_rejects_incomplete_horizons_and_legacy_model(database, trained, tmp_path):
+    _, path, _ = trained
+    with pytest.raises(ValueError, match="7, 15 e 30"):
+        publication.prepare(database, [path])
+    artifact = joblib.load(path)
+    artifact.pop("interval")
+    legacy = tmp_path / "legacy.joblib"
+    joblib.dump(artifact, legacy)
+    with pytest.raises(ValueError, match="calibrado"):
+        publication.prepare(database, [legacy])
+    assert count(database, "modelo_versao") == 1
 
 
 @pytest.fixture

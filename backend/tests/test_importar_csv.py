@@ -1,5 +1,5 @@
 import csv
-from datetime import date
+from datetime import UTC, date
 from decimal import Decimal
 from pathlib import Path
 
@@ -68,7 +68,9 @@ def test_grava_itens_e_precos(sessao: Session, tmp_path: Path) -> None:
     precos = _precos(sessao, KEY)
     assert precos[date(2026, 10, 14)].preco == Decimal("2.3010")
     assert precos[date(2026, 10, 14)].preenchido is True
-    assert precos[date(2026, 10, 14)].coletado_em.isoformat() == "2026-10-15T23:08:33.540452+00:00"
+    assert precos[date(2026, 10, 14)].coletado_em.astimezone(UTC).isoformat() == (
+        "2026-10-15T23:08:33.540452+00:00"
+    )
 
 
 def test_descarta_linhas_que_nao_podem_entrar_na_base(sessao: Session, tmp_path: Path) -> None:

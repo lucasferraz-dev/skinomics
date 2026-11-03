@@ -1,5 +1,9 @@
 # Previsões na aplicação
 
+Para publicar os mesmos modelos no banco usado pela Vercel/Render, veja
+[deploy e diagnóstico entre ambientes](deploy.md). O deploy do código não transfere os artefatos
+nem as versões ativas do banco local.
+
 O treinamento continua manual. A atualização de previsões carrega um modelo já treinado,
 calcula as mesmas 35 features com o histórico completo de TF2 (incluindo a Key) e publica
 um lote no PostgreSQL. A API consulta esse lote; abrir uma página não dispara treinamento.
