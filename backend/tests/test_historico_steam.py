@@ -16,7 +16,7 @@ from app.coleta.steam import (
     MoedaInesperadaError,
     PontoHistorico,
 )
-from app.models import ExecucaoColeta, PrecoDiario, StatusExecucao
+from app.models import ExecucaoColeta, Item, PrecoDiario, StatusExecucao
 
 KEY = "Mann Co. Supply Crate Key"
 CAIXA = "Winter 2025 Cosmetic Case"
@@ -181,3 +181,41 @@ def test_sem_nenhum_item_coletado_a_execucao_e_falha(sessao: Session) -> None:
 
     assert _ultima_execucao(sessao).status is StatusExecucao.FALHA
     assert _serie(sessao, ids[KEY]) == {date(2026, 10, 30): Decimal("11.0000")}
+
+
+def test_somente_os_itens_pedidos_e_cria_os_novos(sessao: Session) -> None:
+    _catalogo(sessao)
+    pedidos: list[httpx.Request] = []
+
+    def steam(pedido: httpx.Request) -> httpx.Response:
+        pedidos.append(pedido)
+        return _resposta([["Nov 01 2026 01: +0", 1.5, "20"]])
+
+    resumo = baixar_historico(
+        sessao, _mercado(steam), AGORA, somente=["Taunt: The Schadenfreude", KEY]
+    )
+
+    assert resumo.itens_ok == 2
+    assert sorted(p.url.params["market_hash_name"] for p in pedidos) == [
+        KEY,
+        "Taunt: The Schadenfreude",
+    ]
+    taunt = sessao.scalars(
+        select(Item).where(Item.market_hash_name == "Taunt: The Schadenfreude")
+    ).one()
+    assert (taunt.appid, taunt.nome) == (440, "Taunt: The Schadenfreude")
+    assert _serie(sessao, taunt.id)
+
+
+def test_item_novo_sem_vendas_nao_fica_no_catalogo(sessao: Session) -> None:
+    _catalogo(sessao)
+    respostas = iter([_resposta([["Nov 01 2026 01: +0", 2.2, "50"]]), _resposta([])])
+
+    resumo = baixar_historico(
+        sessao, _mercado(lambda _: next(respostas)), AGORA, somente=[KEY, "Nome Errado"]
+    )
+
+    assert resumo.falhas == {"Nome Errado": "nenhuma venda antes de hoje"}
+    assert (
+        sessao.scalars(select(Item).where(Item.market_hash_name == "Nome Errado")).first() is None
+    )

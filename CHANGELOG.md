@@ -8,7 +8,8 @@
   HTTP 429, sem novas tentativas que estenderiam o bloqueio do IP.
 - `app.coleta.historico_steam`: regrava a série diária completa de cada item ativo a partir do
   `pricehistory` (cookie em `SKINOMICS_STEAM_LOGIN_SECURE`), no mesmo formato do CSV: média do
-  dia ponderada pelo volume e dias sem venda preenchidos. Confere a moeda da conta (`--moeda`).
+  dia ponderada pelo volume e dias sem venda preenchidos. Confere a moeda da conta (`--moeda`)
+  e aceita uma lista de itens (`--itens`), criando no catálogo os que ainda não existem.
 - `app.coleta.catalogo_steam`: acrescenta ao catálogo os itens populares de TF2 acima de um
   preço mínimo, pela busca do mercado, sem login.
 

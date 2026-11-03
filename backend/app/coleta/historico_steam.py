@@ -122,13 +122,13 @@ def baixar_historico(
 def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str]) -> set[int]:
     existentes = set(
         sessao.scalars(
-            select(Item.market_hash_name).where(
-                Item.appid == TF2, Item.market_hash_name.in_(nomes)
-            )
+            select(Item.market_hash_name).where(Item.appid == TF2, Item.market_hash_name.in_(nomes))
         )
     )
     # Sem nome de exibição melhor à mão, usa o do mercado; o catálogo pode trocá-lo depois.
-    faltando = [ItemCatalogo(TF2, nome, nome) for nome in dict.fromkeys(nomes) if nome not in existentes]
+    faltando = [
+        ItemCatalogo(TF2, nome, nome) for nome in dict.fromkeys(nomes) if nome not in existentes
+    ]
     return set(gravar_itens(sessao, faltando).values())
 
 
