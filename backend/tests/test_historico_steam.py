@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import httpx2 as httpx
 import pytest
@@ -8,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, gravar_precos
-from app.coleta.historico_steam import baixar_historico, serie_diaria
+from app.coleta.historico_steam import baixar_historico, ler_lista, serie_diaria
 from app.coleta.steam import (
     LimiteDaSteamError,
     LoginSteamError,
@@ -39,6 +40,36 @@ def _mercado(responder: Callable[[httpx.Request], httpx.Response], esperas: list
     return MercadoSteam(
         cliente, intervalo=20, esperar=(esperas if esperas is not None else []).append
     )
+
+
+# --- lista de itens -----------------------------------------------------------------------
+
+
+def test_lista_ignora_comentarios_e_linhas_vazias_mas_nao_o_jogo_da_velha_do_nome(
+    tmp_path: Path,
+) -> None:
+    arquivo = tmp_path / "itens.txt"
+    arquivo.write_text(
+        "# Caixas\n"
+        "\n"
+        "  Winter 2025 Cosmetic Case  \n"
+        "Mann Co. Supply Munition Series #91\n"
+        "Vintage Tyrant's Helm # liquidez boa\n",
+        encoding="utf-8",
+    )
+
+    assert ler_lista(arquivo) == [
+        "Winter 2025 Cosmetic Case",
+        "Mann Co. Supply Munition Series #91",
+        "Vintage Tyrant's Helm",
+    ]
+
+
+def test_lista_versionada_nao_tem_nome_repetido() -> None:
+    nomes = ler_lista(Path(__file__).parents[1] / "app" / "coleta" / "itens_tf2.txt")
+
+    assert nomes
+    assert len(nomes) == len(set(nomes))
 
 
 # --- série diária -------------------------------------------------------------------------
