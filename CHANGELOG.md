@@ -15,10 +15,18 @@
   preço mínimo, pela busca do mercado, sem login.
 - Lista versionada dos itens acompanhados (`app/coleta/itens_tf2.txt`) e opção `--arquivo` no
   `historico_steam`, que coleta a lista inteira sem passar pela busca do mercado.
+- Log da coleta mais completo (US016): cada execução guarda quantos itens entraram no catálogo
+  (`itens_novos`) e, na tabela `falha_coleta`, quais itens falharam e por quê.
+- `app.coleta.execucoes`: mostra as últimas execuções, a taxa de coletas sem falha no período
+  (meta de 95% do M1) e os itens que falham em mais de uma execução; `--execucao ID` lista as
+  falhas de uma execução.
 
 ### Corrigido
 
 - A série histórica estava em BRL (moeda da conta usada na coleta), embora documentada como USD.
+- `finalizada_em` das execuções de coleta guardava a hora do início da transação (`now()`), e
+  toda execução aparecia com duração zero; agora é a hora real do fim.
+- Coleta interrompida no meio (HTTP 429 no catálogo) ficava como sucesso; agora fica parcial.
 
 ## [0.3.1] - 2026-11-02
 

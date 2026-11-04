@@ -14,7 +14,13 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.coleta.execucao import registrar_execucao
-from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, gravar_precos
+from app.coleta.gravacao import (
+    ItemCatalogo,
+    PrecoDia,
+    gravar_itens,
+    gravar_precos,
+    ja_no_catalogo,
+)
 from app.db.session import SessionLocal
 from app.models import TipoColeta
 
@@ -58,6 +64,7 @@ def importar_csv(sessao: Session, caminho: Path) -> ResumoImportacao:
 
         # Um item por chave: o mesmo item duas vezes no INSERT faria o ON CONFLICT falhar.
         itens = {(linha.item.appid, linha.item.market_hash_name): linha.item for linha in linhas}
+        execucao.itens_novos = len(itens.keys() - ja_no_catalogo(sessao, itens))
         ids = gravar_itens(sessao, itens.values())
         gravar_precos(
             sessao,

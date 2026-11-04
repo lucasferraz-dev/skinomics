@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.coleta.catalogo_steam import atualizar_catalogo
+from app.coleta.gravacao import ItemCatalogo, gravar_itens
 from app.coleta.steam import LimiteDaSteamError, MercadoSteam
 from app.models import ExecucaoColeta, Item, StatusExecucao
 
@@ -79,7 +80,7 @@ def test_item_repetido_entre_paginas_e_gravado_uma_vez(sessao: Session) -> None:
     assert list(_itens(sessao)) == ["Name Tag"]
 
 
-def test_no_429_fica_com_as_paginas_ja_lidas(sessao: Session) -> None:
+def test_no_429_fica_com_as_paginas_ja_lidas_e_a_execucao_e_parcial(sessao: Session) -> None:
     mercado = _mercado([_pagina(_resultado("Name Tag", 150)), httpx.Response(429)])
 
     resumo = atualizar_catalogo(sessao, mercado, itens=20, preco_minimo=Decimal("1.00"))
@@ -87,8 +88,20 @@ def test_no_429_fica_com_as_paginas_ja_lidas(sessao: Session) -> None:
     assert list(_itens(sessao)) == ["Name Tag"]
     assert "429" in resumo.interrompida_por
     execucao = sessao.scalars(select(ExecucaoColeta).order_by(ExecucaoColeta.id.desc())).first()
-    assert execucao.status is StatusExecucao.SUCESSO
+    assert execucao.status is StatusExecucao.PARCIAL
     assert "429" in execucao.erro
+
+
+def test_conta_so_os_itens_que_entraram_no_catalogo(sessao: Session) -> None:
+    gravar_itens(sessao, [ItemCatalogo(440, "Name Tag", "Name Tag")])
+    mercado = _mercado(
+        [_pagina(_resultado("Name Tag", 150), _resultado("Mann Co. Supply Crate Key", 250))]
+    )
+
+    atualizar_catalogo(sessao, mercado, itens=10, preco_minimo=Decimal("1.00"))
+
+    execucao = sessao.scalars(select(ExecucaoColeta).order_by(ExecucaoColeta.id.desc())).first()
+    assert (execucao.itens_ok, execucao.itens_novos) == (2, 1)
 
 
 def test_429_na_primeira_pagina_e_falha(sessao: Session) -> None:

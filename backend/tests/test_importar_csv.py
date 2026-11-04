@@ -125,7 +125,7 @@ def test_registra_a_importacao_no_log_de_execucoes(sessao: Session, tmp_path: Pa
     execucao = _ultima_execucao(sessao)
     assert execucao.tipo is TipoColeta.IMPORTACAO
     assert execucao.status is StatusExecucao.SUCESSO
-    assert (execucao.itens_ok, execucao.itens_falha) == (2, 0)
+    assert (execucao.itens_ok, execucao.itens_falha, execucao.itens_novos) == (2, 0, 2)
     assert execucao.finalizada_em is not None
 
 
