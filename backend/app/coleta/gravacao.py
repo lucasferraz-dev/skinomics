@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import delete, func
+from sqlalchemy import delete, func, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -30,6 +30,17 @@ class PrecoDia:
     volume: int
     preenchido: bool
     coletado_em: datetime
+
+
+def ja_no_catalogo(sessao: Session, chaves: Iterable[tuple[int, str]]) -> set[tuple[int, str]]:
+    """Quais destes (appid, market_hash_name) já existem: o resto entraria como item novo."""
+    chaves = set(chaves)
+    if not chaves:
+        return set()
+    consulta = select(Item.appid, Item.market_hash_name).where(
+        tuple_(Item.appid, Item.market_hash_name).in_(chaves)
+    )
+    return {(appid, nome) for appid, nome in sessao.execute(consulta)}
 
 
 def gravar_itens(sessao: Session, itens: Iterable[ItemCatalogo]) -> dict[tuple[int, str], int]:

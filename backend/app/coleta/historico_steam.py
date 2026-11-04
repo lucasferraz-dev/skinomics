@@ -22,8 +22,14 @@ import httpx2 as httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.coleta.execucao import registrar_execucao
-from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, substituir_serie
+from app.coleta.execucao import anotar_falha, registrar_execucao
+from app.coleta.gravacao import (
+    ItemCatalogo,
+    PrecoDia,
+    gravar_itens,
+    ja_no_catalogo,
+    substituir_serie,
+)
 from app.coleta.steam import (
     FORMATO_DA_MOEDA,
     TF2,
@@ -111,13 +117,16 @@ def baixar_historico(
         for item in itens:
             if item.id in novos and item.market_hash_name in resumo.falhas:
                 sessao.delete(item)
+                novos.discard(item.id)
         if somente and not resumo.interrompida_por:
             _buscar_icones(mercado, [i for i in itens if i.market_hash_name not in resumo.falhas])
 
         if not resumo.itens_ok:
             raise ValueError(f"nenhum item coletado: {resumo.falhas}")
         execucao.itens_ok = resumo.itens_ok
-        execucao.itens_falha = len(resumo.falhas)
+        execucao.itens_novos = len(novos)
+        for nome, motivo in resumo.falhas.items():
+            anotar_falha(execucao, TF2, nome, motivo)
         execucao.erro = resumo.interrompida_por
 
     return resumo
@@ -141,14 +150,12 @@ def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
 
 
 def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str]) -> set[int]:
-    existentes = set(
-        sessao.scalars(
-            select(Item.market_hash_name).where(Item.appid == TF2, Item.market_hash_name.in_(nomes))
-        )
-    )
+    """Cria no catálogo os nomes que ainda não existem; devolve o id dos criados."""
+    chaves = {(TF2, nome): None for nome in nomes}  # dict: sem repetir, na ordem dada
+    existentes = ja_no_catalogo(sessao, chaves)
     # Sem nome de exibição melhor à mão, usa o do mercado; o catálogo pode trocá-lo depois.
     faltando = [
-        ItemCatalogo(TF2, nome, nome) for nome in dict.fromkeys(nomes) if nome not in existentes
+        ItemCatalogo(TF2, nome, nome) for _, nome in chaves if (TF2, nome) not in existentes
     ]
     return set(gravar_itens(sessao, faltando).values())
 

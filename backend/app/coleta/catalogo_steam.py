@@ -17,7 +17,7 @@ import httpx2 as httpx
 from sqlalchemy.orm import Session
 
 from app.coleta.execucao import registrar_execucao
-from app.coleta.gravacao import ItemCatalogo, gravar_itens
+from app.coleta.gravacao import ItemCatalogo, gravar_itens, ja_no_catalogo
 from app.coleta.steam import (
     ITENS_POR_PAGINA,
     TF2,
@@ -59,21 +59,20 @@ def atualizar_catalogo(
             resumo.gravados += [i for i in pagina if i.menor_preco_usd >= preco_minimo]
             log.info("%d itens lidos, %d acima do mínimo", resumo.vistos, len(resumo.gravados))
 
-        gravar_itens(
-            sessao,
-            # dict: a popularidade muda durante a varredura e um item pode vir em duas páginas.
-            {
-                i.market_hash_name: ItemCatalogo(
-                    appid=TF2,
-                    market_hash_name=i.market_hash_name,
-                    nome=i.nome,
-                    tipo=i.tipo,
-                    icon_url=i.icon_url,
-                )
-                for i in resumo.gravados
-            }.values(),
-        )
-        execucao.itens_ok = len(resumo.gravados)
+        # dict: a popularidade muda durante a varredura e um item pode vir em duas páginas.
+        itens = {
+            (TF2, i.market_hash_name): ItemCatalogo(
+                appid=TF2,
+                market_hash_name=i.market_hash_name,
+                nome=i.nome,
+                tipo=i.tipo,
+                icon_url=i.icon_url,
+            )
+            for i in resumo.gravados
+        }
+        execucao.itens_novos = len(itens.keys() - ja_no_catalogo(sessao, itens))
+        gravar_itens(sessao, itens.values())
+        execucao.itens_ok = len(itens)
         execucao.erro = resumo.interrompida_por
 
     return resumo

@@ -1,4 +1,4 @@
-from app.models.execucao_coleta import ExecucaoColeta, StatusExecucao, TipoColeta
+from app.models.execucao_coleta import ExecucaoColeta, FalhaColeta, StatusExecucao, TipoColeta
 from app.models.item import Item
 from app.models.item_acompanhado import ItemAcompanhado
 from app.models.preco_diario import PrecoDiario
@@ -15,6 +15,7 @@ __all__ = [
     "AtivacaoModelo",
     "ExecucaoColeta",
     "ExecucaoPrevisao",
+    "FalhaColeta",
     "Item",
     "ItemAcompanhado",
     "PrecoDiario",

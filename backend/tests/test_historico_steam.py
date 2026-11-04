@@ -198,6 +198,10 @@ def test_no_429_grava_o_que_ja_baixou_e_para(sessao: Session) -> None:
     execucao = _ultima_execucao(sessao)
     assert execucao.status is StatusExecucao.PARCIAL
     assert "429" in execucao.erro
+    assert execucao.itens_falha == 1
+    assert [(f.appid, f.market_hash_name, f.motivo) for f in execucao.falhas] == [
+        (440, CAIXA, "não coletado")
+    ]
 
 
 def test_sem_nenhum_item_coletado_a_execucao_e_falha(sessao: Session) -> None:
@@ -242,6 +246,7 @@ def test_somente_os_itens_pedidos_e_cria_os_novos(sessao: Session) -> None:
     assert _serie(sessao, taunt.id)
     assert taunt.icon_url == "https://community.cloudflare.steamstatic.com/economy/image/abc-123_X"
     assert "/listings/440/Taunt%3A%20The%20Schadenfreude" in str(pedidos[-1].url)
+    assert _ultima_execucao(sessao).itens_novos == 1
 
 
 def test_item_novo_sem_vendas_nao_fica_no_catalogo(sessao: Session) -> None:
@@ -264,3 +269,8 @@ def test_item_novo_sem_vendas_nao_fica_no_catalogo(sessao: Session) -> None:
         sessao.scalars(select(Item).where(Item.market_hash_name == "Nome Errado")).first() is None
     )
     assert sessao.scalars(select(Item).where(Item.market_hash_name == KEY)).one().icon_url is None
+    # O item que saiu do catálogo não conta como novo, mas a falha dele fica registrada.
+    execucao = _ultima_execucao(sessao)
+    assert (execucao.itens_novos, execucao.itens_falha) == (0, 1)
+    assert execucao.status is StatusExecucao.PARCIAL
+    assert execucao.falhas[0].market_hash_name == "Nome Errado"
