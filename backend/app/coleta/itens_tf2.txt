@@ -65,3 +65,6 @@ Strange Hat of Cards
 The Giger Counter
 Strange Giger Counter
 Vintage Tyrant's Helm
+
+# Armas
+Vintage Lugermorph
