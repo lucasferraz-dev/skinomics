@@ -13,6 +13,8 @@
   buscando na página de anúncios o ícone dos que estão sem imagem.
 - `app.coleta.catalogo_steam`: acrescenta ao catálogo os itens populares de TF2 acima de um
   preço mínimo, pela busca do mercado, sem login.
+- Lista versionada dos itens acompanhados (`app/coleta/itens_tf2.txt`) e opção `--arquivo` no
+  `historico_steam`, que coleta a lista inteira sem passar pela busca do mercado.
 
 ### Corrigido
 

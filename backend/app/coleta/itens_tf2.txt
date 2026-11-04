@@ -1,0 +1,67 @@
+# Itens de TF2 acompanhados pelo Skinomics, um market_hash_name por linha.
+#
+# O nome é o do fim da URL do anúncio, em inglês e com o prefixo de qualidade
+# (Strange, Vintage, Genuine, Unusual...); os Unique não têm prefixo e às vezes
+# começam com "The". Ex.: steamcommunity.com/market/listings/440/Vintage%20Tyrant's%20Helm
+#
+# Uso, dentro de backend/:
+#     uv run python -m app.coleta.historico_steam --moeda USD --arquivo app/coleta/itens_tf2.txt
+#
+# Linhas em branco e linhas que começam com # são ignoradas; no fim de uma linha, o
+# comentário precisa de espaço antes e depois do # (há nomes com #, como "Series #91").
+
+# Caixas de cosméticos
+Winter 2025 Cosmetic Case
+Winter 2024 Cosmetic Case
+Winter 2023 Cosmetic Case
+Winter 2022 Cosmetic Case
+Winter 2021 Cosmetic Case
+Winter 2020 Cosmetic Case
+Winter 2019 Cosmetic Case
+Winter 2018 Cosmetic Case
+Summer 2026 Cosmetic Case
+Summer 2025 Cosmetic Case
+Summer 2024 Cosmetic Case
+Summer 2023 Cosmetic Case
+Summer 2022 Cosmetic Case
+Summer 2021 Cosmetic Case
+
+# Caixas de Halloween
+Spectral Stash Case
+Haunted Hoard Case
+Bone-Chilling Bonanza Case
+Terrifying Trove Case
+Spooky Spoils Case
+
+# Caixas de War Paint
+Summer 2026 War Paint Case
+Summer 2023 War Paint Case
+Winter 2020 War Paint Case
+Winter 2019 War Paint Case
+Scream Fortress XVI War Paint Case
+
+# Crates antigos
+Mann Co. Supply Munition Series #91
+Mann Co. Supply Munition Series #92
+Nice Winter Crate 2014 Series #89
+Naughty Winter Crate 2014 Series #88
+
+# Ferramentas e chaves
+Mann Co. Supply Crate Key
+Mann Co. Store Package
+Description Tag
+Secret Saxton
+Strange Count Transfer Tool
+
+# Peças de robô (Mann vs. Machine)
+Reinforced Robot Emotion Detector
+Reinforced Robot Humor Suppression Pump
+Reinforced Robot Bomb Stabilizer
+Battle-Worn Robot Taunt Processor
+
+# Cosméticos e taunts
+Unusual Taunt: The Schadenfreude
+Strange Hat of Cards
+The Giger Counter
+Strange Giger Counter
+Vintage Tyrant's Helm

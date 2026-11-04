@@ -2,6 +2,7 @@
 
 Uso, dentro de backend/:
     uv run python -m app.coleta.historico_steam [--moeda BRL] [--intervalo 20] [--itens NOME ...]
+        [--arquivo app/coleta/itens_tf2.txt]
 
 Serve para tapar lacunas e corrigir a série: a de cada item é trocada inteira pela que a
 Steam devolve. Precisa do cookie de login em `SKINOMICS_STEAM_LOGIN_SECURE` (ver config.py);
@@ -15,6 +16,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 import httpx2 as httpx
 from sqlalchemy import select
@@ -195,6 +197,23 @@ def _media_ponderada(pontos: Sequence[PontoHistorico]) -> Decimal:
     return media.quantize(_CASAS, ROUND_HALF_UP)
 
 
+def ler_lista(caminho: Path) -> list[str]:
+    """Os market_hash_name de um arquivo, um por linha; ignora linhas vazias e comentários (#).
+
+    O # só abre comentário no começo da linha ou depois de um espaço, porque há nomes com #
+    no mercado (Mann Co. Supply Munition Series #91).
+    """
+    nomes = []
+    for linha in caminho.read_text(encoding="utf-8").splitlines():
+        nome = linha.strip()
+        if nome.startswith("#"):
+            continue
+        nome = nome.split(" # ", 1)[0].strip()
+        if nome:
+            nomes.append(nome)
+    return nomes
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Regrava o histórico de preços pela Steam.")
     parser.add_argument(
@@ -213,7 +232,13 @@ def main() -> None:
         metavar="NOME",
         help="só estes itens, pelo nome exato no mercado (os novos entram no catálogo)",
     )
+    parser.add_argument(
+        "--arquivo",
+        type=Path,
+        help="só os itens deste arquivo, um nome por linha (ex.: app/coleta/itens_tf2.txt)",
+    )
     args = parser.parse_args()
+    somente = [*args.itens, *(ler_lista(args.arquivo) if args.arquivo else [])]
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
 
     cookie = get_settings().steam_login_secure
@@ -224,7 +249,7 @@ def main() -> None:
     cabecalho = {"Cookie": f"steamLoginSecure={cookie}"}
     with httpx.Client(timeout=30, headers=cabecalho) as cliente, SessionLocal() as sessao:
         mercado = MercadoSteam(cliente, moeda=args.moeda, intervalo=args.intervalo)
-        resumo = baixar_historico(sessao, mercado, somente=args.itens)
+        resumo = baixar_historico(sessao, mercado, somente=somente)
 
     print(f"{resumo.itens_ok} itens e {resumo.precos} preços diários gravados.")
     if resumo.interrompida_por:
