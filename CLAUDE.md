@@ -1,176 +1,220 @@
 # CLAUDE.md — Skinomics
 
-Contexto do projeto para o Claude. Fontes: plano de gestão "EAP-2" (TE1–TE5, PDF fora do repo),
-[docs/architecture.md](docs/architecture.md) e o notebook de ML em [ml/notebooks/previsao_precos.ipynb](ml/notebooks/previsao_precos.ipynb).
-Idioma do projeto: **português (pt-BR)** — código, comentários, commits e docs.
+Contexto do projeto para assistentes de IA. Fontes: plano de gestão "EAP-2" (TE1–TE5, PDF fora do repo),
+[docs/](docs/) e o código. Idioma do projeto: **português (pt-BR)** — código, comentários, commits e docs.
+
+> **Última atualização: 05/11/2026**, feita pelo Lucas e pelo Claude. Este arquivo é a passagem de bastão
+> para a próxima IA ou o próximo dev: a §2 diz o que já está pronto e a §3 o que falta. Ao retomar,
+> confira no git (`git log origin/main`) e nas issues o que mudou depois desta data.
 
 ## 1. O que é
 
 **Skinomics** — plataforma web de previsão de preços de itens do mercado da Steam, para investidores.
-Coleta e guarda o histórico de preços, gera previsões com ML, aponta anomalias e oportunidades de
-compra/venda, e oferece painéis, busca com filtros, watchlist, inventário e alertas.
+Coleta e guarda o histórico de preços, gera previsões com ML, aponta oportunidades de compra/venda e
+oferece busca, detalhe do item com previsão, watchlist e ranking.
 
 Projeto acadêmico (PUCPR, disciplina do Prof. Evandro Zatti, que é o patrocinador). Modelo de processo:
-**incremental, 4 incrementos**. S1 começou em 24/08/2026; 12 semanas de 10 h/integrante.
+**incremental, 4 incrementos**. **Go-Live: 13/11/2026.** O repositório é pessoal do Lucas
+(`github.com/lucasferraz-dev/skinomics`).
 
-**Decisões tomadas (28/10/2026):**
+**Decisões tomadas:**
 - **Só TF2** (appid 440). CS2 foi testado e o modelo foi pior. Filtros de float/desgaste da EAP
   viram filtros de TF2 (tipo de item, qualidade, coleção).
-- O Lucas e o Claude implementam **o sistema inteiro** (back-end, dados, ML e front-end).
-- Prazo real: Go-Live em 13/11/2026 e o código começou em 28/10, então priorizar o fluxo principal
-  (dados → previsão → ranking → telas) antes dos módulos secundários.
+- O Lucas e o Claude implementaram quase todo o sistema (back-end, dados, ML e front-end); o Ricardo
+  fez boa parte do pacote `ml/` (LightGBM, intervalos, registro de modelos, ranking).
+- Escopo das estórias foi **cortado** nas issues do GitHub (cada issue tem "Mantém" e "Fica de fora");
+  a issue é a referência do que entregar, não a EAP completa.
 
-**Fora do escopo:** trading/intermediação dentro da plataforma, app mobile nativo (é web responsivo),
-outros marketplaces, pagamentos/carteira/custódia, jogos fora da Steam, recomendação formal de investimento.
+**Fora do escopo:** trading/intermediação, app mobile nativo (é web responsivo), outros marketplaces,
+pagamentos/carteira/custódia, jogos fora da Steam, recomendação formal de investimento.
 
-## 2. Equipe e papéis
+## 2. Estado atual (05/11/2026)
+
+**No ar:** front na **Vercel** (`https://skinomics.ferrazdeveloper.com`, root `frontend/`,
+`frontend/vercel.json` repassa `/api/*` para a API), API no **Render Free** (Docker, root `backend/`,
+`https://skinomics-api.onrender.com`, health `/health` e `/health/ready`), banco **Neon Free** (PostgreSQL).
+O Render Free dorme após 15 min sem acesso — a primeira requisição demora. Detalhes, publicação de
+modelos e diagnóstico entre ambientes: [docs/deploy.md](docs/deploy.md).
+
+**Pronto (issues fechadas):**
+
+| Issue | Estória | Onde está |
+|---|---|---|
+| #11 US001 | Login com a Steam (OpenID + sessão por cookie) | `backend/app/auth/`, `api/auth.py`, `paginas/Entrar.tsx` |
+| #13 US016 | Log de execuções e falhas de coleta | `app/coleta/execucao.py`, `execucoes.py`; tabelas `execucao_coleta`, `falha_coleta` |
+| #15 US004 | Busca pelo nome | `GET /itens?busca=`, `paginas/ExplorarItens.tsx` |
+| #17 US006 | Ficha do item com histórico real | `paginas/DetalheItem.tsx`, `GraficoHistorico.tsx` |
+| #18 US011 | Watchlist ("Minha lista") com variação desde a inclusão | `api/minha_lista.py`, `paginas/MinhaLista.tsx` |
+| #19 US018 / #20 US019 | Registro, comparação, promoção e reversão de versões de modelo | `ml/registry.py`, `ml/publish.py` |
+| #21 US007 / #22 US008 | Previsão em 7, 15 e 30 dias com intervalo de 80% | `ml/predict.py`, `ml/intervals.py`, `PrevisaoPreco.tsx` |
+| #23 US013 | Ranking de oportunidades (margem + risco) | `api/oportunidades.py`, `servicos/risco_oportunidade.py`, `paginas/Oportunidades.tsx`, [docs/oportunidades.md](docs/oportunidades.md) |
+| #25 US020 | Desconectar a conta | fechada pelo Ricardo; **conferir** se a remoção dos dados do usuário existe de fato (no back-end só há logout em `api/auth.py`) |
+
+**Coletor (módulo 16) — pronto, mas roda à mão:**
+- `python -m app.coleta.historico_steam --arquivo app/coleta/itens_tf2.txt` regrava a série diária de
+  cada item a partir do `pricehistory` da Steam (exige o cookie `SKINOMICS_STEAM_LOGIN_SECURE`).
+  Confere a moeda da conta (`--moeda`); a série é em **USD** (já houve bug de gravar em BRL).
+- `app/coleta/itens_tf2.txt` é a lista versionada dos itens acompanhados (43 hoje).
+- `app.coleta.catalogo_steam` acrescenta itens populares acima de um preço mínimo.
+- `app.coleta.execucoes` mostra as últimas execuções, a taxa sem falha (meta de 95%) e itens que falham
+  repetidamente. Para ao primeiro HTTP 429 (não insiste, para não estender o bloqueio do IP).
+
+**ML em produção:** pacote [ml/](ml/) (treino, inferência, registro, worker). Treino é **manual**;
+`python -m ml.worker` atualiza previsões após coletas e na virada do dia, mas **não está rodando em lugar
+nenhum na nuvem** hoje. Passo a passo: [docs/ml-integracao.md](docs/ml-integracao.md).
+
+## 3. O que falta (issues abertas e pendências)
+
+| Issue | Estória | Situação |
+|---|---|---|
+| **#12 US015** | Agendar a coleta diária | **Não feito.** Não há cron. Proposta: workflow agendado no GitHub Actions (`.github/workflows/`, `on: schedule`) rodando `historico_steam --arquivo ...` contra o Neon, com `SKINOMICS_DATABASE_URL` e o cookie da Steam em *secrets*. O Render Free não tem cron. Depois da coleta, rodar `ml.predict` (ou o worker) no mesmo job para atualizar as previsões. |
+| **#14 US017** | Cobertura da base histórica | **Não feito.** O escopo cortado pede só uma **consulta SQL** (itens por quantidade de dias de histórico, itens abaixo do mínimo para treino — o ML usa `MIN_HISTORY = 30`), sem tela. Backup é manual. Dá para fazer como módulo `app.coleta.cobertura` no estilo de `execucoes.py`. |
+| **#16 US005** | Filtrar por atributos | **Metade.** A API já aceita `tipo`, `preco_min`, `preco_max`, `ordenar`, `direcao` (`schemas/item.py`, `consultas/itens.py`); **falta a UI** em `ExplorarItens.tsx` (hoje só tem a busca por nome). Líder: Pedro. |
+| **#24 US012** | Alerta por preço absoluto | **Não feito.** Escopo: regra "preço abaixo de X", motor periódico sem disparo duplicado, notificação só por e-mail. Precisa de tabela nova (migração Alembic), rotas, tela e o motor (pode ir no mesmo job agendado da #12). Líder: Riscala. A branch local `feat/alertas` está vazia. |
+
+Outras pendências conhecidas:
+- **Buraco no histórico** depois de 15/10/2026 (fim do CSV piloto) até a coleta rodar de novo — rodar o
+  `historico_steam` resolve, porque o `pricehistory` devolve a série inteira.
+- **Meta de ≥ 1.000 itens** está longe (43). Ampliar `itens_tf2.txt` / usar `catalogo_steam`, respeitando
+  o rate limit (429).
+- Fora do escopo cortado, mas na EAP: onboarding (5), painel do mercado (6), comparação (10),
+  inventário (11), movimentos atípicos (15), conta/preferências (19). Não começar antes de fechar as 4 acima.
+- Retreino periódico do modelo não existe (é manual).
+- Sugestões do professor para o ML, ainda não testadas: features de eventos do TF2 (Scream Fortress,
+  Smissmas, promoções da Steam) e janela de treino deslizante / peso maior para dados recentes, avaliadas
+  no walk-forward de 4 semestres. Mês como feature já foi testado e piorou.
+
+## 4. Equipe e papéis
 
 | Integrante | Papel | Área |
 |---|---|---|
-| Riscala Miguel Fadel Neto | Gerente do projeto | Gestão, arquitetura, integração |
-| Pedro Senes Velloso Ribeiro | Front-end | React/TypeScript, UX, Figma (fez as 16 telas) |
-| Ricardo Lucas Kucek | Engenheiro de ML | Modelos, análise de dados, testes (pytest) |
-| Lucas Ferraz dos Santos | Dados + back-end | Coletores, PostgreSQL, FastAPI, Docker, OpenID |
+| Riscala Miguel Fadel Neto | Gerente do projeto | Gestão, arquitetura, integração; líder de alertas e desconexão |
+| Pedro Senes Velloso Ribeiro | Front-end | React/TypeScript, UX, Figma (fez as 16 telas); líder dos filtros |
+| Ricardo Lucas Kucek (`Ricardo-LK`) | Engenheiro de ML | Modelos, análise de dados, testes; fez boa parte de `ml/` |
+| Lucas Ferraz dos Santos (`lucasferraz-dev`) | Dados + back-end | Coletores, PostgreSQL, FastAPI, Docker, OpenID, deploy |
 
-Lucas (o usuário deste repo) é **R ou R/A** em: coletores (16), base histórica (17), autenticação Steam (4),
-inventário (11), alertas (13), CI/ambiente (2.3), monitoramento (2.5), ambiente inicial (1.4), e
-co-R em construir painel (6.2), busca (7.2), detalhe (8.2), watchlist (12.2), anomalias (15.2), ML (18.2).
+## 5. Stack
 
-## 3. Stack
+React + TypeScript + Vite + Tailwind (front) · Python 3 + FastAPI + SQLAlchemy + Alembic (API) ·
+PostgreSQL · Docker · pandas + scikit-learn + LightGBM (ML) · uv · ruff · pytest · GitHub Actions (CI) ·
+Steam OpenID · Vercel + Render + Neon.
 
-React + TypeScript · Python + FastAPI · PostgreSQL (séries temporais) · Docker · pandas + scikit-learn ·
-pytest · GitHub + Actions (CI/CD) · Steam OpenID · proxies para coleta · nuvem (app, banco, agendador).
-
-## 4. Estrutura do repositório
+## 6. Estrutura do repositório
 
 ```
-backend/          API FastAPI (uv, ruff, pytest); app/ = código, tests/ = testes unitários;
-                  o esquema do banco fica aqui, em migrações Alembic
-frontend/         React/TS (vazio ainda)
-ml/notebooks/     protótipo do modelo (previsao_precos.ipynb)
-ml/data/          CSVs de entrada/saída — fora do git (tf2_historico.csv tem 51 MB)
-tests/            testes ponta a ponta (vazio ainda)
-docs/             architecture.md
-.github/          templates de issue/PR, CONTRIBUTING, CODE_OF_CONDUCT, workflows de CI
-docker-compose.yml  PostgreSQL local
+backend/            API FastAPI (uv, ruff, pytest)
+  app/api/          rotas: auth, health, itens, minha_lista, oportunidades
+  app/consultas/    consultas SQL usadas pelas rotas
+  app/coleta/       coletores da Steam, importação do CSV, log de execuções, itens_tf2.txt
+  app/models/       modelos SQLAlchemy  ·  alembic/versions/ = migrações (esquema do banco)
+  app/schemas/      Pydantic (contrato da API)  ·  app/servicos/ = regras (risco da oportunidade)
+  tests/            testes (usam o banco skinomics_test, criado sozinho)
+frontend/           React/TS; src/paginas/, src/componentes/, src/api/ (esquema.d.ts gerado do OpenAPI
+                    com `npm run api:tipos`)
+ml/                 pacote de ML: train, predict, intervals, registry, publish, worker, sarima, tests/
+ml/notebooks/       protótipo original do modelo (previsao_precos.ipynb)
+ml/data/            CSVs (fora do git; tf2_historico.csv tem 51 MB e é compartilhado à parte)
+ml/artifacts/       modelos treinados (fora do git)
+scripts/            check_deployment.py (diagnóstico do deploy)
+docs/               architecture.md, deploy.md, ml-integracao.md, oportunidades.md
+.github/            templates de issue/PR, CONTRIBUTING, workflows de CI (backend, frontend, ml)
+docker-compose.yml  PostgreSQL local (porta 55432) + API (porta 8080)
+CHANGELOG.md        mantido a cada PR, na seção [Não lançado]
 ```
 
-Branches: `main` (principal, alvo de PR) e `develop` (trabalho).
+Branches: `main` é a de produção (Vercel publica dela) e o alvo dos PRs; cada assunto em `feat/...`,
+`fix/...`, `chore/...` ou `docs/...`. Branches locais antigas já mergeadas podem ser apagadas.
 
-## 5. Incrementos e marcos
+## 7. Como rodar
 
-| Marco | Entrega | Data |
-|---|---|---|
-| M0 | Termo de abertura + plano de incrementos | 04/09/2026 |
-| M1 | **Inc. 1 – Fundação de Dados**: coletores, banco histórico, agendamento, autenticação Steam, telas de acompanhamento da base | 25/09/2026 |
-| M2 | **Inc. 2 – Consulta e Navegação**: onboarding, painel do mercado, busca/filtros, detalhe do item, itens acompanhados | 23/10/2026 |
-| M3 | **Inc. 3 – Inteligência**: base de treino, features, treino/avaliação, previsão, comparação, ranking, movimentos atípicos | 06/11/2026 |
-| M4 | **Inc. 4 – Conclusão**: inventário, alertas, conta/preferências (com exportação), documentação | 06/11/2026 |
-| M5 | Testes de aceitação, estabilização e **Go-Live** | **13/11/2026** |
+```bash
+docker compose up -d db                        # PostgreSQL em localhost:55432
+cd backend && uv sync && uv run alembic upgrade head
+uv run pytest                                  # testes
+uv run uvicorn app.main:app --reload           # API em localhost:8000
+uv run python -m app.coleta.importar_csv ../ml/data/tf2_historico.csv   # carrega o histórico piloto
+cd ../frontend && npm install && npm run dev
+```
 
-Caminho crítico: 1.1→1.3 → 3.x → 16.1 → 17.x → 18.x → 9.1/9.2 → 14.x → 2.6 → Fim.
-Quase críticas: 2.2 e 13. Reserva de cronograma: 11 h.
+Config em `backend/.env` (copiar de `.env.example`): `SKINOMICS_DATABASE_URL`
+(`postgresql+psycopg://...`), `SKINOMICS_SITE_URL`, `SKINOMICS_STEAM_LOGIN_SECURE` (coleta),
+`SKINOMICS_MODEL_DIR` (ML). Nunca commitar `.env` nem credenciais; nunca pôr segredo em variável `VITE_*`.
+Depois de mudar um modelo em `app/models/`: `uv run alembic revision --autogenerate -m "..."` e revisar.
 
-Obs.: `docs/architecture.md` põe a autenticação Steam no Inc. 2; a EAP (fonte oficial) põe no **Inc. 1**.
+## 8. Machine Learning
 
-## 6. Objetivos mensuráveis (critérios de sucesso)
+Protótipo em [ml/notebooks/previsao_precos.ipynb](ml/notebooks/previsao_precos.ipynb); o código de produção
+está em [ml/](ml/) (o treino foi extraído do notebook e ganhou LightGBM e SARIMA para experimento).
 
-- Histórico de **≥ 1.000 itens**, coleta diária com **≥ 95%** de execuções sem falha (M1).
-- Modelo com **MAPE ≤ 15%** no teste, **superando o baseline ingênuo** (M3).
-- Identificar oportunidade pelo ranking em **< 2 min** (M3).
+**Dados:** `tf2_historico.csv`, ~90 mil linhas, 37 itens de TF2 (caixas, Key, ferramentas), 2012-12 →
+2026-10-15, preços em USD. Tratamento: remove o dia parcial da coleta, duplicatas `(item, data)` e
+preço ≤ 0; ignora os 30 primeiros dias de cada item (`MIN_HISTORY`) e tudo antes de 2016-01-01.
+
+**Alvo:** log-retorno da média do preço numa janela em torno de `t + horizonte` (no protótipo, `t+5..t+9`
+para 7 dias). Hoje há modelos de **7, 15 e 30 dias**, cada um com intervalo de **80%** calibrado.
+
+**Features (35)**, todas relativas ao preço atual: retornos 1/3/7/14/30 d, distância de médias móveis e
+EMAs, volatilidade, min/máx, z-score, distância de ATH/ATL, volume, `is_filled` e contexto de mercado
+(retorno mediano do dia, retorno da Key). Removidas **de propósito** porque pioravam a validação: mês,
+dia do ano, dia da semana, idade e nome do item (o modelo decorava sazonalidade antiga).
+
+**Resultado do protótipo (teste 2026-04-09..2026-10-05, horizonte 7):** HGB + EMA10 com MAE 0,0742,
+MAPE 8,11%, direção 72,8%, ganho de 21,1% sobre o ingênuo → atende a meta (MAPE ≤ 15% e melhor que o
+ingênuo). Pontos fracos: Secret Saxton e Mann Co. Store Package; perde do ingênuo na Key e em poucos itens.
+
+**Validação:** split temporal (teste = últimos 180 dias, intervalo entre treino e teste) + walk-forward
+de 4 semestres. A escolha do modelo usa o CV; o teste não escolhe vencedor.
+
+**Cuidados:** retorno previsto alto em item de volume baixíssimo geralmente quer dizer "o preço de hoje é
+um pico e vai voltar". Itens com histórico curto não são confiáveis.
+
+## 9. Objetivos mensuráveis (critérios de sucesso)
+
+- Histórico de **≥ 1.000 itens**, coleta diária com **≥ 95%** de execuções sem falha.
+- Modelo com **MAPE ≤ 15%** no teste, **superando o baseline ingênuo** — atingido.
+- Identificar oportunidade pelo ranking em **< 2 min**.
 - Usabilidade **≥ 4,0/5** com ≥ 5 usuários reais (Go-Live).
-- 4 incrementos + Go-Live até 13/11/2026; orçamento ≤ **R$ 31.900** (R$ 24k são horas equivalentes, não desembolso).
 
-## 7. EAP — módulos de produto (nível 1)
+## 10. EAP — módulos de produto (referência)
 
-Cada módulo segue o ciclo **analisar e projetar → construir → testar e validar**.
-Esforço total da linha de base: **480 h** (elementos 20 e 21 já incluídos).
-
-| Cód. | Módulo | Tela | Inc. | Horas | Pontos-chave |
-|---|---|---|---|---|---|
-| 4 | Autenticação com a Steam | 01 | 1 | 20 | OpenID, sessão/expiração, consentimento, falha do provedor |
-| 5 | Onboarding de preferências | 02 | 2 | 16 | jogos, faixa de preço, objetivo (revenda/coleção); vira filtro padrão |
-| 6 | Painel do mercado | 03 | 2 | 28 | volume do dia, índice de preços, variação %, destaques do modelo, cache |
-| 7 | Busca e filtros | 04 | 2 | 30 | raridade, desgaste, float, faixa de preço; ordenação e paginação |
-| 8 | Detalhe do item | 05 | 2 | 32 | histórico real + faixa prevista com IC, janela temporal, ações rápidas |
-| 9 | Previsão de preço | 06 | 3 | 36 | horizontes 7–30 dias, intervalo de confiança, fatores explicativos, cache/recálculo |
-| 10 | Comparação de itens | 07 | 3 | 20 | 2 a 4 itens; liquidez, volatilidade, retorno previsto; compartilhável |
-| 11 | Inventário do usuário | 08 | 4 | 26 | importação Steam, valor total, lucro/perda em aberto, inventário privado/vazio |
-| 12 | Itens acompanhados | 09 | 2 | 18 | watchlist, variação desde a inclusão, nota do modelo |
-| 13 | Alertas de preço | 10 | 4 | 24 | regra de preço absoluto e de variação prevista, motor periódico, sem duplicidade |
-| 14 | Ranking de oportunidades | 11 | 3 | 28 | preço atual < previsto; margem estimada + risco (liquidez/volatilidade) |
-| 15 | Movimentos atípicos | 12 | 3 | 26 | anomalia de preço/volume; causa provável (manipulação, update, sazonal); alimenta ranking e alertas |
-| 16 | Coletores de dados | 13 | 1 | 34 | catálogo, preço+volume, agendador, log de execução/falha, reprocessamento, proxies, retry |
-| 17 | Base histórica | 14 | 1 | 30 | esquema de séries, normalização/dedup, outliers, lacunas, cobertura, backup |
-| 18 | Gestão de modelos de ML | 15 | 3 | 40 | split treino/val/teste, baseline, modelo final, versionamento, promoção/reversão, retreino |
-| 19 | Conta e preferências | 16 | 4 | 18 | moeda, idioma, canais de notificação, exportar dados, desconectar Steam |
-
-Elementos de gestão: 1 Iniciação, 2 Planejamento da Integração (CI/CD, contratos de API, testes de
-regressão/integração, logs, docs), 3 Estimativa de Escopo, 20 Cronograma, 21 Recursos.
+| Cód. | Módulo | Inc. | Situação |
+|---|---|---|---|
+| 4 | Autenticação com a Steam | 1 | feito |
+| 5 | Onboarding de preferências | 2 | não feito (fora do corte) |
+| 6 | Painel do mercado | 2 | parcial (página inicial com dados) |
+| 7 | Busca e filtros | 2 | busca feita; filtros só na API (#16) |
+| 8 | Detalhe do item | 2 | feito |
+| 9 | Previsão de preço | 3 | feito (7/15/30 d + intervalo) |
+| 10 | Comparação de itens | 3 | não feito |
+| 11 | Inventário do usuário | 4 | não feito |
+| 12 | Itens acompanhados | 2 | feito |
+| 13 | Alertas de preço | 4 | não feito (#24) |
+| 14 | Ranking de oportunidades | 3 | feito |
+| 15 | Movimentos atípicos | 3 | não feito |
+| 16 | Coletores de dados | 1 | feito, falta agendar (#12) |
+| 17 | Base histórica | 1 | esquema e log feitos; falta cobertura (#14) |
+| 18 | Gestão de modelos de ML | 3 | feito (registro, promoção, reversão); retreino manual |
+| 19 | Conta e preferências | 4 | só desconectar (#25, conferir) |
 
 Fluxos ponta a ponta a testar: **coleta → base → modelo → tela** e **previsão → oportunidade → alerta**.
 
-## 8. Machine Learning (protótipo atual)
+## 11. Convenções de trabalho
 
-Arquivo: [ml/notebooks/previsao_precos.ipynb](ml/notebooks/previsao_precos.ipynb) — roda a partir de
-`ml/notebooks/` (lê e grava em `../data/`). Saída: `ml/data/previsao_7d.csv`.
-
-**Dados — `tf2_historico.csv`:** ~90 mil linhas, **37 itens de TF2** (appid 440; caixas, Key, ferramentas),
-2012-12 → 2026-10-15, 61 colunas, preços em USD. Colunas-base usadas: `observation_date`,
-`market_hash_name`, `price`, `volume`, `is_filled`, `days_since_first_obs`, `scrape_timestamp_utc`.
-O CSV já traz features prontas (lags, MAs, alvos), mas o notebook **recalcula tudo** e não as usa.
-⚠️ Muito abaixo da meta de 1.000 itens; é um conjunto piloto.
-
-**Tratamento:**
-- Remove o dia da coleta (parcial), duplicatas `(item, data)` e preço ≤ 0.
-- Ignora os primeiros 30 dias de cada item (`MIN_HISTORY`) e tudo antes de 2016-01-01.
-- **Alvo** = média do preço em `t+5..t+9` (horizonte 7, meia-janela 2), modelado como
-  **log-retorno** `log(alvo / preço_atual)` — comparável entre itens de 0,15 e 10,8.
-- No treino o alvo é cortado em ±0,7.
-
-**Features (35)**, todas relativas ao preço atual: retornos 1/3/7/14/30 d; distância de MA 3–60,
-mediana 7/30, EMA 5/10/30; volatilidade 7/30; min/máx da janela; z-score 30; distância de ATH/ATL;
-log-volume, médias e tendência; `is_filled`; **contexto de mercado** (retorno mediano do dia,
-retorno da Key, retorno relativo ao mercado).
-Removidas **de propósito** (pioravam a validação): mês, dia do ano, dia da semana, idade e nome do
-item — o modelo decorava sazonalidade antiga e quebrava na mudança de regime do fim de 2025.
-
-**Modelos:**
-- *Ingênuo* — retorno 0 (preço não muda).
-- *EMA 10* — "volta para a EMA de 10 dias"; baseline forte (reversão à média).
-- *HGB* — `HistGradientBoostingRegressor`, `loss="absolute_error"`, lr 0,03, `max_leaf_nodes=7`,
-  `min_samples_leaf=200`, até 600 iterações com early stopping.
-- **Final: HGB + EMA** — `0,5 × HGB + 0,5 × EMA10` (classe `EMABlend`).
-
-**Validação:** split temporal (teste = últimos 180 dias, intervalo de 9 dias entre treino e teste) +
-**walk-forward com 4 semestres** antes do teste. Ganho médio de MAE sobre o ingênuo no CV: 27,8% (final).
-
-**Resultados no teste (2026-04-09 .. 2026-10-05):**
-
-| Modelo | MAE | MAPE | R² retorno | Direção | Ganho vs ingênuo |
-|---|---|---|---|---|---|
-| Ingênuo | 0,0939 | 11,07% | — | — | 0% |
-| EMA 10 | 0,0828 | 9,31% | 0,33 | 72,0% | 11,9% |
-| HGB | 0,0756 | 7,87% | 0,25 | 72,4% | 19,5% |
-| **HGB + EMA** | **0,0742** | **8,11%** | **0,36** | **72,8%** | **21,1%** |
-
-→ Atende a meta do TE1 (MAPE ≤ 15% e melhor que o ingênuo). Ganha do ingênuo em 32 de 36 itens.
-Pontos fracos: Secret Saxton (MAPE ~91%) e Mann Co. Store Package (~30%); perde do ingênuo na Key,
-Description Tag, Bone-Chilling Bonanza e Terrifying Trove Case.
-
-**Cuidados ao interpretar previsões:** retornos previstos altos em itens de baixíssimo volume
-geralmente significam "o preço de hoje é um pico e vai voltar", não tendência. Itens com
-`historico_curto=True` (ex.: Haunted Hoard Case) não são confiáveis.
-
-**Falta para cumprir a EAP (módulos 9 e 18):** horizontes até 30 dias, intervalo de confiança,
-fatores explicativos por previsão (hoje só há importância por permutação global), versionamento e
-promoção de modelos, retreino periódico, e mover o código do notebook para `ml/` como serviço de inferência.
-
-## 9. Convenções de trabalho
-
-- Revisão por outro integrante sempre que a mudança afetar contratos de integração, dados,
-  segurança ou modelo preditivo.
+- **Quem commita é o humano.** A IA sugere nome de branch, mensagem de commit (Conventional Commits em
+  pt-BR, ex.: `feat: ...`, `fix(ml): ...`) e texto do PR, mas não faz commit, push nem abre PR sozinha.
+- **Partes pequenas, um PR por assunto.** Ao fim de cada parte, explicar o que foi feito, como e como rodar.
+- Descrição de PR **sempre no template** [.github/pull_request_template.md](.github/pull_request_template.md),
+  com o checklist marcado com honestidade. Atualizar o `CHANGELOG.md` no mesmo PR.
+- Código legível e modular, sem comentários óbvios; comentário só para explicar o porquê.
+- CI roda ruff e pytest (back e ML) e `npm test` + build do front; tudo precisa passar antes do merge.
+- Revisão por outro integrante quando a mudança afetar contratos de API, dados, segurança ou modelo.
 - Manter um modelo baseline em produção até o definitivo ser validado.
-- Coleta da Steam: respeitar rate limit, distribuir requisições ao longo do dia, proxies, retry,
-  coletor isolado em módulo próprio e com monitoramento de falhas.
-- Split de dados de séries temporais **sempre por data**, nunca aleatório.
+- Coleta da Steam: respeitar rate limit, espaçar requisições, parar no 429, coletor isolado em módulo
+  próprio e com log de falhas.
+- Split de séries temporais **sempre por data**, nunca aleatório.
+
+**Visual do front:** tema escuro com verde-limão (clima do jogo Deadlock, da Valve), seguindo o Figma do
+Pedro. Títulos em **Archivo** larga (utility `titulo`), rótulos em **Cinzel** (`font-rotulo`), números em
+**IBM Plex Mono**. **Evitar cara de "site gerado por IA":** nada de rótulo em mono caixa-alta com letras
+espaçadas e quadradinho verde, nada de Space Grotesk/JetBrains Mono, nada de landing genérica. Mudança
+visual de gosto: mostrar opções lado a lado antes de aplicar.
