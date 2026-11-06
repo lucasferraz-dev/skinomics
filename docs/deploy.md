@@ -80,6 +80,22 @@ cópia dos artefatos em `SKINOMICS_MODEL_DIR`. Arquivos no computador local não
 automaticamente no Render. Em um worker remoto, provisione os artefatos em armazenamento
 persistente e confira os SHA-256; um deploy Docker não os inclui, pois estão fora do Git.
 
+## Copiar o histórico de preços para outro banco
+
+`scripts/migrar_precos.py` copia o catálogo e a série de preços do PostgreSQL local (Docker)
+para o banco de `SKINOMICS_DATABASE_URL`. A série do destino é **substituída inteira**; os
+itens são casados por `(appid, market_hash_name)`, então os IDs do destino (usados pela
+watchlist e pelas previsões) não mudam. Usuários, sessões, listas e modelos ficam intactos.
+O script exige a mesma migração Alembic nos dois bancos e grava tudo numa transação.
+
+```powershell
+uv run --project backend --env-file .env.production python scripts/migrar_precos.py          # prévia
+uv run --project backend --env-file .env.production python scripts/migrar_precos.py --apply
+```
+
+Depois de trocar os preços, publique as previsões de novo (seção anterior): as antigas foram
+calculadas sobre a série anterior.
+
 ## Verificar depois do deploy
 
 O diagnóstico só lê rotas públicas e retorna código 1 se encontrar falhas:

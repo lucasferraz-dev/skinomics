@@ -20,6 +20,8 @@
 - `app.coleta.execucoes`: mostra as últimas execuções, a taxa de coletas sem falha no período
   (meta de 95% do M1) e os itens que falham em mais de uma execução; `--execucao ID` lista as
   falhas de uma execução.
+- `scripts/migrar_precos.py`: copia o catálogo e a série de preços do banco local para outro
+  banco (ex.: o Neon de produção), preservando os IDs dos itens do destino; prévia por padrão.
 
 ### Corrigido
 
