@@ -8,8 +8,11 @@ import { Link } from "react-router";
 
 type Ponto = { x: number; y: number };
 
-const PONTA_PARADO = 9; // px: tamanho da pontinha descolada em repouso
-const PONTA_MIRANDO = 15; // ... com o mouse em cima
+// A ponta fica visivelmente descolada em repouso, mostrando um pouco do verso e do que há embaixo,
+// para ficar claro que dá para puxar; de tempos em tempos ela "acena" (levanta e volta).
+const PONTA_PARADO = 24; // px: tamanho da pontinha descolada em repouso
+const PONTA_MIRANDO = 38; // ... com o mouse em cima
+const PONTA_ACENO = 34; // ... no aceno
 const PARTE_COLADA = 0.15; // fração da largura (à esquerda) que nunca descola
 
 /** Divide o retângulo pela dobra: o que continua colado e a aba (já espelhada sobre a dobra). */
@@ -79,6 +82,7 @@ export function Adesivo({
   const animacao = useRef(0);
   // Enquanto segura ou enquanto volta a colar, o mouse entrando/saindo da ponta não mexe nela.
   const ocupado = useRef(false);
+  const mirando = useRef(false);
 
   // Desenha a dobra a partir do ponto puxado (ou da pontinha em repouso).
   const desenhar = () => {
@@ -106,6 +110,28 @@ export function Adesivo({
     return () => {
       window.removeEventListener("resize", aoRedimensionar);
       cancelAnimationFrame(animacao.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao montar e desmontar
+  }, []);
+
+  // Aceno: de tempos em tempos (intervalo sorteado por adesivo) a ponta levanta e volta sozinha.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let espera = 0;
+    let volta = 0;
+    const agendar = () => {
+      espera = window.setTimeout(() => {
+        if (!ocupado.current && !mirando.current) {
+          animarRecuo(PONTA_ACENO);
+          volta = window.setTimeout(() => !ocupado.current && !mirando.current && animarRecuo(PONTA_PARADO), 420);
+        }
+        agendar();
+      }, 3500 + Math.random() * 5000);
+    };
+    agendar();
+    return () => {
+      window.clearTimeout(espera);
+      window.clearTimeout(volta);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao montar e desmontar
   }, []);
@@ -208,9 +234,15 @@ export function Adesivo({
         onPointerMove={arrastar}
         onPointerUp={soltar}
         onPointerCancel={soltar}
-        onPointerEnter={() => !ocupado.current && animarRecuo(PONTA_MIRANDO)}
-        onPointerLeave={() => !ocupado.current && animarRecuo(PONTA_PARADO)}
-        className={`absolute right-0 bottom-0 z-10 size-8 touch-none ${puxando ? "cursor-grabbing" : "cursor-grab"}`}
+        onPointerEnter={() => {
+          mirando.current = true;
+          if (!ocupado.current) animarRecuo(PONTA_MIRANDO);
+        }}
+        onPointerLeave={() => {
+          mirando.current = false;
+          if (!ocupado.current) animarRecuo(PONTA_PARADO);
+        }}
+        className={`absolute right-0 bottom-0 z-10 size-11 touch-none ${puxando ? "cursor-grabbing" : "cursor-grab"}`}
       />
     </div>
   );
