@@ -7,10 +7,10 @@
   /* Letras romanas em versalete para rótulos: o clima "jogo/art déco" do Deadlock. */
   --font-rotulo: "Cinzel Variable", serif;
 
-  --color-fundo: #0b0d0c;
-  --color-painel: #111412;
-  --color-painel-alto: #171b18;
-  --color-borda: #232924;
+  --color-fundo: #000000;
+  --color-painel: #080908;
+  --color-painel-alto: #0e100f;
+  --color-borda: #1a1e1b;
   --color-texto: #e9ece7;
   --color-suave: #8b928c;
   --color-apagado: #5c635d;

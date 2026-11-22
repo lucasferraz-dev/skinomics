@@ -7,6 +7,7 @@ import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
 import { PrevisaoPreco } from "../componentes/PrevisaoPreco";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco } from "../lib/formato";
+import { jogoDoItem } from "../lib/jogos";
 
 const PERIODOS = { "7d": 7, "30d": 30, "90d": 90, "1a": 365, tudo: null } as const;
 type Periodo = keyof typeof PERIODOS;
@@ -58,7 +59,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
           <div className="min-w-0">
             {/* Quebra em vez de cortar: no celular, o nome cortado escondia qual item era. */}
             <h1 className="text-2xl leading-tight text-balance titulo sm:text-3xl">{item.nome}</h1>
-            <Rotulo>TF2 / {item.tipo ?? "Item"}</Rotulo>
+            <Rotulo>{item.tipo ?? jogoDoItem(item.appid)?.nome ?? "Item"}</Rotulo>
           </div>
         </div>
         <BotaoAcompanhar itemId={item.id} />

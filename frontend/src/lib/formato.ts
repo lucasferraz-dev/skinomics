@@ -58,3 +58,10 @@ export function diasAntes(iso: string, dias: number): string {
   data.setUTCDate(data.getUTCDate() - dias);
   return data.toISOString().slice(0, 10);
 }
+
+const dataNumerica = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" });
+
+/** "2026-11-21" → "21/11/2026" (cabe numa linha em cards estreitos) */
+export function formatarDataNumerica(iso: string): string {
+  return dataNumerica.format(paraData(iso));
+}

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health, itens, minha_lista, oportunidades
+from app.api import auth, health, itens, minha_lista, modelos, oportunidades
 from app.core.config import get_settings
 
 
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(itens.router)
     app.include_router(minha_lista.router)
     app.include_router(oportunidades.router)
+    app.include_router(modelos.router)
     return app
 
 

@@ -28,10 +28,11 @@ export function useItem(id: number) {
   });
 }
 
-export function usePrevisao(id: number, horizonte: HorizontePrevisao = 7) {
+export function usePrevisao(id: number, horizonte: HorizontePrevisao = 7, habilitado = true) {
   return useQuery({
     queryKey: ["previsao", id, horizonte],
     queryFn: () => obter<PrevisaoItem>(`/itens/${id}/previsao`, { horizonte }),
+    enabled: habilitado,
     staleTime: 5 * 60_000,
   });
 }

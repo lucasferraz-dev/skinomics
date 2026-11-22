@@ -5,6 +5,8 @@ import { type FiltrosItens, type ItemResumo, type PontoHistorico, useHistorico, 
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { Sparkline } from "../componentes/Sparkline";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
+import { jogoDoItem } from "../lib/jogos";
+import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 
 type Ordenacao = NonNullable<FiltrosItens["ordenar"]>;
 type Direcao = NonNullable<FiltrosItens["direcao"]>;
@@ -49,7 +51,7 @@ export function ExplorarItens() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
-          <Rotulo destaque>No radar / Team Fortress 2</Rotulo>
+          <Rotulo destaque>Mercado da Steam</Rotulo>
           <h1 className="text-3xl titulo sm:text-4xl">Explorar itens</h1>
         </div>
         <p className="max-w-sm text-sm text-suave">
@@ -128,7 +130,7 @@ function CampoBusca({ valorInicial, aoBuscar }: { valorInicial: string; aoBuscar
         type="search"
         value={texto}
         onChange={(evento) => setTexto(evento.target.value)}
-        placeholder="Buscar item de TF2…"
+        placeholder="Buscar item…"
         aria-label="Buscar item"
         className="w-full bg-transparent text-sm outline-none placeholder:text-apagado"
       />
@@ -167,21 +169,23 @@ function Cabecalho({
   );
 }
 
-export function LinhaItem({ item }: { item: ItemResumo }) {
+/** Linha da tabela de itens. Com `chaveiros`, mostra os chaveiros mini do item (jogo, tipo, evento). */
+export function LinhaItem({ item, chaveiros = false }: { item: ItemResumo; chaveiros?: boolean }) {
   const inicio = item.data_preco ? diasAntes(item.data_preco, 30) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
 
   return (
     // A linha inteira é clicável: o link do nome se estende sobre ela (after:absolute).
     <tr className="relative border-b border-borda/60 transition-colors last:border-0 hover:bg-painel-alto">
-      <td className="px-4 py-3">
+      <td className="relative px-4 py-3">
+        {chaveiros && <ChaveirosDoItem item={item} tamanho="mini" direita="0.75rem" className="hidden sm:block" />}
         <div className="flex items-center gap-3">
           <IconeItem url={item.icon_url} nome={item.nome} />
           <div className="min-w-0">
             <Link to={`/itens/${item.id}`} className="block truncate text-sm after:absolute after:inset-0">
               {item.nome}
             </Link>
-            <span className="text-xs text-apagado">{item.tipo ?? "Team Fortress 2"}</span>
+            <span className="text-xs text-apagado">{item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
           </div>
         </div>
       </td>

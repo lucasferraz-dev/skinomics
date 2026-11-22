@@ -1,165 +1,55 @@
-import type { ReactNode } from "react";
-import { Link } from "react-router";
-
-import { type ItemResumo, useHistorico, useItens } from "../../api/itens";
-import { IconeItem, Rotulo, Variacao } from "../../componentes/Basicos";
-import { Sparkline } from "../../componentes/Sparkline";
-import { diasAntes, formatarPreco } from "../../lib/formato";
-import { useItemVitrine } from "./dados";
+import { useModelosAtivos } from "../../api/modelos";
+import { Rotulo } from "../../componentes/Basicos";
 import { CabecalhoSecao, Container } from "./ui";
 
+// "Como funciona" em uma faixa compacta: três passos com ícone e uma frase curta, ligados por uma linha.
 const PASSOS = [
   {
-    titulo: "Encontre seu item",
-    texto: "Navegue pelo mercado de TF2 e escolha o item que você quer entender melhor.",
-    rodape: "Busque por nome ou categoria",
+    titulo: "Busque o item",
+    texto: "pelo nome, entre os itens monitorados",
+    icone: "M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 20 20",
   },
   {
-    titulo: "Conecte os sinais",
-    texto: "Coloque histórico, tendência e cenários projetados lado a lado. Veja o movimento, não só o número.",
-    rodape: "Histórico + faixa de cenários",
+    titulo: "Veja histórico e previsão",
+    texto: "7, 15 ou 30 dias, com faixa de 80%",
+    icone: "M4 18 9 12l4 3 7-9M15 6h5v5",
   },
   {
-    titulo: "Faça sua leitura",
-    texto: "Acompanhe o que importa para você e decida no seu tempo, com os riscos em perspectiva.",
-    rodape: "Mais contexto. Sua decisão.",
+    titulo: "Acompanhe",
+    texto: "na sua lista ou no ranking de oportunidades",
+    icone: "M7 4h10v16l-5-3.5L7 20z",
   },
 ];
 
-/** Seção 4 */
+/** Seção 4: como funciona, em três passos. */
 export function FluxoSimples() {
   return (
-    <section id="como-funciona" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
-      <Container className="space-y-12">
-        <CabecalhoSecao
-          rotulo="Do item à decisão"
-          titulo="Um fluxo simples. Uma visão melhor."
-          texto="Você não precisa de mais abas abertas. Precisa de uma leitura mais clara."
-        />
-        <ol className="grid gap-10 md:grid-cols-3">
+    <section id="como-funciona" className="scroll-mt-16 py-14 sm:py-20">
+      <Container className="space-y-8">
+        <Rotulo destaque>Como funciona</Rotulo>
+        <ol className="relative grid gap-8 md:grid-cols-3 md:gap-6">
+          {/* Linha tracejada ligando os passos (só lado a lado) */}
+          <span
+            aria-hidden
+            className="absolute top-6 right-[16%] left-[16%] hidden border-t-2 border-dashed border-destaque/25 md:block"
+          />
           {PASSOS.map((passo, i) => (
-            <li key={passo.titulo} className="space-y-4">
-              <span className="block border-b border-borda pb-3 font-mono text-sm text-destaque">/0{i + 1}</span>
-              <h3 className="text-xl">{passo.titulo}</h3>
-              <p className="text-sm text-suave">{passo.texto}</p>
-              <Rotulo>{passo.rodape}</Rotulo>
+            <li key={passo.titulo} className="relative flex items-center gap-4 md:flex-col md:text-center">
+              <span className="relative grid size-12 shrink-0 place-items-center rounded-full border border-destaque/40 bg-fundo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-destaque)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d={passo.icone} />
+                </svg>
+                <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-destaque font-mono text-[10px] font-bold text-fundo">
+                  {i + 1}
+                </span>
+              </span>
+              <div className="space-y-0.5">
+                <h3 className="text-lg">{passo.titulo}</h3>
+                <p className="text-sm text-suave">{passo.texto}</p>
+              </div>
             </li>
           ))}
         </ol>
-      </Container>
-    </section>
-  );
-}
-
-function Cartao({ titulo, texto, children, className = "" }: { titulo: string; texto: string; children: ReactNode; className?: string }) {
-  return (
-    <div className={`space-y-5 rounded-2xl border border-borda bg-painel p-6 ${className}`}>
-      <div className="space-y-2">
-        <h3 className="text-xl">{titulo}</h3>
-        <p className="text-sm text-suave">{texto}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Chips({ opcoes, ativa }: { opcoes: { rotulo: string; para?: string }[]; ativa: string }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {opcoes.map(({ rotulo, para }) => {
-        const classe = `rounded-md border px-3 py-1.5 font-mono text-xs ${
-          rotulo === ativa ? "border-destaque/25 bg-destaque-fundo text-destaque" : "border-borda text-apagado"
-        }`;
-        return para ? (
-          <Link key={rotulo} to={para} className={`${classe} hover:text-texto`}>
-            {rotulo}
-          </Link>
-        ) : (
-          <span key={rotulo} className={classe}>
-            {rotulo}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-function LinhaRadar({ item }: { item: ItemResumo }) {
-  const inicio = item.data_preco ? diasAntes(item.data_preco, 30) : undefined;
-  const { data } = useHistorico(item.id, inicio, item.data_preco !== null);
-  return (
-    <Link to={`/itens/${item.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-painel-alto">
-      <IconeItem url={item.icon_url} nome={item.nome} tamanho={32} />
-      <span className="min-w-0 flex-1 truncate text-sm">{item.nome}</span>
-      <Sparkline valores={data?.map((ponto) => ponto.preco) ?? []} largura={80} altura={24} />
-      <span className="w-24 text-right">
-        <span className="block font-mono text-sm">{item.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}</span>
-        <span className="text-[11px]">
-          <Variacao valor={item.variacao_7d} />
-        </span>
-      </span>
-    </Link>
-  );
-}
-
-/** Seção 5 */
-export function DecidaComContexto() {
-  const { item: vitrine } = useItemVitrine(30);
-  const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 2 });
-  const detalhe = (periodo: string) => (vitrine ? `/itens/${vitrine.id}?periodo=${periodo}` : undefined);
-
-  return (
-    <section className="border-t border-borda py-20 sm:py-28">
-      <Container className="space-y-12">
-        <CabecalhoSecao
-          rotulo="Menos ruído. Mais intenção."
-          titulo={
-            <>
-              Decida com contexto.
-              <br />
-              Não no impulso.
-            </>
-          }
-          texto="Uma rotina de análise para quem coleciona, negocia ou só quer entender melhor o próprio inventário."
-        />
-        <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-          <Cartao
-            titulo="Seu radar, do seu jeito."
-            texto="Reúna os itens que você acompanha. Compare o movimento sem perder de vista o que importa."
-          >
-            <div className="rounded-xl border border-borda bg-fundo/40 p-3">
-              <div className="mb-2 flex items-center justify-between px-2">
-                <span className="text-sm">Minha lista de acompanhamento</span>
-                <span className="rounded bg-painel-alto px-2 py-0.5 font-rotulo text-xs font-semibold text-suave">Exemplo</span>
-              </div>
-              {data?.itens.map((item) => <LinhaRadar key={item.id} item={item} />)}
-            </div>
-            <Rotulo>Acompanhe a evolução. Não apenas a cotação.</Rotulo>
-          </Cartao>
-
-          <div className="grid gap-4">
-            <Cartao
-              titulo="O zoom certo para cada decisão."
-              texto="Um dia conta uma parte da história. Mude o período e enxergue a tendência em perspectiva."
-            >
-              <Chips
-                ativa="30 dias"
-                opcoes={[
-                  { rotulo: "7 dias", para: detalhe("7d") },
-                  { rotulo: "30 dias", para: detalhe("30d") },
-                  { rotulo: "90 dias", para: detalhe("90d") },
-                  { rotulo: "1 ano", para: detalhe("1a") },
-                ]}
-              />
-            </Cartao>
-            <Cartao
-              titulo="Uma faixa, não uma promessa."
-              texto="Cenários ajudam a pensar no que pode acontecer — inclusive quando o mercado sai do esperado."
-            >
-              <Chips ativa="Central" opcoes={[{ rotulo: "Conservador" }, { rotulo: "Central" }, { rotulo: "Otimista" }]} />
-            </Cartao>
-          </div>
-        </div>
       </Container>
     </section>
   );
@@ -173,8 +63,8 @@ const COMPROMISSOS = [
   },
   {
     titulo: "Quão bom é o modelo",
-    texto:
-      "No teste com os últimos seis meses de dados, o protótipo errou em média 8,1% na previsão de 7 dias e superou a referência ingênua (\"o preço não muda\") em 32 de 36 itens.",
+    // Preenchido com as métricas do modelo ativo (ver TextoQualidade).
+    texto: "",
   },
   {
     titulo: "O que não fazemos",
@@ -183,21 +73,43 @@ const COMPROMISSOS = [
   },
 ];
 
+const percentual = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+
+/** Métricas do modelo de 7 dias em produção, lidas da API: mudam sozinhas a cada retreino. */
+function TextoQualidade() {
+  const { data, isError } = useModelosAtivos();
+  const sete = data?.find((modelo) => modelo.horizonte === 7);
+  // Ex.: o site publicado antes da API com a rota de modelos.
+  if (isError) return <>As métricas do modelo em produção estão indisponíveis no momento.</>;
+  if (!data) return <>Carregando as métricas do modelo…</>;
+  if (!sete?.mape_pct || !sete.acerto_preco_pct) {
+    return <>As métricas do modelo em produção ainda não foram publicadas.</>;
+  }
+  return (
+    <>
+      No teste com os últimos 180 dias, o modelo de 7 dias errou em média{" "}
+      <span className="text-texto">{percentual.format(sete.mape_pct)}%</span> e acertou o preço, com tolerância de
+      15%, em <span className="text-texto">{percentual.format(sete.acerto_preco_pct)}%</span> das previsões. Cada
+      versão treinada fica registrada com seus números.
+    </>
+  );
+}
+
 /** Transparência: de onde vêm os números e os limites do produto. */
 export function Transparencia() {
   return (
-    <section id="transparencia" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
+    <section id="transparencia" className="scroll-mt-16 py-14 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo="Transparência"
-          titulo="Números com origem. Limites às claras."
-          texto="Uma ferramenta de análise só é útil se você souber de onde ela tira as conclusões."
+          titulo="De onde vêm os números."
+          texto="A origem dos dados, a qualidade do modelo e o que a plataforma não faz."
         />
         <div className="grid gap-4 md:grid-cols-3">
           {COMPROMISSOS.map(({ titulo, texto }) => (
-            <div key={titulo} className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
+            <div key={titulo} data-poleiro className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
               <h3 className="text-lg">{titulo}</h3>
-              <p className="text-sm text-suave">{texto}</p>
+              <p className="text-sm text-suave">{texto || <TextoQualidade />}</p>
             </div>
           ))}
         </div>
@@ -210,7 +122,7 @@ const PERGUNTAS = [
   {
     pergunta: "Preciso de uma conta Steam?",
     resposta:
-      "Para explorar preços e históricos, não. O login com a Steam vai liberar a lista de acompanhamento, os alertas e a leitura do seu inventário.",
+      "Para ver preços, históricos e previsões, não. O login com a Steam libera a Minha lista, onde você salva os itens que acompanha.",
   },
   {
     pergunta: "Com que frequência os preços são atualizados?",
@@ -224,17 +136,17 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Quais jogos são cobertos?",
-    resposta: "Por enquanto, só Team Fortress 2. Preferimos começar por um jogo e fazer bem feito.",
+    resposta: "Hoje, itens de Team Fortress 2. Outros jogos da Steam vão entrar.",
   },
 ];
 
 export function Faq() {
   return (
-    <section id="faq" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
+    <section id="faq" className="scroll-mt-16 py-14 sm:py-28">
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-4">
           <Rotulo destaque>FAQ</Rotulo>
-          <h2 className="text-4xl titulo sm:text-5xl">Perguntas frequentes</h2>
+          <h2 data-poleiro="texto" className="text-4xl titulo sm:text-5xl">Perguntas frequentes</h2>
         </div>
         <div className="divide-y divide-borda border-y border-borda">
           {PERGUNTAS.map(({ pergunta, resposta }) => (
