@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
 import { useItens } from "../../api/itens";
@@ -11,6 +11,7 @@ import { Mascote } from "../../componentes/mascote/Mascote";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
+import { Adesivo } from "./Adesivo";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DestaquesDaSemana } from "./Destaques";
@@ -239,8 +240,7 @@ function Destaques() {
   ];
 
   return (
-    // overflow-x-clip: o adesivo descolado sai deslizando para o lado sem criar rolagem horizontal.
-    <section className="overflow-x-clip">
+    <section>
       <Container className="grid grid-cols-2 gap-3 py-5 lg:grid-cols-4">
         {indicadores.map((indicador, i) => (
           <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
@@ -250,8 +250,8 @@ function Destaques() {
   );
 }
 
-// Os indicadores são adesivos compactos nas cores do site, alternando verde-limão e preto, com uma
-// pontinha descolando no canto e um reflexo de vinil ao passar o mouse.
+// Os indicadores são adesivos compactos nas cores do site, alternando verde-limão e preto. Dá para
+// descolar puxando a ponta (ver Adesivo.tsx), e um reflexo de vinil passa ao mover o mouse.
 const TINTAS = {
   verde: {
     "--fundo": "var(--color-destaque)",
@@ -278,85 +278,35 @@ const TINTAS = {
 const ADESIVOS = ["verde", "preto", "verde", "preto"] as const;
 
 function CardIndicador({ rotulo, valor, detalhe, icone, para, verso, adesivo }: Indicador & { adesivo: (typeof ADESIVOS)[number] }) {
-  const [descolado, setDescolado] = useState(false);
-  const [mirando, setMirando] = useState(false); // mouse sobre a pontinha: ela levanta mais
-
-  const frente = (
-    <>
-      {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.28)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
-      />
-      {/* Pontinha descolando: o verso dobrado no canto, com o fundo da página aparecendo */}
-      <span
-        aria-hidden
-        className={`pointer-events-none absolute right-0 bottom-0 rounded-tl-[5px] bg-[linear-gradient(315deg,var(--color-fundo)_50%,var(--verso)_50%)] shadow-[-2px_-2px_4px_rgba(0,0,0,0.35)] transition-[width,height] duration-300 ${
-          descolado ? "size-12" : mirando ? "size-6" : "size-4"
-        }`}
-      />
-      <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-[var(--icone-fundo)]">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d={ICONES[icone]} />
-        </svg>
-      </span>
-      <div className="relative min-w-0">
-        <span className="block truncate font-rotulo text-[11px] font-bold tracking-[0.06em] text-[var(--rotulo)]">
-          {rotulo}
-          {para && <span aria-hidden> ↗</span>}
-        </span>
-        <p className="titulo text-xl leading-tight text-[var(--numero)] sm:text-2xl">{valor}</p>
-        <p className="truncate font-mono text-[10px] text-[var(--detalhe)]">{detalhe}</p>
-      </div>
-    </>
-  );
-  // Descolando: primeiro recua um pouco (a curva vai abaixo de zero no começo), depois sai deslizando
-  // para o lado, girando. Colando de volta, faz o caminho inverso.
-  const classe =
-    "group relative flex h-full items-center gap-3 overflow-hidden rounded-2xl rounded-br-none border border-[var(--contorno)] bg-[var(--fundo)] px-4 py-3 " +
-    "shadow-[0_8px_18px_-8px_rgba(0,0,0,0.9)] transition-[transform,opacity] duration-[650ms] ease-[cubic-bezier(.5,-0.35,.35,1)] " +
-    (descolado ? "pointer-events-none translate-x-[110%] -translate-y-3 rotate-[9deg] opacity-0" : "hover:-translate-y-0.5");
-  const estilo = TINTAS[adesivo] as unknown as React.CSSProperties;
-
   return (
-    <div data-poleiro className="relative">
-      {/* Embaixo do adesivo: um dado a mais e a marca tracejada de onde ele estava colado */}
-      <button
-        type="button"
-        onClick={() => setDescolado(false)}
-        tabIndex={descolado ? 0 : -1}
-        aria-hidden={!descolado}
-        title="Colar o adesivo de volta"
-        className="absolute inset-0 flex flex-col justify-center gap-0.5 rounded-2xl rounded-br-none border-2 border-dashed border-destaque/35 px-4 text-left"
-      >
-        <span className="font-rotulo text-[11px] font-bold tracking-[0.06em] text-suave">{verso.rotulo}</span>
-        <span className="truncate font-mono text-base text-destaque">{verso.valor}</span>
-        <span className="font-mono text-[10px] text-apagado">clique para colar de volta</span>
-      </button>
-
-      {para ? (
-        <Link to={para} className={classe} style={estilo} title={detalhe} tabIndex={descolado ? -1 : 0}>
-          {frente}
-        </Link>
-      ) : (
-        <div className={classe} style={estilo} title={detalhe}>
-          {frente}
-        </div>
-      )}
-
-      {/* A pontinha é o botão de descolar */}
-      {!descolado && (
-        <button
-          type="button"
-          onClick={() => setDescolado(true)}
-          onPointerEnter={() => setMirando(true)}
-          onPointerLeave={() => setMirando(false)}
-          aria-label={`Descolar o adesivo ${rotulo}`}
-          title="Descolar"
-          className="absolute right-0 bottom-0 z-10 size-7 cursor-pointer"
-        />
-      )}
-    </div>
+    <Adesivo
+      estilo={TINTAS[adesivo] as unknown as React.CSSProperties}
+      para={para}
+      titulo={detalhe}
+      verso={verso}
+      frente={
+        <>
+          {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.28)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
+          />
+          <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-[var(--icone-fundo)]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d={ICONES[icone]} />
+            </svg>
+          </span>
+          <div className="relative min-w-0">
+            <span className="block truncate font-rotulo text-[11px] font-bold tracking-[0.06em] text-[var(--rotulo)]">
+              {rotulo}
+              {para && <span aria-hidden> ↗</span>}
+            </span>
+            <p className="titulo text-xl leading-tight text-[var(--numero)] sm:text-2xl">{valor}</p>
+            <p className="truncate font-mono text-[10px] text-[var(--detalhe)]">{detalhe}</p>
+          </div>
+        </>
+      }
+    />
   );
 }
 
