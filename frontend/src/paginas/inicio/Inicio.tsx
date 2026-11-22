@@ -15,6 +15,7 @@ import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DecidaComContexto, Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
 import { BotaoPrimario, Container } from "./ui";
+import { jogoDoItem } from "../../lib/jogos";
 
 export function Inicio() {
   return (
@@ -70,7 +71,7 @@ function Hero() {
     <section>
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
-          <Rotulo destaque>Preços e previsões para itens de Team Fortress 2</Rotulo>
+          <Rotulo destaque>Preços e previsões de itens do Mercado da Steam</Rotulo>
           <h1 data-poleiro="texto" className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
             Seu inventário.
             <br />
@@ -147,7 +148,7 @@ function VitrineHero() {
               ) : (
                 <span>Carregando…</span>
               )}
-              <span className="font-mono text-[11px] text-apagado">TF2</span>
+              <span className="font-mono text-[11px] text-apagado">{jogoDoItem(item?.appid)?.sigla}</span>
             </div>
             <div className="mt-2 flex items-end justify-between gap-4">
               <div>

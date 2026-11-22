@@ -3,11 +3,13 @@
 // (Halloween, inverno, Unusual...). Os ícones são
 // desenhados em traço, centrados em (0, 0), cabendo num círculo de raio ~10.
 
+import { jogoDoItem } from "../../lib/jogos";
+
 export type TemaChaveiro = {
   nome: string;
   cor: string;
   icone: string; // caminho SVG em traço
-  texto?: string; // no lugar do ícone (o padrão "TF2")
+  texto?: string; // no lugar do ícone (a sigla do jogo)
 };
 
 const T = {
@@ -93,12 +95,7 @@ const T = {
   },
 } satisfies Record<string, TemaChaveiro>;
 
-/** Chaveiro de cada jogo, pelo appid da Steam. Para um jogo novo, basta acrescentar uma entrada. */
-const JOGOS: Record<number, TemaChaveiro> = {
-  440: { nome: "Team Fortress 2", cor: "#ff8c42", icone: "", texto: "TF2" },
-  730: { nome: "Counter-Strike 2", cor: "#f0b232", icone: "", texto: "CS2" },
-  252490: { nome: "Rust", cor: "#ce422b", icone: "", texto: "RUST" },
-};
+
 
 const TIPOS: [RegExp, TemaChaveiro][] = [
   [/\bkey\b/, T.chave],
@@ -129,6 +126,7 @@ export function temasDoItem(
   const tipo = TIPOS.find(([regra]) => regra.test(texto))?.[1];
   const extras = TEMAS.filter(([regra]) => regra.test(texto)).map(([, tema]) => tema);
   const doItem = [tipo, ...extras].filter((t): t is TemaChaveiro => Boolean(t)).slice(0, 3);
-  const jogo = JOGOS[item.appid];
-  return jogo ? [jogo, ...doItem] : doItem;
+  // O chaveiro do jogo (pela lista de jogos do site) vem sempre primeiro.
+  const jogo = jogoDoItem(item.appid);
+  return jogo ? [{ nome: jogo.nome, cor: jogo.cor, icone: "", texto: jogo.sigla }, ...doItem] : doItem;
 }

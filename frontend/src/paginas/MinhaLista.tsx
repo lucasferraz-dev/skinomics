@@ -5,6 +5,7 @@ import { useUsuario } from "../api/auth";
 import { type ItemAcompanhado, useAlternarAcompanhamento, useMinhaLista } from "../api/minhaLista";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { formatarInstante, formatarPreco } from "../lib/formato";
+import { jogoDoItem } from "../lib/jogos";
 
 export function MinhaLista() {
   const { data: usuario, isPending } = useUsuario();
@@ -13,7 +14,7 @@ export function MinhaLista() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
-          <Rotulo destaque>Acompanhamento / Team Fortress 2</Rotulo>
+          <Rotulo destaque>Acompanhamento</Rotulo>
           <h1 className="text-3xl titulo sm:text-4xl">Minha lista</h1>
         </div>
         <p className="max-w-sm text-sm text-suave">
@@ -80,7 +81,7 @@ function Linha({ item }: { item: ItemAcompanhado }) {
             <Link to={`/itens/${item.id}`} className="block truncate text-sm after:absolute after:inset-0">
               {item.nome}
             </Link>
-            <span className="text-xs text-apagado">{item.tipo ?? "Team Fortress 2"}</span>
+            <span className="text-xs text-apagado">{item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
           </div>
         </div>
       </td>

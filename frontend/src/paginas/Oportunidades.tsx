@@ -28,7 +28,7 @@ export function Oportunidades() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
-          <Rotulo destaque>No radar / Team Fortress 2</Rotulo>
+          <Rotulo destaque>Mercado da Steam</Rotulo>
           <h1 className="text-3xl titulo sm:text-4xl">Oportunidades</h1>
         </div>
         <p className="max-w-sm text-sm text-suave">

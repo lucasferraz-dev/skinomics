@@ -12,7 +12,7 @@ export function Terminal() {
           <Logo />
           {/* No celular não cabe ao lado da conta; o jogo já aparece nos rótulos das telas. */}
           <span className="hidden text-apagado sm:inline">/</span>
-          <span className="hidden text-sm text-suave sm:inline">Team Fortress 2</span>
+          <span className="hidden text-sm text-suave sm:inline">Mercado da Steam</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="rounded border border-borda px-2 py-1 font-mono text-[11px] text-suave">USD</span>

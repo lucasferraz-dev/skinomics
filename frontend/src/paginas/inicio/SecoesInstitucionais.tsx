@@ -11,7 +11,7 @@ import { CabecalhoSecao, Container } from "./ui";
 const PASSOS = [
   {
     titulo: "Encontre o item",
-    texto: "Busque pelo nome entre os itens de TF2 que a base acompanha.",
+    texto: "Busque pelo nome entre os itens que a base acompanha.",
     rodape: "Busca por nome",
   },
   {
@@ -230,7 +230,7 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Quais jogos são cobertos?",
-    resposta: "Por enquanto, só Team Fortress 2. Outros jogos da Steam podem entrar depois.",
+    resposta: "Hoje, itens de Team Fortress 2. Outros jogos da Steam vão entrar.",
   },
 ];
 

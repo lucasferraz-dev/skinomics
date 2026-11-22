@@ -172,7 +172,7 @@ export function Radar() {
               Todos os itens
             </span>
             <Link to="/itens" className="text-sm text-suave hover:text-texto">
-              Buscar item de TF2…
+              Buscar item…
             </Link>
           </div>
           {data ? (
@@ -202,7 +202,7 @@ export function Radar() {
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-apagado">
           <p>Preços em US$ do Mercado da Comunidade Steam. Efeitos e qualidades alteram o valor de um item.</p>
           <Link to="/itens" className="text-sm text-destaque hover:underline">
-            Explorar itens de TF2 →
+            Explorar todos os itens →
           </Link>
         </div>
       </Container>
