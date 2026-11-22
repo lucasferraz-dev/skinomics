@@ -82,7 +82,7 @@ function TerminalItem({
   const classe = "group flex min-w-0 flex-col rounded-2xl border border-borda bg-painel transition-colors";
 
   return item ? (
-    <div className="relative flex min-w-0">
+    <div className="relative flex w-[82%] min-w-0 shrink-0 snap-start sm:w-auto">
       <Link ref={card} to={`/itens/${item.id}`} data-poleiro className={`${classe} w-full hover:border-destaque/40`}>
         {cabecalho}
         {conteudo}
@@ -92,7 +92,7 @@ function TerminalItem({
       <ChaveirosDoItem item={item} parede={card} direita="1rem" className="hidden lg:block" />
     </div>
   ) : (
-    <div data-poleiro className={classe}>
+    <div data-poleiro className={`${classe} w-[82%] shrink-0 snap-start sm:w-auto`}>
       {cabecalho}
       {conteudo}
     </div>
@@ -117,14 +117,15 @@ export function DestaquesDaSemana() {
     item?.volume_7d != null ? `${formatarInteiro(item.volume_7d)} vendas em 7 dias` : "Sem vendas registradas";
 
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="Destaques da semana"
           titulo="Quem mais se mexeu nos últimos 7 dias."
           texto="Atualizado a cada coleta, com os preços do Mercado da Steam. Clique num terminal para abrir o item."
         />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* No celular, um carrossel horizontal (empilhados passariam de 1600 px); a partir do sm, grade. */}
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
           <TerminalItem
             rotulo="Maior alta em 7 dias"
             medalha="alta"

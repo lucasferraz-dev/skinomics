@@ -76,11 +76,11 @@ function Hero() {
         <div className="space-y-7">
           <Rotulo destaque>Preços e previsões de itens do Mercado da Steam</Rotulo>
           <h1 data-poleiro="texto" className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
-            Seu inventário.
+            O preço de hoje.
             <br />
-            Seu próximo
+            O de daqui a
             <br />
-            <span className="text-destaque">movimento.</span>
+            <span className="text-destaque">30 dias.</span>
           </h1>
           <p className="max-w-md text-lg text-suave">
             Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a
@@ -188,7 +188,10 @@ function VitrineHero() {
         {/* Chaveiros do item (o que ele é, evento e qualidade), pendurados embaixo do card, que é parede para eles */}
         <ChaveirosDoItem item={item} parede={card} direita="1.5rem" />
       </div>
-      <p className="mt-4">
+      {/* No celular, espaço para os chaveiros pendurados, que senão cairiam sobre os adesivos de baixo */}
+      <div aria-hidden className="h-24 sm:hidden" />
+      {/* No celular os chaveiros pendem justamente sobre esta legenda; ela só aparece do sm em diante. */}
+      <p className="mt-4 hidden sm:block">
         <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>
       </p>
     </div>
@@ -263,8 +266,9 @@ function Destaques() {
   ];
 
   return (
-    <section>
-      <Container className="grid grid-cols-2 gap-3 py-5 lg:grid-cols-4">
+    // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
+    <section className="overflow-x-clip">
+      <Container className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
         {indicadores.map((indicador, i) => (
           <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
         ))}

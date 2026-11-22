@@ -2,41 +2,51 @@ import { useModelosAtivos } from "../../api/modelos";
 import { Rotulo } from "../../componentes/Basicos";
 import { CabecalhoSecao, Container } from "./ui";
 
+// "Como funciona" em uma faixa compacta: três passos com ícone e uma frase curta, ligados por uma linha.
 const PASSOS = [
   {
-    titulo: "Encontre o item",
-    texto: "Busque pelo nome entre os itens que a base acompanha.",
-    rodape: "Busca por nome",
+    titulo: "Busque o item",
+    texto: "pelo nome, entre os itens monitorados",
+    icone: "M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 20 20",
   },
   {
     titulo: "Veja histórico e previsão",
-    texto: "O gráfico mostra o preço de cada dia e a previsão para 7, 15 ou 30 dias, com a faixa de 80%.",
-    rodape: "Um modelo por horizonte",
+    texto: "7, 15 ou 30 dias, com faixa de 80%",
+    icone: "M4 18 9 12l4 3 7-9M15 6h5v5",
   },
   {
-    titulo: "Acompanhe e compare",
-    texto: "Salve itens na sua lista ou veja o ranking de oportunidades, com o risco de cada uma.",
-    rodape: "Minha lista e Oportunidades",
+    titulo: "Acompanhe",
+    texto: "na sua lista ou no ranking de oportunidades",
+    icone: "M7 4h10v16l-5-3.5L7 20z",
   },
 ];
 
-/** Seção 4 */
+/** Seção 4: como funciona, em três passos. */
 export function FluxoSimples() {
   return (
-    <section id="como-funciona" className="scroll-mt-16 py-20 sm:py-28">
-      <Container className="space-y-12">
-        <CabecalhoSecao
-          rotulo="Como funciona"
-          titulo="Do item à previsão, em três passos."
-          texto="Tudo parte dos preços públicos do Mercado da Comunidade Steam."
-        />
-        <ol className="grid gap-10 md:grid-cols-3">
+    <section id="como-funciona" className="scroll-mt-16 py-14 sm:py-20">
+      <Container className="space-y-8">
+        <Rotulo destaque>Como funciona</Rotulo>
+        <ol className="relative grid gap-8 md:grid-cols-3 md:gap-6">
+          {/* Linha tracejada ligando os passos (só lado a lado) */}
+          <span
+            aria-hidden
+            className="absolute top-6 right-[16%] left-[16%] hidden border-t-2 border-dashed border-destaque/25 md:block"
+          />
           {PASSOS.map((passo, i) => (
-            <li key={passo.titulo} className="space-y-4">
-              <span className="block border-b border-borda pb-3 font-mono text-sm text-destaque">Passo {i + 1}</span>
-              <h3 className="text-xl">{passo.titulo}</h3>
-              <p className="text-sm text-suave">{passo.texto}</p>
-              <Rotulo>{passo.rodape}</Rotulo>
+            <li key={passo.titulo} className="relative flex items-center gap-4 md:flex-col md:text-center">
+              <span className="relative grid size-12 shrink-0 place-items-center rounded-full border border-destaque/40 bg-fundo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-destaque)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d={passo.icone} />
+                </svg>
+                <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-destaque font-mono text-[10px] font-bold text-fundo">
+                  {i + 1}
+                </span>
+              </span>
+              <div className="space-y-0.5">
+                <h3 className="text-lg">{passo.titulo}</h3>
+                <p className="text-sm text-suave">{passo.texto}</p>
+              </div>
             </li>
           ))}
         </ol>
@@ -86,7 +96,7 @@ function TextoQualidade() {
 /** Transparência: de onde vêm os números e os limites do produto. */
 export function Transparencia() {
   return (
-    <section id="transparencia" className="scroll-mt-16 py-20 sm:py-28">
+    <section id="transparencia" className="scroll-mt-16 py-14 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo="Transparência"
@@ -130,7 +140,7 @@ const PERGUNTAS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="scroll-mt-16 py-20 sm:py-28">
+    <section id="faq" className="scroll-mt-16 py-14 sm:py-28">
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-4">
           <Rotulo destaque>FAQ</Rotulo>

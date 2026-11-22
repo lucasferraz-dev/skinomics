@@ -17,7 +17,7 @@ export function PreviaDaPlataforma() {
   const card = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="plataforma" className="scroll-mt-16 py-20 sm:py-28">
+    <section id="plataforma" className="scroll-mt-16 py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="Prévia"
@@ -46,7 +46,7 @@ export function PreviaDaPlataforma() {
 
             <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
               <div className="min-w-0 space-y-4">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                   <div className="flex min-w-0 items-center gap-3">
                     {item && <IconeItem url={item.icon_url} nome={item.nome} tamanho={44} />}
                     <div className="min-w-0">
@@ -69,7 +69,7 @@ export function PreviaDaPlataforma() {
                       {item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}
                     </span>
                     <Variacao valor={item?.variacao_7d} sufixo="7d" />
-                    <span className="ml-auto font-mono text-[11px] text-apagado">90 dias</span>
+                    <span className="ml-auto hidden font-mono text-[11px] text-apagado sm:inline">90 dias</span>
                   </div>
                   {pontos ? <GraficoHistorico pontos={pontos} altura={260} /> : <div className="h-[260px]"><Carregando /></div>}
                 </div>
@@ -151,7 +151,7 @@ export function Radar() {
   const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 5 });
 
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="No radar"
