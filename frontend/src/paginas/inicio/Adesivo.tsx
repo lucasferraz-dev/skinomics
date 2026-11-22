@@ -10,7 +10,7 @@ type Ponto = { x: number; y: number };
 
 const PONTA_PARADO = 9; // px: tamanho da pontinha descolada em repouso
 const PONTA_MIRANDO = 15; // ... com o mouse em cima
-const PARTE_COLADA = 0.22; // fração da largura que nunca descola
+const PARTE_COLADA = 0.15; // fração da largura (à esquerda) que nunca descola
 
 /** Divide o retângulo pela dobra: o que continua colado e a aba (já espelhada sobre a dobra). */
 function dobrar(largura: number, altura: number, puxado: Ponto) {
@@ -141,10 +141,11 @@ export function Adesivo({
 
   const pontoLocal = (evento: React.PointerEvent) => {
     const r = raiz.current!.getBoundingClientRect();
-    // Limites: sempre sobra uma faixa colada à esquerda, e a ponta não vai longe do adesivo.
+    // A dobra fica no meio do caminho entre o canto e o cursor, então o cursor pode ir além da borda
+    // esquerda: o limite é a dobra, que sempre deixa uma faixa colada de PARTE_COLADA da largura.
     return {
-      x: Math.min(Math.max(evento.clientX - r.left, r.width * PARTE_COLADA), r.width),
-      y: Math.min(Math.max(evento.clientY - r.top, -r.height * 0.3), r.height),
+      x: Math.min(Math.max(evento.clientX - r.left, r.width * (2 * PARTE_COLADA - 1)), r.width),
+      y: Math.min(Math.max(evento.clientY - r.top, -r.height), r.height),
     };
   };
 
