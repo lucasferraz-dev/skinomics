@@ -8,7 +8,7 @@ import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
-import { formatarData, formatarPreco } from "../../lib/formato";
+import { formatarDataNumerica, formatarPreco } from "../../lib/formato";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DecidaComContexto, Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
@@ -170,7 +170,7 @@ function Destaques() {
     { rotulo: "Itens monitorados", valor: itens?.total ?? "—", detalhe: "Mercado da Steam · TF2", icone: "itens" },
     {
       rotulo: "Última cotação",
-      valor: dataCotacao ? formatarData(dataCotacao) : "—",
+      valor: dataCotacao ? formatarDataNumerica(dataCotacao) : "—",
       detalhe: "Atualizada a cada coleta",
       icone: "calendario",
     },
