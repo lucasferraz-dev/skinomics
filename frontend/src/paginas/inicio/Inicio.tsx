@@ -214,45 +214,66 @@ function Destaques() {
 
   return (
     <section className="border-y border-borda">
-      <Container className="grid grid-cols-2 gap-3 py-6 sm:gap-4 lg:grid-cols-4">
-        {indicadores.map((indicador) => (
-          <CardIndicador key={indicador.rotulo} {...indicador} />
+      <Container className="grid grid-cols-2 gap-4 py-7 sm:gap-6 lg:grid-cols-4">
+        {indicadores.map((indicador, i) => (
+          <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
         ))}
       </Container>
     </section>
   );
 }
 
-function CardIndicador({ rotulo, valor, detalhe, icone, para }: Indicador) {
+// Os indicadores são adesivos: cor própria, borda creme de recorte, sombra de colado e cada um
+// levemente torto, como colado à mão.
+const ADESIVOS = [
+  { cor: "#c6f36b", giro: -2.2 },
+  { cor: "#ffb36b", giro: 1.6 },
+  { cor: "#c9b3ff", giro: -1.2 },
+  { cor: "#9fdcff", giro: 2.1 },
+] as const;
+
+function CardIndicador({ rotulo, valor, detalhe, icone, para, adesivo }: Indicador & { adesivo: (typeof ADESIVOS)[number] }) {
   const conteudo = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <span className="grid size-10 place-items-center rounded-xl border border-destaque/20 bg-destaque-fundo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-destaque)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.45)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
+      />
+      <div className="relative flex items-start justify-between gap-3">
+        <span className="grid size-10 place-items-center rounded-full bg-[#0b0d0c] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.08)]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={adesivo.cor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d={ICONES[icone]} />
           </svg>
         </span>
         {para && (
-          <span className="font-mono text-sm text-apagado transition-colors group-hover:text-destaque" aria-hidden>
+          <span className="font-mono text-base text-[#0b0d0c]/60 transition-colors group-hover:text-[#0b0d0c]" aria-hidden>
             ↗
           </span>
         )}
       </div>
-      <div className="space-y-1">
-        <Rotulo>{rotulo}</Rotulo>
-        <p className="font-mono text-2xl sm:text-3xl">{valor}</p>
-        <p className="font-mono text-[11px] text-apagado">{detalhe}</p>
+      <div className="relative space-y-1 text-[#0b0d0c]">
+        <span className="block font-rotulo text-[12px] font-bold tracking-[0.06em] text-[#0b0d0c]/75">{rotulo}</span>
+        <p className="titulo text-2xl leading-none sm:text-[2rem]">{valor}</p>
+        <p className="font-mono text-[11px] text-[#0b0d0c]/65">{detalhe}</p>
       </div>
     </>
   );
-  const classe = "flex flex-col justify-between gap-6 rounded-2xl border border-borda bg-painel p-4 sm:p-5";
+  // Borda creme (o recorte do adesivo) + sombra de colado; endireita e levanta ao passar o mouse.
+  const classe =
+    "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-[20px] p-4 sm:p-5 " +
+    "shadow-[0_0_0_4px_#f3efe4,0_14px_26px_-6px_rgba(0,0,0,0.75)] " +
+    "[rotate:var(--giro)] transition-[rotate,translate] duration-300 hover:[rotate:0deg] hover:-translate-y-1";
+  const estilo = { background: adesivo.cor, "--giro": `${adesivo.giro}deg` } as React.CSSProperties;
 
   return para ? (
-    <Link to={para} data-poleiro className={`group ${classe} transition-colors hover:border-destaque/40`}>
+    <Link to={para} data-poleiro className={classe} style={estilo}>
       {conteudo}
     </Link>
   ) : (
-    <div data-poleiro className={classe}>{conteudo}</div>
+    <div data-poleiro className={classe} style={estilo}>
+      {conteudo}
+    </div>
   );
 }
 
