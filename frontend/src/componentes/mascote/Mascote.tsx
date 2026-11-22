@@ -2,16 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { type ItemResumo, useItens } from "../../api/itens";
 import { formatarVariacao } from "../../lib/formato";
+import { coletarPoleiros, type Poleiro, visivel } from "./poleiros";
 
-// O Caixote: mascote do Skinomics. Anda pela base da tela, para de vez em quando, segue o cursor
-// com os olhos e, quando clicado, pula e conta um dado real da base. Dá para escondê-lo; a escolha
-// fica no navegador. Com "reduzir movimento" ligado ele fica parado num canto.
+// O corvo do Skinomics. Pousa no topo dos cards e das letras dos títulos (elementos com
+// `data-poleiro`), anda aos pulinhos por eles e salta em arco para o próximo. Se o poleiro sai da
+// tela com a rolagem, voa até um visível. Clicado, mostra um dado real da base. Dá para escondê-lo;
+// com "reduzir movimento" fica pousado, parado. Precisa de um pai com `position: relative`.
 
-const LARGURA = 56;
-const MARGEM = 16;
-const VELOCIDADE = 42; // px/s
+const LARGURA = 58;
+const ALTURA = 53;
+const PASSO = 38; // px/s andando
 const CHAVE_OCULTO = "skinomics:mascote-oculto";
 const VOLUME_MINIMO = 50;
+
+type Modo = "parado" | "andando" | "pulando" | "voando";
+type Salto = { x0: number; y0: number; x1: number; y1: number; inicio: number; duracao: number; arco: number };
 
 const sortear = (min: number, max: number) => min + Math.random() * (max - min);
 
@@ -23,117 +28,216 @@ function lerOculto() {
   }
 }
 
-function frases(itens: ItemResumo[]): string[] {
+function boletim(itens: ItemResumo[]): string[] {
   const negociados = itens.filter((item) => item.variacao_7d != null && (item.volume_7d ?? 0) >= VOLUME_MINIMO);
-  const porVariacao = [...negociados].sort((a, b) => b.variacao_7d! - a.variacao_7d!);
-  const alta = porVariacao[0];
-  const queda = porVariacao[porVariacao.length - 1];
-  const lista = [
-    "Eu sou o Caixote. Não, não tenho nada dentro.",
-    "Clica de novo. Eu gosto de pular.",
-  ];
-  if (alta && alta.variacao_7d! > 0) lista.push(`Psst… ${alta.nome} subiu ${formatarVariacao(alta.variacao_7d!)} esta semana.`);
-  if (queda && queda.variacao_7d! < 0) lista.push(`${queda.nome} caiu ${formatarVariacao(queda.variacao_7d!)} em 7 dias. Ai.`);
-  if (itens.length) lista.push(`Eu confiro o preço de ${itens.length} itens todo dia. Sozinho.`);
-  return lista;
+  const ordem = [...negociados].sort((a, b) => b.variacao_7d! - a.variacao_7d!);
+  const alta = ordem[0];
+  const queda = ordem[ordem.length - 1];
+  const linhas: string[] = [];
+  if (alta && alta.variacao_7d! > 0) linhas.push(`Maior alta em 7 dias: ${alta.nome}, ${formatarVariacao(alta.variacao_7d!)}.`);
+  if (queda && queda.variacao_7d! < 0) linhas.push(`Maior queda em 7 dias: ${queda.nome}, ${formatarVariacao(queda.variacao_7d!)}.`);
+  const maisNegociado = [...negociados].sort((a, b) => (b.volume_7d ?? 0) - (a.volume_7d ?? 0))[0];
+  if (maisNegociado) linhas.push(`Mais negociado da semana: ${maisNegociado.nome}.`);
+  if (itens.length) linhas.push(`${itens.length} itens sob observação.`);
+  return linhas;
 }
 
 export function Mascote() {
   const [oculto, setOculto] = useState(lerOculto);
-  const [andando, setAndando] = useState(false);
-  const [pulando, setPulando] = useState(false);
+  const [modo, setModo] = useState<Modo>("parado");
+  const [direcao, setDirecao] = useState(1);
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
-  const corpo = useRef<SVGGElement>(null);
-  const pupilas = useRef<(SVGCircleElement | null)[]>([]);
-  const estado = useRef({ x: MARGEM, direcao: 1, ateParar: sortear(3, 7), pausaAte: 0, falando: false });
+  const falando = useRef(false);
   const { data } = useItens({ por_pagina: 100 });
-  const repertorio = useMemo(() => frases(data?.itens ?? []), [data]);
-  const ultimaFrase = useRef(-1);
+  const linhas = useMemo(() => boletim(data?.itens ?? []), [data]);
+  const ultimaLinha = useRef(-1);
 
-  // Caminhada: um laço de animação que só mexe no estilo, sem renderizar o React a cada quadro.
   useEffect(() => {
     if (oculto) return;
-    const s = estado.current;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      raiz.current?.style.setProperty("transform", `translateX(${MARGEM}px)`);
-      return;
-    }
+    const el = raiz.current;
+    const pai = el?.parentElement;
+    if (!el || !pai) return;
+    const calmo = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let poleiros: Poleiro[] = [];
+    let atualizadoEm = 0;
+    let atual: Poleiro | null = null;
+    let x = 0;
+    let y = 0;
+    let alvoX = 0;
+    let ate = 0;
+    let invisivelDesde = 0;
+    let salto: Salto | null = null;
+    let destino: Poleiro | null = null;
+    let modoAgora: Modo = "parado";
+    let direcaoAgora = 1;
     let anterior = performance.now();
     let quadro = 0;
-    let andandoAgora = false;
-    const mudarAndando = (valor: boolean) => {
-      if (valor !== andandoAgora) {
-        andandoAgora = valor;
-        setAndando(valor);
+
+    const mudarModo = (novo: Modo) => {
+      if (novo !== modoAgora) {
+        modoAgora = novo;
+        setModo(novo);
       }
     };
+    const olharPara = (dx: number) => {
+      const nova = dx < 0 ? -1 : 1;
+      if (dx !== 0 && nova !== direcaoAgora) {
+        direcaoAgora = nova;
+        setDirecao(nova);
+      }
+    };
+    const desenhar = (bob = 0) => {
+      el.style.transform = `translate(${x - LARGURA / 2}px, ${y - ALTURA + bob}px)`;
+      el.style.opacity = atual || salto ? "1" : "0";
+    };
+    const atualizarPoleiros = (agora: number) => {
+      poleiros = coletarPoleiros(pai.getBoundingClientRect());
+      atualizadoEm = agora;
+      if (atual) {
+        // O layout muda (imagens carregando, redimensionamento): acompanha o poleiro onde está.
+        const mesmo = poleiros.find((p) => p.chave === atual!.chave);
+        if (mesmo) {
+          atual = mesmo;
+          y = mesmo.y;
+          x = Math.min(Math.max(x, mesmo.x0), mesmo.x1);
+        } else {
+          atual = null;
+        }
+      }
+    };
+    const saltarPara = (p: Poleiro, agora: number, voando: boolean, ref?: DOMRect) => {
+      if (voando && ref) {
+        // Vindo de longe (o poleiro saiu da tela): entra pela borda da tela, sem atravessar a página.
+        const topoTela = -ref.top + 60;
+        const baseTela = -ref.top + window.innerHeight + 40;
+        y = Math.min(Math.max(y, topoTela), baseTela);
+      }
+      const x1 = sortear(p.x0, p.x1);
+      const distancia = Math.hypot(x1 - x, p.y - y);
+      salto = {
+        x0: x,
+        y0: y,
+        x1,
+        y1: p.y,
+        inicio: agora,
+        duracao: voando ? Math.min(600 + distancia * 1.1, 1400) : 380 + distancia * 0.9,
+        arco: voando ? 70 + distancia * 0.15 : 28 + Math.max(0, y - p.y) * 0.35,
+      };
+      destino = p;
+      atual = null;
+      olharPara(x1 - x);
+      mudarModo(voando ? "voando" : "pulando");
+    };
+    const decidir = (agora: number, ref: DOMRect) => {
+      if (!atual) return;
+      const largura = atual.x1 - atual.x0;
+      if (largura > 80 && Math.random() < 0.5) {
+        alvoX = sortear(atual.x0, atual.x1);
+        olharPara(alvoX - x);
+        mudarModo("andando");
+        return;
+      }
+      const vizinhos = poleiros
+        .filter((p) => p.chave !== atual!.chave && visivel(p, ref))
+        .map((p) => ({ p, d: Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) }))
+        .filter(({ d }) => d < 650)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 4);
+      const escolhido = vizinhos[Math.floor(Math.random() * vizinhos.length)];
+      if (escolhido) {
+        saltarPara(escolhido.p, agora, false);
+      } else {
+        ate = agora + sortear(1500, 3000);
+      }
+    };
+
     const passo = (agora: number) => {
       const dt = Math.min((agora - anterior) / 1000, 0.05);
       anterior = agora;
-      const limite = window.innerWidth - LARGURA - MARGEM;
-      if (s.falando || agora < s.pausaAte) {
-        mudarAndando(false);
-      } else {
-        mudarAndando(true);
-        s.x += s.direcao * VELOCIDADE * dt;
-        s.ateParar -= dt;
-        if (s.x <= MARGEM || s.x >= limite) {
-          s.x = Math.min(Math.max(s.x, MARGEM), limite);
-          s.direcao *= -1;
-        }
-        if (s.ateParar <= 0) {
-          s.pausaAte = agora + sortear(1500, 4000);
-          s.ateParar = sortear(3, 8);
-          if (Math.random() < 0.4) s.direcao *= -1;
+      const ref = pai.getBoundingClientRect();
+      if (agora - atualizadoEm > 1200) atualizarPoleiros(agora);
+
+      // Primeiro pouso: no título principal, se estiver na tela; senão em qualquer poleiro visível.
+      if (!atual && !salto) {
+        const inicial = poleiros.find((p) => visivel(p, ref));
+        if (inicial) {
+          atual = inicial;
+          x = sortear(inicial.x0, Math.min(inicial.x1, inicial.x0 + 200));
+          y = inicial.y;
+          ate = agora + sortear(1200, 2500);
         }
       }
-      raiz.current?.style.setProperty("transform", `translateX(${s.x}px)`);
-      corpo.current?.setAttribute("transform", s.direcao < 0 ? "translate(56 0) scale(-1 1)" : "");
+
+      let bob = 0;
+      if (salto) {
+        const t = Math.min((agora - salto.inicio) / salto.duracao, 1);
+        x = salto.x0 + (salto.x1 - salto.x0) * t;
+        y = salto.y0 + (salto.y1 - salto.y0) * t - salto.arco * 4 * t * (1 - t);
+        if (t >= 1) {
+          atual = destino;
+          salto = null;
+          mudarModo("parado");
+          ate = agora + sortear(700, 2500);
+        }
+      } else if (atual && !calmo) {
+        if (!visivel(atual, ref)) {
+          // O poleiro saiu da tela: depois de um instante, voa para um visível.
+          invisivelDesde ||= agora;
+          if (agora - invisivelDesde > 600) {
+            const opcoes = poleiros.filter((p) => visivel(p, ref));
+            const alvo = opcoes[Math.floor(Math.random() * opcoes.length)];
+            if (alvo) saltarPara(alvo, agora, true, ref);
+            invisivelDesde = 0;
+          }
+        } else {
+          invisivelDesde = 0;
+          if (modoAgora === "andando") {
+            const dx = alvoX - x;
+            x += Math.sign(dx) * Math.min(Math.abs(dx), PASSO * dt);
+            bob = -Math.abs(Math.sin(agora / 70)) * 2.5; // pulinhos curtos, como um corvo andando
+            if (Math.abs(dx) < 1) {
+              mudarModo("parado");
+              ate = agora + sortear(800, 2500);
+            }
+          } else if (agora > ate && !falando.current) {
+            decidir(agora, ref);
+          }
+        }
+      }
+
+      desenhar(bob);
       quadro = requestAnimationFrame(passo);
     };
-    quadro = requestAnimationFrame(passo);
-    return () => cancelAnimationFrame(quadro);
-  }, [oculto]);
 
-  // Olhos seguem o cursor.
-  useEffect(() => {
-    if (oculto) return;
-    const olhar = (evento: PointerEvent) => {
-      const caixa = raiz.current?.getBoundingClientRect();
-      if (!caixa) return;
-      const dx = evento.clientX - (caixa.left + LARGURA / 2);
-      const dy = evento.clientY - (caixa.top + 30);
-      const d = Math.hypot(dx, dy) || 1;
-      // O corpo espelhado inverte o eixo x dos olhos.
-      const ox = ((dx / d) * 2.4) * estado.current.direcao;
-      const oy = (dy / d) * 2.4;
-      pupilas.current.forEach((pupila) => pupila?.setAttribute("transform", `translate(${ox} ${oy})`));
+    const aoRedimensionar = () => (atualizadoEm = 0);
+    window.addEventListener("resize", aoRedimensionar);
+    quadro = requestAnimationFrame(passo);
+    return () => {
+      cancelAnimationFrame(quadro);
+      window.removeEventListener("resize", aoRedimensionar);
     };
-    window.addEventListener("pointermove", olhar);
-    return () => window.removeEventListener("pointermove", olhar);
   }, [oculto]);
 
   useEffect(() => {
     if (!fala) return;
-    estado.current.falando = true;
+    falando.current = true;
     const id = setTimeout(() => {
       setFala(null);
-      estado.current.falando = false;
-    }, 4500);
+      falando.current = false;
+    }, 5000);
     return () => clearTimeout(id);
   }, [fala]);
 
   if (oculto) return null;
 
-  function cutucar() {
-    setPulando(false);
-    requestAnimationFrame(() => setPulando(true));
-    if (!repertorio.length) return;
-    let indice = Math.floor(Math.random() * repertorio.length);
-    if (indice === ultimaFrase.current) indice = (indice + 1) % repertorio.length;
-    ultimaFrase.current = indice;
-    setFala(repertorio[indice]!);
+  function grasnar() {
+    if (!linhas.length) return;
+    let indice = Math.floor(Math.random() * linhas.length);
+    if (indice === ultimaLinha.current) indice = (indice + 1) % linhas.length;
+    ultimaLinha.current = indice;
+    setFala(linhas[indice]!);
   }
 
   function esconder() {
@@ -145,80 +249,81 @@ export function Mascote() {
     }
   }
 
+  const asasAbertas = modo === "voando" || modo === "pulando";
+
   return (
-    <div ref={raiz} className="pointer-events-none fixed bottom-2 left-0 z-30 select-none" style={{ width: LARGURA }}>
+    <div
+      ref={raiz}
+      className="pointer-events-none absolute top-0 left-0 z-30 opacity-0 transition-opacity duration-300 select-none"
+      style={{ width: LARGURA, height: ALTURA }}
+    >
       {fala && (
         <p
           role="status"
-          className="pointer-events-auto absolute bottom-full left-1/2 mb-2 w-max max-w-56 -translate-x-1/2 rounded-xl border border-borda bg-painel px-3 py-2 text-xs text-texto shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+          className="absolute bottom-full left-1/2 mb-1 w-max max-w-64 -translate-x-1/2 rounded-lg border border-borda bg-painel px-3 py-2 font-mono text-[11px] leading-snug text-texto shadow-[0_8px_24px_rgba(0,0,0,0.7)]"
         >
           {fala}
         </p>
       )}
-      <div className="group pointer-events-auto relative">
+      <div className="group pointer-events-auto relative size-full">
         <button
           type="button"
           onClick={esconder}
-          aria-label="Esconder o mascote"
-          className="absolute -top-1 -right-2 z-10 grid size-5 place-items-center rounded-full border border-borda bg-painel text-[11px] text-suave opacity-0 transition-opacity group-hover:opacity-100 hover:text-texto focus:opacity-100"
+          aria-label="Esconder o corvo"
+          className="absolute -top-3 -right-3 z-10 grid size-5 place-items-center rounded-full border border-borda bg-painel text-[11px] text-suave opacity-0 transition-opacity group-hover:opacity-100 hover:text-texto focus:opacity-100"
         >
           ×
         </button>
-        <button
-          type="button"
-          onClick={cutucar}
-          onAnimationEnd={() => setPulando(false)}
-          aria-label="Caixote, o mascote do Skinomics"
-          title="Caixote"
-          className={`block cursor-pointer ${pulando ? "animate-pulo" : ""}`}
-        >
-          <svg width={LARGURA} height="64" viewBox="0 0 56 64" aria-hidden>
-            <ellipse cx="28" cy="61" rx="15" ry="2.5" fill="#000" fillOpacity="0.5" />
-            <g ref={corpo}>
+        <button type="button" onClick={grasnar} aria-label="Corvo do Skinomics" className="block size-full cursor-pointer">
+          <svg viewBox="0 0 48 44" className="size-full overflow-visible" aria-hidden>
+            <g transform={direcao < 0 ? "translate(48 0) scale(-1 1)" : undefined}>
               {/* Pernas */}
-              {[21, 35].map((x, i) => (
-                <line
-                  key={x}
-                  x1={x}
-                  y1="46"
-                  x2={x}
-                  y2="58"
+              <g stroke="#4b524c" strokeWidth="1.5" strokeLinecap="round" fill="none">
+                <path d="M23 34 22 43m-3 0h5.5" />
+                <path d="M28 34 29 43m-3 0h5.5" />
+              </g>
+              {/* Cauda em cunha */}
+              <path
+                d="M15 27 1 32.5 2.5 36 17 31.5Z"
+                fill="#0b0c0b"
+                stroke="var(--color-destaque)"
+                strokeOpacity="0.4"
+                strokeWidth="0.7"
+                strokeLinejoin="round"
+              />
+              {/* Corpo e cabeça, angulosos, com as penas eriçadas da garganta */}
+              <path
+                d="M13 30 17 21 26 16.5 33 16 35.5 10 40 6.5 44.5 7.5 46 11 43 14.5 41.4 16.6 43 17 41.2 19.6 40 25 34 31 26 35 18 34.5Z"
+                fill="#0b0c0b"
+                stroke="var(--color-destaque)"
+                strokeOpacity="0.55"
+                strokeWidth="0.7"
+                strokeLinejoin="round"
+              />
+              {/* Bico grosso */}
+              <path d="M44.2 7.6C47.2 7.9 50 9.4 51.8 11.6L45.2 13.6Z" fill="#2d322e" stroke="#0b0c0b" strokeWidth="0.4" />
+              <path d="M45.2 11.3 50.6 11.5" stroke="#0b0c0b" strokeWidth="0.4" />
+              {/* Olho */}
+              <circle cx="41.4" cy="9.9" r="1" fill="var(--color-destaque)" />
+              {/* Asa: fechada pousado, erguida no salto, batendo no voo */}
+              <g
+                className={modo === "voando" ? "animate-bater-asas" : ""}
+                style={{
+                  transformBox: "fill-box",
+                  transformOrigin: "80% 15%",
+                  transform: asasAbertas && modo !== "voando" ? "rotate(-35deg)" : undefined,
+                  transition: "transform 120ms",
+                }}
+              >
+                <path
+                  d="M17 26 25 19.5 37 19.5 33 26.5 22 30Z"
+                  fill="#141714"
                   stroke="var(--color-destaque)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  className={andando ? "animate-passo" : ""}
-                  style={{
-                    transformBox: "fill-box",
-                    transformOrigin: "top center",
-                    animationDirection: i === 0 ? "alternate" : "alternate-reverse",
-                  }}
+                  strokeOpacity="0.45"
+                  strokeWidth="0.6"
+                  strokeLinejoin="round"
                 />
-              ))}
-              <g className={andando ? "animate-gingado" : ""}>
-                {/* Caixa e tampa */}
-                <rect x="6" y="18" width="44" height="30" rx="6" fill="#0f120f" stroke="var(--color-destaque)" strokeWidth="2" />
-                <line x1="18" y1="20" x2="18" y2="46" stroke="var(--color-destaque)" strokeOpacity="0.2" strokeWidth="1.5" />
-                <line x1="38" y1="20" x2="38" y2="46" stroke="var(--color-destaque)" strokeOpacity="0.2" strokeWidth="1.5" />
-                <rect x="3" y="10" width="50" height="10" rx="4" fill="#141914" stroke="var(--color-destaque)" strokeWidth="2" />
-                {/* Olhos */}
-                <g className="animate-piscar" style={{ transformBox: "fill-box", transformOrigin: "center" }}>
-                  {[21, 35].map((x, i) => (
-                    <g key={x}>
-                      <circle cx={x} cy="31" r="6" fill="#e9ece7" />
-                      <circle
-                        ref={(el) => {
-                          pupilas.current[i] = el;
-                        }}
-                        cx={x}
-                        cy="31"
-                        r="2.7"
-                        fill="#000"
-                      />
-                    </g>
-                  ))}
-                </g>
-                {/* Boca */}
-                <path d="M25 40.5q3 2.6 6 0" fill="none" stroke="var(--color-destaque)" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M22 28.5 29 22.5M26.5 28 33 22" stroke="var(--color-destaque)" strokeOpacity="0.25" strokeWidth="0.5" />
               </g>
             </g>
           </svg>

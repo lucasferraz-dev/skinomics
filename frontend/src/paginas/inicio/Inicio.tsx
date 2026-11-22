@@ -18,7 +18,7 @@ import { BotaoPrimario, Container } from "./ui";
 
 export function Inicio() {
   return (
-    <div className="min-h-dvh">
+    <div className="relative min-h-dvh">
       <Navegacao />
       <main>
         <Hero />
@@ -71,7 +71,7 @@ function Hero() {
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
           <Rotulo destaque>Preços e previsões para itens de Team Fortress 2</Rotulo>
-          <h1 className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
+          <h1 data-poleiro="texto" className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
             Seu inventário.
             <br />
             Seu próximo
@@ -111,7 +111,7 @@ function VitrineHero() {
   return (
     <div>
       <div className="relative">
-        <div ref={card} className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
+        <div ref={card} data-poleiro className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
           {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
@@ -246,11 +246,11 @@ function CardIndicador({ rotulo, valor, detalhe, icone, para }: Indicador) {
   const classe = "flex flex-col justify-between gap-6 rounded-2xl border border-borda bg-painel p-4 sm:p-5";
 
   return para ? (
-    <Link to={para} className={`group ${classe} transition-colors hover:border-destaque/40`}>
+    <Link to={para} data-poleiro className={`group ${classe} transition-colors hover:border-destaque/40`}>
       {conteudo}
     </Link>
   ) : (
-    <div className={classe}>{conteudo}</div>
+    <div data-poleiro className={classe}>{conteudo}</div>
   );
 }
 

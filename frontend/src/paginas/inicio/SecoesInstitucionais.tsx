@@ -53,7 +53,7 @@ export function FluxoSimples() {
 
 function Cartao({ titulo, texto, children, className = "" }: { titulo: string; texto: string; children: ReactNode; className?: string }) {
   return (
-    <div className={`space-y-5 rounded-2xl border border-borda bg-painel p-6 ${className}`}>
+    <div data-poleiro className={`space-y-5 rounded-2xl border border-borda bg-painel p-6 ${className}`}>
       <div className="space-y-2">
         <h3 className="text-xl">{titulo}</h3>
         <p className="text-sm text-suave">{texto}</p>
@@ -201,7 +201,7 @@ export function Transparencia() {
         />
         <div className="grid gap-4 md:grid-cols-3">
           {COMPROMISSOS.map(({ titulo, texto }) => (
-            <div key={titulo} className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
+            <div key={titulo} data-poleiro className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
               <h3 className="text-lg">{titulo}</h3>
               <p className="text-sm text-suave">{texto}</p>
             </div>
@@ -240,7 +240,7 @@ export function Faq() {
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-4">
           <Rotulo destaque>FAQ</Rotulo>
-          <h2 className="text-4xl titulo sm:text-5xl">Perguntas frequentes</h2>
+          <h2 data-poleiro="texto" className="text-4xl titulo sm:text-5xl">Perguntas frequentes</h2>
         </div>
         <div className="divide-y divide-borda border-y border-borda">
           {PERGUNTAS.map(({ pergunta, resposta }) => (

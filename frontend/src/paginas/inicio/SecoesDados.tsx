@@ -33,7 +33,7 @@ export function PreviaDaPlataforma() {
         />
 
         <div className="relative">
-          <div ref={card} className="overflow-hidden rounded-2xl border border-borda bg-painel">
+          <div ref={card} data-poleiro className="overflow-hidden rounded-2xl border border-borda bg-painel">
             <div className="flex h-12 items-center justify-between border-b border-borda px-4">
               <span className="flex items-center gap-2.5 text-sm font-semibold">
                 <MarcaLogo tamanho={18} />

@@ -36,7 +36,7 @@ export function CabecalhoSecao({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:gap-16">
       <div className="max-w-2xl space-y-4">
         <Rotulo destaque>{rotulo}</Rotulo>
-        <h2 className="text-4xl leading-[1.08] titulo sm:text-5xl">{titulo}</h2>
+        <h2 data-poleiro="texto" className="text-4xl leading-[1.08] titulo sm:text-5xl">{titulo}</h2>
       </div>
       <div className="space-y-3">
         <p className="text-suave">{texto}</p>
