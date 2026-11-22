@@ -103,7 +103,7 @@ function Hero() {
 }
 
 function VitrineHero() {
-  const { item, pontos } = useItemVitrine(30);
+  const { item, pontos, motivo, trocar } = useItemVitrine(30);
   const card = useRef<HTMLDivElement>(null);
 
   return (
@@ -114,16 +114,37 @@ function VitrineHero() {
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
             <img
+              key={item.id}
               src={`${item.icon_url}/360fx360f`}
               alt={item.nome}
               draggable={false}
-              className="absolute top-[12%] left-1/2 w-[58%] -translate-x-1/2 -rotate-12 drop-shadow-[0_24px_40px_rgba(0,0,0,0.7)]"
+              className="absolute top-[12%] left-1/2 w-[58%] -translate-x-1/2 -rotate-12 drop-shadow-[0_24px_40px_rgba(0,0,0,0.7)] transition duration-500 starting:scale-90 starting:opacity-0"
             />
           )}
 
+          <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
+            {motivo && <Rotulo destaque>{motivo}</Rotulo>}
+            <button
+              type="button"
+              onClick={trocar}
+              className="ml-auto flex items-center gap-2 rounded-lg border border-borda bg-painel/80 px-3 py-1.5 text-xs text-suave backdrop-blur transition-colors hover:border-suave hover:text-texto"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+              </svg>
+              Outro item
+            </button>
+          </div>
+
           <div className="absolute right-4 bottom-4 left-4 rounded-xl border border-borda bg-painel/90 p-4 backdrop-blur sm:right-auto sm:w-80">
-            <div className="flex items-center justify-between text-sm">
-              <span>{item?.nome ?? "Carregando…"}</span>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              {item ? (
+                <Link to={`/itens/${item.id}`} className="truncate hover:text-destaque">
+                  {item.nome}
+                </Link>
+              ) : (
+                <span>Carregando…</span>
+              )}
               <span className="font-mono text-[11px] text-apagado">TF2</span>
             </div>
             <div className="mt-2 flex items-end justify-between gap-4">
