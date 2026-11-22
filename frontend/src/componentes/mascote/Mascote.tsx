@@ -25,7 +25,7 @@ import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./pol
 // acima ou abaixo (ou quando o atual sai da tela). Parado, pisca, vira a cabeça, bica e mexe a cauda.
 // Clicado, mostra um dado real da base. Precisa de um pai com `position: relative`.
 
-const ESCALA = 0.72;
+const ESCALA = 0.6;
 const DURACAO_GRASNADO = 900; // ms
 const LARGURA = 120 * ESCALA;
 const ALTURA = 100 * ESCALA;

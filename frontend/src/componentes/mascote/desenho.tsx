@@ -143,9 +143,10 @@ export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada
   t(partes.bico, `rotate(${n(pose.bico)} ${ARTICULACAO_BICO.x} ${ARTICULACAO_BICO.y})`);
   ([0, 1] as const).forEach((lado) => {
     const p = perna(pose, lado);
-    partes.pernas.current[lado * 3]?.setAttribute("d", p.tibia);
-    partes.pernas.current[lado * 3 + 1]?.setAttribute("d", p.tarso);
-    partes.pernas.current[lado * 3 + 2]?.setAttribute("d", p.dedos);
+    partes.pernas.current[lado * 4]?.setAttribute("d", p.tarso);
+    partes.pernas.current[lado * 4 + 1]?.setAttribute("d", p.dedos);
+    partes.pernas.current[lado * 4 + 2]?.setAttribute("d", p.coxa);
+    partes.pernas.current[lado * 4 + 3]?.setAttribute("d", p.penasCoxa);
   });
 }
 
@@ -200,12 +201,13 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {/* Pernas (atrás do corpo; a de longe mais apagada): coxa emplumada, tarso e dedos */}
+        {/* Pernas (atrás do corpo; a de longe mais apagada): tarso fino e dedos, e por cima a coxa emplumada */}
         {([1, 0] as const).map((lado) => (
-          <g key={lado} fill="none" strokeOpacity={lado === 1 ? 0.45 : 1}>
-            <path ref={(e) => void (partes.pernas.current[lado * 3] = e)} strokeWidth="1.5" />
-            <path ref={(e) => void (partes.pernas.current[lado * 3 + 1] = e)} strokeWidth="1" />
-            <path ref={(e) => void (partes.pernas.current[lado * 3 + 2] = e)} strokeWidth="0.8" />
+          <g key={lado} strokeOpacity={lado === 1 ? 0.45 : 1}>
+            <path ref={(e) => void (partes.pernas.current[lado * 4] = e)} fill="none" strokeWidth="1" />
+            <path ref={(e) => void (partes.pernas.current[lado * 4 + 1] = e)} fill="none" strokeWidth="0.8" />
+            <path ref={(e) => void (partes.pernas.current[lado * 4 + 2] = e)} />
+            <path ref={(e) => void (partes.pernas.current[lado * 4 + 3] = e)} fill="none" strokeWidth="0.45" strokeOpacity="0.6" />
           </g>
         ))}
 

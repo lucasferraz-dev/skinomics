@@ -182,8 +182,11 @@ function quadril(pose: Pose, lado: 0 | 1): Vetor {
   };
 }
 
-/** Perna: tíbia (coberta de penas), tarso e dedos. Devolve os caminhos SVG de cada parte. */
-export function perna(pose: Pose, lado: 0 | 1): { tibia: string; tarso: string; dedos: string } {
+/**
+ * Perna: coxa emplumada (a "coxinha", larga no quadril e afinando até o calcanhar), tarso fino e
+ * dedos. Devolve os caminhos SVG de cada parte.
+ */
+export function perna(pose: Pose, lado: 0 | 1): { coxa: string; penasCoxa: string; tarso: string; dedos: string } {
   const h = quadril(pose, lado);
   const pe = pose.pes[lado];
   const dx = pe.x - h.x;
@@ -199,8 +202,37 @@ export function perna(pose: Pose, lado: 0 | 1): { tibia: string; tarso: string; 
     const a = anguloBase + (anguloBase > Math.PI / 2 ? -curva : curva);
     return `M${f(pe.x)} ${f(pe.y)}l${f(Math.cos(a) * tamanho)} ${f(Math.sin(a) * tamanho)}`;
   };
+  // Coxa: contorno em forma de gota entre o quadril (raio maior) e o calcanhar (raio menor).
+  const comprimento = Math.hypot(calcanhar.x - h.x, calcanhar.y - h.y) || 1;
+  const u = { x: (calcanhar.x - h.x) / comprimento, y: (calcanhar.y - h.y) / comprimento };
+  const nr = { x: -u.y, y: u.x };
+  const R1 = 4.6;
+  const R2 = 1.6;
+  const ponto = (base: Vetor, ao: number, lateral: number) => ({
+    x: base.x + u.x * ao + nr.x * lateral,
+    y: base.y + u.y * ao + nr.y * lateral,
+  });
+  const p = (v: Vetor) => `${f(v.x)} ${f(v.y)}`;
+  const meio = comprimento * 0.5;
+  const coxa =
+    `M${p(ponto(h, 0, R1))}` +
+    `Q${p(ponto(h, meio, R1 * 0.95))} ${p(ponto(calcanhar, 0, R2))}` +
+    `Q${p(ponto(calcanhar, R2 * 1.6, 0))} ${p(ponto(calcanhar, 0, -R2))}` +
+    `Q${p(ponto(h, meio, -R1 * 0.95))} ${p(ponto(h, 0, -R1))}` +
+    `Q${p(ponto(h, -R1 * 1.4, 0))} ${p(ponto(h, 0, R1))}Z`;
+  // Marcas das penas na parte de baixo da coxa.
+  const penasCoxa = [0.62, 0.78]
+    .map((t) => {
+      const largura = R1 + (R2 - R1) * t;
+      const a1 = ponto(h, comprimento * t, largura * 0.85);
+      const a2 = ponto(h, comprimento * t, -largura * 0.85);
+      const c = ponto(h, comprimento * t + 1.6, 0);
+      return `M${p(a1)}Q${p(c)} ${p(a2)}`;
+    })
+    .join("");
   return {
-    tibia: `M${f(h.x)} ${f(h.y)}L${f(calcanhar.x)} ${f(calcanhar.y)}`,
+    coxa,
+    penasCoxa,
     tarso: `M${f(calcanhar.x)} ${f(calcanhar.y)}L${f(pe.x)} ${f(pe.y)}`,
     dedos: [dedo(0, 7.5), dedo(0.22, 6), dedo(-0.12, 5.5), dedo(Math.PI, 5)].join(""),
   };
