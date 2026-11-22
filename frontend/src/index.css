@@ -17,23 +17,6 @@
   --color-destaque: #c6f36b;
   --color-destaque-fundo: #1d2614;
   --color-queda: #f2876b;
-
-  /* Corvo (mascote): asa batendo durante o voo. */
-  --animate-bater-asas: bater-asas 0.18s ease-in-out infinite alternate;
-  @keyframes bater-asas {
-    from {
-      transform: rotate(-70deg);
-    }
-    to {
-      transform: rotate(15deg);
-    }
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-bater-asas {
-    animation: none;
-  }
 }
 
 body {
