@@ -60,8 +60,8 @@ export function Entrar() {
           </dl>
 
           <p className="text-xs text-apagado">
-            Ao continuar, você concorda que o Skinomics guarde esses dados enquanto sua conta existir. Projeto acadêmico,
-            não afiliado à Valve nem à Steam.
+            Ao continuar, você concorda que o Skinomics guarde esses dados enquanto sua conta existir. O Skinomics
+            não é afiliado à Valve nem à Steam.
           </p>
         </div>}
       </main>

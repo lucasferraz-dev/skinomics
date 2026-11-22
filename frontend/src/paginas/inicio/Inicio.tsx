@@ -257,7 +257,7 @@ function Rodape() {
     <footer className="border-t border-borda">
       <Container className="flex flex-wrap items-center justify-between gap-4 py-8 text-xs text-apagado">
         <Logo />
-        <p>Projeto acadêmico — PUCPR, 2026. Não afiliado à Valve nem à Steam.</p>
+        <p>Não afiliado à Valve nem à Steam.</p>
       </Container>
     </footer>
   );
