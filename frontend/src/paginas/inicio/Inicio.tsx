@@ -183,7 +183,7 @@ const ICONES = {
 type Indicador = {
   rotulo: string;
   valor: ReactNode;
-  detalhe: ReactNode;
+  detalhe: string;
   icone: keyof typeof ICONES;
   para?: string;
 };
@@ -214,7 +214,7 @@ function Destaques() {
 
   return (
     <section className="border-y border-borda">
-      <Container className="grid grid-cols-2 gap-4 py-7 sm:gap-6 lg:grid-cols-4">
+      <Container className="grid grid-cols-2 gap-3 py-5 lg:grid-cols-4">
         {indicadores.map((indicador, i) => (
           <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
         ))}
@@ -223,33 +223,32 @@ function Destaques() {
   );
 }
 
-// Os indicadores são adesivos nas cores do site, alternando verde-limão e preto: borda de recorte,
-// sombra de colado e cada um levemente torto, como colado à mão.
+// Os indicadores são adesivos compactos nas cores do site, alternando verde-limão e preto, com uma
+// pontinha descolando no canto e um reflexo de vinil ao passar o mouse.
 const TINTAS = {
   verde: {
     "--fundo": "var(--color-destaque)",
+    "--contorno": "transparent",
     "--numero": "#0b0d0c",
-    "--rotulo": "rgba(11, 13, 12, 0.75)",
-    "--detalhe": "rgba(11, 13, 12, 0.65)",
+    "--rotulo": "rgba(11, 13, 12, 0.72)",
+    "--detalhe": "rgba(11, 13, 12, 0.62)",
     "--icone-fundo": "#0b0d0c",
     "--icone-traco": "var(--color-destaque)",
+    "--verso": "#97bd4f",
   },
   preto: {
     "--fundo": "#10140f",
+    "--contorno": "rgba(198, 243, 107, 0.35)",
     "--numero": "var(--color-destaque)",
     "--rotulo": "var(--color-suave)",
     "--detalhe": "var(--color-apagado)",
     "--icone-fundo": "var(--color-destaque)",
     "--icone-traco": "#0b0d0c",
+    "--verso": "#2b3427",
   },
 } as const;
 
-const ADESIVOS = [
-  { tinta: "verde", giro: -2.2 },
-  { tinta: "preto", giro: 1.6 },
-  { tinta: "verde", giro: -1.2 },
-  { tinta: "preto", giro: 2.1 },
-] as const;
+const ADESIVOS = ["verde", "preto", "verde", "preto"] as const;
 
 function CardIndicador({ rotulo, valor, detalhe, icone, para, adesivo }: Indicador & { adesivo: (typeof ADESIVOS)[number] }) {
   const conteudo = (
@@ -257,40 +256,39 @@ function CardIndicador({ rotulo, valor, detalhe, icone, para, adesivo }: Indicad
       {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.3)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.28)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
       />
-      <div className="relative flex items-start justify-between gap-3">
-        <span className="grid size-10 place-items-center rounded-full bg-[var(--icone-fundo)]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d={ICONES[icone]} />
-          </svg>
+      {/* Pontinha descolando: o verso do adesivo dobrado no canto, com o fundo da página aparecendo */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-0 bottom-0 size-4 rounded-tl-[5px] bg-[linear-gradient(315deg,var(--color-fundo)_50%,var(--verso)_50%)] shadow-[-2px_-2px_4px_rgba(0,0,0,0.35)] transition-[width,height] duration-300 group-hover:size-5"
+      />
+      <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-[var(--icone-fundo)]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d={ICONES[icone]} />
+        </svg>
+      </span>
+      <div className="relative min-w-0">
+        <span className="block truncate font-rotulo text-[11px] font-bold tracking-[0.06em] text-[var(--rotulo)]">
+          {rotulo}
+          {para && <span aria-hidden> ↗</span>}
         </span>
-        {para && (
-          <span className="font-mono text-base text-[var(--rotulo)] transition-colors group-hover:text-[var(--numero)]" aria-hidden>
-            ↗
-          </span>
-        )}
-      </div>
-      <div className="relative space-y-1">
-        <span className="block font-rotulo text-[12px] font-bold tracking-[0.06em] text-[var(--rotulo)]">{rotulo}</span>
-        <p className="titulo text-2xl leading-none text-[var(--numero)] sm:text-[2rem]">{valor}</p>
-        <p className="font-mono text-[11px] text-[var(--detalhe)]">{detalhe}</p>
+        <p className="titulo text-xl leading-tight text-[var(--numero)] sm:text-2xl">{valor}</p>
+        <p className="truncate font-mono text-[10px] text-[var(--detalhe)]">{detalhe}</p>
       </div>
     </>
   );
-  // Borda de recorte no branco dos textos do site + sombra de colado; endireita e levanta ao passar o mouse.
   const classe =
-    "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-[20px] bg-[var(--fundo)] p-4 sm:p-5 " +
-    "shadow-[0_0_0_4px_var(--color-texto),0_14px_26px_-6px_rgba(0,0,0,0.85)] " +
-    "[rotate:var(--giro)] transition-[rotate,translate] duration-300 hover:[rotate:0deg] hover:-translate-y-1";
-  const estilo = { ...TINTAS[adesivo.tinta], "--giro": `${adesivo.giro}deg` } as unknown as React.CSSProperties;
+    "group relative flex items-center gap-3 overflow-hidden rounded-2xl rounded-br-none border border-[var(--contorno)] bg-[var(--fundo)] px-4 py-3 " +
+    "shadow-[0_8px_18px_-8px_rgba(0,0,0,0.9)] transition-transform duration-300 hover:-translate-y-0.5";
+  const estilo = TINTAS[adesivo] as unknown as React.CSSProperties;
 
   return para ? (
-    <Link to={para} data-poleiro className={classe} style={estilo}>
+    <Link to={para} data-poleiro className={classe} style={estilo} title={detalhe}>
       {conteudo}
     </Link>
   ) : (
-    <div data-poleiro className={classe} style={estilo}>
+    <div data-poleiro className={classe} style={estilo} title={detalhe}>
       {conteudo}
     </div>
   );
