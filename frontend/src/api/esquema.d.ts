@@ -233,6 +233,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelos/ativos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Modelos Ativos
+         * @description Modelo publicado em cada horizonte, com as métricas do teste temporal.
+         */
+        get: operations["modelos_ativos_modelos_ativos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -336,6 +356,40 @@ export interface components {
              * @description Unidades negociadas nos últimos 7 dias
              */
             volume_7d: number | null;
+        };
+        /**
+         * ModeloAtivoResumo
+         * @description Modelo publicado num horizonte, com as métricas do seu teste temporal.
+         */
+        ModeloAtivoResumo: {
+            /** Horizonte */
+            horizonte: number;
+            /** Versao */
+            versao: string;
+            /** Nome */
+            nome: string;
+            /** Treinado Em */
+            treinado_em?: string | null;
+            /**
+             * Mape Pct
+             * @description Erro percentual médio do preço no teste.
+             */
+            mape_pct?: number | null;
+            /**
+             * Acerto Preco Pct
+             * @description Previsões dentro da tolerância de preço no teste, em %.
+             */
+            acerto_preco_pct?: number | null;
+            /**
+             * Acerto Direcao Pct
+             * @description Previsões que acertaram se o preço sobe ou desce, em %.
+             */
+            acerto_direcao_pct?: number | null;
+            /**
+             * Cobertura Intervalo
+             * @description Fração do teste dentro da faixa de 80%.
+             */
+            cobertura_intervalo?: number | null;
         };
         /** Oportunidade */
         Oportunidade: {
@@ -969,6 +1023,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    modelos_ativos_modelos_ativos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModeloAtivoResumo"][];
                 };
             };
         };

@@ -1,3 +1,4 @@
+import { useModelosAtivos } from "../../api/modelos";
 import { Rotulo } from "../../componentes/Basicos";
 import { CabecalhoSecao, Container } from "./ui";
 
@@ -52,8 +53,8 @@ const COMPROMISSOS = [
   },
   {
     titulo: "Quão bom é o modelo",
-    texto:
-      "No teste com os últimos 180 dias, o modelo de 7 dias errou em média 8,6% e acertou o preço, com tolerância de 15%, em 89,7% das previsões. Cada versão treinada fica registrada com seus números.",
+    // Preenchido com as métricas do modelo ativo (ver TextoQualidade).
+    texto: "",
   },
   {
     titulo: "O que não fazemos",
@@ -61,6 +62,26 @@ const COMPROMISSOS = [
       "Não compramos nem vendemos itens, não guardamos dinheiro e não damos recomendação de investimento. Previsão é estimativa; a decisão é sua.",
   },
 ];
+
+const percentual = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+
+/** Métricas do modelo de 7 dias em produção, lidas da API: mudam sozinhas a cada retreino. */
+function TextoQualidade() {
+  const { data } = useModelosAtivos();
+  const sete = data?.find((modelo) => modelo.horizonte === 7);
+  if (!data) return <>Carregando as métricas do modelo…</>;
+  if (!sete?.mape_pct || !sete.acerto_preco_pct) {
+    return <>As métricas do modelo em produção ainda não foram publicadas.</>;
+  }
+  return (
+    <>
+      No teste com os últimos 180 dias, o modelo de 7 dias errou em média{" "}
+      <span className="text-texto">{percentual.format(sete.mape_pct)}%</span> e acertou o preço, com tolerância de
+      15%, em <span className="text-texto">{percentual.format(sete.acerto_preco_pct)}%</span> das previsões. Cada
+      versão treinada fica registrada com seus números.
+    </>
+  );
+}
 
 /** Transparência: de onde vêm os números e os limites do produto. */
 export function Transparencia() {
@@ -76,7 +97,7 @@ export function Transparencia() {
           {COMPROMISSOS.map(({ titulo, texto }) => (
             <div key={titulo} data-poleiro className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
               <h3 className="text-lg">{titulo}</h3>
-              <p className="text-sm text-suave">{texto}</p>
+              <p className="text-sm text-suave">{texto || <TextoQualidade />}</p>
             </div>
           ))}
         </div>
