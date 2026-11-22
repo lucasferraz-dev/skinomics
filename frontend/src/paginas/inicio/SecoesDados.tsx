@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link } from "react-router";
 
 import { useItens } from "../../api/itens";
@@ -13,6 +14,7 @@ import { CabecalhoSecao, Container } from "./ui";
 /** Seção 2: uma "janela" do Terminal com o gráfico real da Key. */
 export function PreviaDaPlataforma() {
   const { item, pontos } = useItemVitrine(90);
+  const card = useRef<HTMLDivElement>(null);
 
   return (
     <section id="plataforma" className="scroll-mt-16 py-20 sm:py-28">
@@ -31,8 +33,7 @@ export function PreviaDaPlataforma() {
         />
 
         <div className="relative">
-          <Chaveiro appid={item?.appid} className="absolute top-3 right-40 hidden sm:block" />
-          <div className="overflow-hidden rounded-2xl border border-borda bg-painel">
+          <div ref={card} className="overflow-hidden rounded-2xl border border-borda bg-painel">
             <div className="flex h-12 items-center justify-between border-b border-borda px-4">
               <span className="flex items-center gap-2.5 text-sm font-semibold">
                 <MarcaLogo tamanho={18} />
@@ -100,6 +101,8 @@ export function PreviaDaPlataforma() {
               {item?.data_preco ? `, atualizados até ${formatarData(item.data_preco)}` : ""}. Preços em dólar (US$).
             </p>
           </div>
+          {/* Pendurado embaixo do card, entre as legendas, com o card como parede. */}
+          <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-[30%] hidden sm:block" />
         </div>
 
         <div className="grid gap-4 font-rotulo text-[13px] font-semibold tracking-[0.06em] text-apagado sm:grid-cols-3">

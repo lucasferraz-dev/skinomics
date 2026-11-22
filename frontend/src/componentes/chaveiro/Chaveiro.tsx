@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 import { acordar, type Corpo, registrar } from "./fisica";
 
@@ -15,11 +15,20 @@ const COMPRIMENTO_SEGMENTO = 8;
 const RAIO = 20;
 
 /**
- * Chaveiro pendurado num card: uma linha com um círculo do jogo na ponta. Dá para segurar o círculo
- * e arrastar; ao soltar, ele balança e volta. Chaveiros que se encostam se empurram.
- * Posicione o ponto de fixação com `className` (ex.: "absolute top-3 right-12"); o elemento não ocupa espaço.
+ * Chaveiro pendurado embaixo de um card: uma linha com um círculo do jogo na ponta. Dá para segurar
+ * o círculo e arrastar; ao soltar, ele balança e volta. O card (`parede`) não deixa a linha nem o
+ * círculo entrarem, e chaveiros que se encostam se empurram. Posicione o ponto de fixação com
+ * `className` (ex.: "absolute top-full right-28"); o elemento não ocupa espaço.
  */
-export function Chaveiro({ appid = 440, className = "" }: { appid?: number; className?: string }) {
+export function Chaveiro({
+  appid = 440,
+  parede,
+  className = "",
+}: {
+  appid?: number;
+  parede?: RefObject<HTMLElement | null>;
+  className?: string;
+}) {
   const jogo = JOGOS[appid];
   const raiz = useRef<HTMLSpanElement>(null);
   const linha = useRef<SVGPolylineElement>(null);
@@ -37,6 +46,7 @@ export function Chaveiro({ appid = 440, className = "" }: { appid?: number; clas
       raio: RAIO,
       deslocamentoDisco: RAIO,
       arrasto: null,
+      parede: () => parede?.current?.getBoundingClientRect(),
       ancora: () => {
         const r = raiz.current?.getBoundingClientRect();
         return { x: r?.left ?? 0, y: r?.top ?? 0 };
@@ -52,7 +62,7 @@ export function Chaveiro({ appid = 440, className = "" }: { appid?: number; clas
     corpo.current = novo;
     novo.desenhar();
     return registrar(novo);
-  }, [jogo]);
+  }, [jogo, parede]);
 
   if (!jogo) return null;
 

@@ -17,6 +17,8 @@ export type Corpo = {
   ancora: () => Vetor;
   /** Alvo do arraste, em coordenadas locais; null quando ninguém está segurando. */
   arrasto: Vetor | null;
+  /** Retângulo (viewport) que funciona como parede: a linha e o círculo não entram nele. */
+  parede?: () => DOMRect | undefined;
   desenhar: () => void;
 };
 
@@ -27,6 +29,7 @@ const ITERACOES = 10;
 const MASSA_ELO = 1;
 const MASSA_MEDALHAO = 5;
 const EMPURRAO_MAXIMO = 1.2; // px por subpasso
+const RICOCHETE = 0.45; // fração da velocidade devolvida ao bater na parede
 
 const corpos = new Set<Corpo>();
 let rodando = false;
@@ -72,6 +75,7 @@ function quadro(agora: number) {
       corpos.forEach(restringir);
     }
     colidir();
+    corpos.forEach(baterNaParede);
   }
 
   let movimento = 0;
@@ -167,5 +171,66 @@ function colidir() {
       pontaB.x += nx * empurrao * pb;
       pontaB.y += ny * empurrao * pb;
     }
+  }
+}
+
+/** Mantém a linha e o círculo fora do card; o círculo ricocheteia ao bater. */
+function baterNaParede(corpo: Corpo) {
+  const r = corpo.parede?.();
+  if (!r) return;
+  const ancora = corpo.ancora();
+  const ultimo = corpo.pontos.length - 1;
+
+  // Pontos da linha: se entraram no retângulo, saem pela borda mais próxima.
+  for (let i = 1; i < ultimo; i++) {
+    const p = corpo.pontos[i]!;
+    const x = ancora.x + p.x;
+    const y = ancora.y + p.y;
+    if (x <= r.left || x >= r.right || y <= r.top || y >= r.bottom) continue;
+    const saidas = [
+      { d: x - r.left, dx: -(x - r.left), dy: 0 },
+      { d: r.right - x, dx: r.right - x, dy: 0 },
+      { d: y - r.top, dx: 0, dy: -(y - r.top) },
+      { d: r.bottom - y, dx: 0, dy: r.bottom - y },
+    ].sort((a, b) => a.d - b.d)[0]!;
+    p.x += saidas.dx;
+    p.y += saidas.dy;
+  }
+
+  // Círculo: distância do centro ao ponto mais próximo do retângulo.
+  const centro = centroDisco(corpo);
+  const cx = ancora.x + centro.x;
+  const cy = ancora.y + centro.y;
+  const px = Math.min(Math.max(cx, r.left), r.right);
+  const py = Math.min(Math.max(cy, r.top), r.bottom);
+  let nx = cx - px;
+  let ny = cy - py;
+  let d = Math.hypot(nx, ny);
+  let penetracao: number;
+  if (d > 0) {
+    if (d >= corpo.raio) return;
+    nx /= d;
+    ny /= d;
+    penetracao = corpo.raio - d;
+  } else {
+    // Centro dentro do card: sai por baixo, que é de onde o chaveiro pende.
+    nx = 0;
+    ny = 1;
+    d = r.bottom - cy;
+    penetracao = d + corpo.raio;
+  }
+
+  const ponta = corpo.pontos[ultimo]!;
+  const anterior = corpo.anteriores[ultimo]!;
+  ponta.x += nx * penetracao;
+  ponta.y += ny * penetracao;
+  if (corpo.arrasto) return;
+  // Inverte (e amortece) a componente da velocidade que entrava na parede.
+  const vx = ponta.x - anterior.x;
+  const vy = ponta.y - anterior.y;
+  const vn = vx * nx + vy * ny;
+  if (vn < 0) {
+    anterior.x = ponta.x - (vx - (1 + RICOCHETE) * vn * nx);
+    anterior.y = ponta.y - (vy - (1 + RICOCHETE) * vn * ny);
   }
 }

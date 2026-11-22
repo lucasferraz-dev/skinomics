@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
 import { useItens } from "../../api/itens";
@@ -104,39 +104,44 @@ function Hero() {
 
 function VitrineHero() {
   const { item, pontos } = useItemVitrine(30);
+  const card = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative">
-      <Chaveiro appid={item?.appid} className="absolute top-3 right-12" />
-      <div className="relative aspect-[5/4] overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
-        <span className="absolute top-5 left-5">
-          <Rotulo destaque>TF2 / Economia em movimento</Rotulo>
-        </span>
-        {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
-        <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
-        {item?.icon_url && (
-          <img
-            src={`${item.icon_url}/360fx360f`}
-            alt={item.nome}
-            className="absolute top-[12%] left-1/2 w-[58%] -translate-x-1/2 -rotate-12 drop-shadow-[0_24px_40px_rgba(0,0,0,0.7)]"
-          />
-        )}
+    <div>
+      <div className="relative">
+        <div ref={card} className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
+          <span className="absolute top-5 left-5">
+            <Rotulo destaque>TF2 / Economia em movimento</Rotulo>
+          </span>
+          {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
+          <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
+          {item?.icon_url && (
+            <img
+              src={`${item.icon_url}/360fx360f`}
+              alt={item.nome}
+              draggable={false}
+              className="absolute top-[12%] left-1/2 w-[58%] -translate-x-1/2 -rotate-12 drop-shadow-[0_24px_40px_rgba(0,0,0,0.7)]"
+            />
+          )}
 
-        <div className="absolute right-4 bottom-4 left-4 rounded-xl border border-borda bg-painel/90 p-4 backdrop-blur sm:right-auto sm:w-80">
-          <div className="flex items-center justify-between text-sm">
-            <span>{item?.nome ?? "Carregando…"}</span>
-            <span className="font-mono text-[11px] text-apagado">TF2</span>
-          </div>
-          <div className="mt-2 flex items-end justify-between gap-4">
-            <div>
-              <p className="font-mono text-2xl">{item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}</p>
-              <p className="mt-1 font-mono text-[11px] text-apagado">
-                <Variacao valor={item?.variacao_7d} /> nos últimos 7 dias
-              </p>
+          <div className="absolute right-4 bottom-4 left-4 rounded-xl border border-borda bg-painel/90 p-4 backdrop-blur sm:right-auto sm:w-80">
+            <div className="flex items-center justify-between text-sm">
+              <span>{item?.nome ?? "Carregando…"}</span>
+              <span className="font-mono text-[11px] text-apagado">TF2</span>
             </div>
-            <Sparkline valores={pontos?.map((ponto) => ponto.preco) ?? []} largura={96} altura={36} />
+            <div className="mt-2 flex items-end justify-between gap-4">
+              <div>
+                <p className="font-mono text-2xl">{item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}</p>
+                <p className="mt-1 font-mono text-[11px] text-apagado">
+                  <Variacao valor={item?.variacao_7d} /> nos últimos 7 dias
+                </p>
+              </div>
+              <Sparkline valores={pontos?.map((ponto) => ponto.preco) ?? []} largura={96} altura={36} />
+            </div>
           </div>
         </div>
+        {/* Pendurado embaixo do card, que funciona como parede para ele. */}
+        <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-28" />
       </div>
       <div className="mt-4 flex items-center justify-between">
         <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>
