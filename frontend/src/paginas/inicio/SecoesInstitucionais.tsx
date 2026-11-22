@@ -22,7 +22,7 @@ const PASSOS = [
 /** Seção 4 */
 export function FluxoSimples() {
   return (
-    <section id="como-funciona" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
+    <section id="como-funciona" className="scroll-mt-16 py-20 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo="Como funciona"
@@ -65,7 +65,7 @@ const COMPROMISSOS = [
 /** Transparência: de onde vêm os números e os limites do produto. */
 export function Transparencia() {
   return (
-    <section id="transparencia" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
+    <section id="transparencia" className="scroll-mt-16 py-20 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo="Transparência"
@@ -109,7 +109,7 @@ const PERGUNTAS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
+    <section id="faq" className="scroll-mt-16 py-20 sm:py-28">
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-4">
           <Rotulo destaque>FAQ</Rotulo>

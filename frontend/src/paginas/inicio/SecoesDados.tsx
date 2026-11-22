@@ -152,7 +152,7 @@ export function Radar() {
   const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 5 });
 
   return (
-    <section className="border-t border-borda py-20 sm:py-28">
+    <section className="py-20 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="No radar"
