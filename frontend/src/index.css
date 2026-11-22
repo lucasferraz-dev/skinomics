@@ -17,6 +17,56 @@
   --color-destaque: #c6f36b;
   --color-destaque-fundo: #1d2614;
   --color-queda: #f2876b;
+
+  /* Mascote: passos, balanço do corpo, piscada e pulo. */
+  --animate-passo: passo 0.4s ease-in-out infinite alternate;
+  --animate-gingado: gingado 0.4s ease-in-out infinite alternate;
+  --animate-piscar: piscar 4.5s infinite;
+  --animate-pulo: pulo 0.5s ease-out;
+  @keyframes passo {
+    from {
+      transform: rotate(-24deg);
+    }
+    to {
+      transform: rotate(24deg);
+    }
+  }
+  @keyframes gingado {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-1.5px);
+    }
+  }
+  @keyframes piscar {
+    0%,
+    93%,
+    100% {
+      transform: scaleY(1);
+    }
+    96% {
+      transform: scaleY(0.1);
+    }
+  }
+  @keyframes pulo {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-22px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-passo,
+  .animate-gingado,
+  .animate-piscar,
+  .animate-pulo {
+    animation: none;
+  }
 }
 
 body {

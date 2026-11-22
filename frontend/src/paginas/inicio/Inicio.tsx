@@ -7,6 +7,7 @@ import { Rotulo, Variacao } from "../../componentes/Basicos";
 import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
+import { Mascote } from "../../componentes/mascote/Mascote";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarPreco } from "../../lib/formato";
@@ -30,6 +31,7 @@ export function Inicio() {
         <Faq />
       </main>
       <Rodape />
+      <Mascote />
     </div>
   );
 }
