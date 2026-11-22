@@ -148,7 +148,11 @@ function PrevisaoVitrine({ itemId }: { itemId: number | undefined }) {
 
 /** Seção 3: os itens mais negociados da semana, com dados reais. */
 export function Radar() {
-  const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 5 });
+  // Os cinco mais negociados saem da lista completa que o resto da landing já carrega.
+  const lista = useItens({ por_pagina: 100 }).data;
+  const data = lista && {
+    itens: [...lista.itens].sort((a, b) => (b.volume_7d ?? 0) - (a.volume_7d ?? 0)).slice(0, 5),
+  };
 
   return (
     <section className="py-14 sm:py-28">

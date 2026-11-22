@@ -25,6 +25,10 @@ export type Corpo = {
   /** Ritmo (rad/s) e fase do balanço, sorteados por chaveiro para não balançarem juntos. */
   ritmo?: number;
   fase?: number;
+  /** Posição da fixação e da parede lidas uma vez por quadro (ler o layout é caro), e se está perto da tela. */
+  quadroAncora?: Vetor;
+  quadroParede?: DOMRect | null;
+  ativo?: boolean;
   /** Retângulo (viewport) que funciona como parede: a linha e o círculo não entram nele. */
   parede?: () => DOMRect | undefined;
   desenhar: () => void;
@@ -48,8 +52,30 @@ let tempo = 0; // s, para o balanço
 let rodando = false;
 let quadrosParados = 0;
 let ultimoTempo = 0;
+let movimentoAnterior = Infinity; // maior deslocamento de um ponto no quadro anterior
+
+// Ao rolar a página, chaveiros que estavam longe da tela voltam a ser simulados.
+let ouvindoRolagem = false;
+
+/** Fixação do corpo neste quadro (lida uma vez por quadro). */
+function ancoraDe(corpo: Corpo): Vetor {
+  return corpo.quadroAncora ?? corpo.ancora();
+}
+
+/** Parede do corpo neste quadro (lida uma vez por quadro). */
+function paredeDe(corpo: Corpo): DOMRect | undefined {
+  return corpo.quadroParede === undefined ? corpo.parede?.() : (corpo.quadroParede ?? undefined);
+}
+
+function alcance(corpo: Corpo): number {
+  return (corpo.pontos.length - 1) * corpo.comprimentoElo + corpo.deslocamentoDisco + corpo.raio;
+}
 
 export function registrar(corpo: Corpo): () => void {
+  if (!ouvindoRolagem && typeof window !== "undefined") {
+    ouvindoRolagem = true;
+    window.addEventListener("scroll", () => acordar(), { passive: true });
+  }
   corpo.ritmo ??= 1.25 + Math.random() * 0.55; // ida e volta em ~3,5 a 5 s
   corpo.fase ??= Math.random() * Math.PI * 2;
   corpos.add(corpo);
@@ -92,9 +118,23 @@ function quadro(agora: number) {
   ultimoTempo = agora;
   tempo += dt * SUBPASSOS;
 
+  // Lê o layout uma vez por corpo neste quadro e separa os que estão perto da tela: os outros ficam
+  // parados até a página rolar até eles.
+  const ativos: Corpo[] = [];
+  corpos.forEach((corpo) => {
+    const a = corpo.ancora();
+    corpo.quadroAncora = a;
+    corpo.quadroParede = corpo.parede?.() ?? null;
+    const margem = alcance(corpo) + 200;
+    corpo.ativo =
+      corpo.arrasto !== null ||
+      (a.y > -margem && a.y < window.innerHeight + margem && a.x > -margem && a.x < window.innerWidth + margem);
+    if (corpo.ativo) ativos.push(corpo);
+  });
+
   // Segurado: acompanha o cursor e mede a velocidade com que ele move a ponta, para o chaveiro
   // sair com esse embalo quando for solto (um arremesso continua balançando).
-  corpos.forEach((corpo) => {
+  ativos.forEach((corpo) => {
     if (!corpo.arrasto) {
       corpo.alvoArrasto = undefined;
       corpo.velocidadeArrasto = undefined;
@@ -108,20 +148,25 @@ function quadro(agora: number) {
     corpo.alvoArrasto = alvo;
   });
 
+  // Só balançando de leve (ninguém segurando, nada se mexendo rápido), poucas iterações bastam para
+  // manter a linha firme; ao arrastar, bater ou soltar, volta ao cálculo completo.
+  const calmaria = !ativos.some((corpo) => corpo.arrasto) && movimentoAnterior < 0.4;
+  const iteracoes = calmaria ? 3 : ITERACOES;
+
   for (let s = 0; s < SUBPASSOS; s++) {
-    corpos.forEach((corpo) => integrar(corpo, dt));
-    for (let i = 0; i < ITERACOES; i++) {
-      corpos.forEach((corpo) => {
+    ativos.forEach((corpo) => integrar(corpo, dt));
+    for (let i = 0; i < iteracoes; i++) {
+      ativos.forEach((corpo) => {
         restringir(corpo);
         afastarLinhaDaParede(corpo);
       });
     }
-    colidir();
-    corpos.forEach(baterNaParede);
+    colidir(ativos);
+    ativos.forEach(baterNaParede);
   }
 
   let movimento = 0;
-  corpos.forEach((corpo) => {
+  ativos.forEach((corpo) => {
     corpo.desenhar();
     corpo.pontos.forEach((p, i) => {
       const a = corpo.anteriores[i]!;
@@ -129,9 +174,11 @@ function quadro(agora: number) {
     });
   });
 
-  const segurando = [...corpos].some((corpo) => corpo.arrasto);
-  // Com balanço constante o laço não dorme (o navegador já o pausa com a aba escondida).
-  const balancando = !calmo && [...corpos].some((corpo) => (corpo.balanco ?? 0) > 0);
+  movimentoAnterior = movimento;
+  const segurando = ativos.some((corpo) => corpo.arrasto);
+  // Com balanço constante o laço não dorme enquanto houver chaveiro perto da tela (o navegador já o
+  // pausa com a aba escondida); longe de todos, dorme e acorda com a rolagem.
+  const balancando = !calmo && ativos.some((corpo) => (corpo.balanco ?? 0) > 0);
   quadrosParados = !segurando && !balancando && movimento < 0.01 ? quadrosParados + 1 : 0;
   if (corpos.size === 0 || quadrosParados > 45) {
     rodando = false;
@@ -179,8 +226,8 @@ function integrar(corpo: Corpo, dt: number) {
 /** Ponto mais perto do cursor onde a ponta pode ficar: linha sem esticar e círculo fora do card. */
 function alvoValido(corpo: Corpo, cursor: Vetor): Vetor {
   const alcance = (corpo.pontos.length - 1) * corpo.comprimentoElo;
-  const r = corpo.parede?.();
-  const ancora = corpo.ancora();
+  const r = paredeDe(corpo);
+  const ancora = ancoraDe(corpo);
   let { x, y } = cursor;
   for (let k = 0; k < 4; k++) {
     const d = Math.hypot(x, y);
@@ -222,14 +269,15 @@ function restringir(corpo: Corpo) {
 }
 
 /** Círculos que se encostam são afastados; na integração de Verlet isso já vira o "empurrão". */
-function colidir() {
-  const lista = [...corpos];
+function colidir(lista: Corpo[]) {
   for (let i = 0; i < lista.length; i++) {
     for (let j = i + 1; j < lista.length; j++) {
       const a = lista[i]!;
       const b = lista[j]!;
-      const oa = a.ancora();
-      const ob = b.ancora();
+      const oa = ancoraDe(a);
+      const ob = ancoraDe(b);
+      // Fixações longe demais para os círculos se alcançarem: nem calcula.
+      if (Math.abs(oa.x - ob.x) > alcance(a) + alcance(b) || Math.abs(oa.y - ob.y) > alcance(a) + alcance(b)) continue;
       const ca = centroDisco(a);
       const cb = centroDisco(b);
       const dx = ob.x + cb.x - (oa.x + ca.x);
@@ -291,9 +339,9 @@ function separacao(r: DOMRect, cx: number, cy: number, raio: number) {
 
 /** Pontos da linha que entraram no card saem pela borda mais próxima. */
 function afastarLinhaDaParede(corpo: Corpo) {
-  const r = corpo.parede?.();
+  const r = paredeDe(corpo);
   if (!r) return;
-  const ancora = corpo.ancora();
+  const ancora = ancoraDe(corpo);
   for (let i = 1; i < corpo.pontos.length - 1; i++) {
     const p = corpo.pontos[i]!;
     const x = ancora.x + p.x;
@@ -312,9 +360,9 @@ function afastarLinhaDaParede(corpo: Corpo) {
 
 /** Mantém o círculo fora do card; solto, ele ricocheteia ao bater. */
 function baterNaParede(corpo: Corpo) {
-  const r = corpo.parede?.();
+  const r = paredeDe(corpo);
   if (!r || corpo.arrasto) return; // segurado, o alvo já respeita a parede
-  const ancora = corpo.ancora();
+  const ancora = ancoraDe(corpo);
   const c = centroDisco(corpo);
   const saida = separacao(r, ancora.x + c.x, ancora.y + c.y, corpo.raio);
   if (!saida) return;

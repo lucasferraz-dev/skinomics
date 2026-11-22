@@ -77,8 +77,10 @@ const percentual = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
 /** Métricas do modelo de 7 dias em produção, lidas da API: mudam sozinhas a cada retreino. */
 function TextoQualidade() {
-  const { data } = useModelosAtivos();
+  const { data, isError } = useModelosAtivos();
   const sete = data?.find((modelo) => modelo.horizonte === 7);
+  // Ex.: o site publicado antes da API com a rota de modelos.
+  if (isError) return <>As métricas do modelo em produção estão indisponíveis no momento.</>;
   if (!data) return <>Carregando as métricas do modelo…</>;
   if (!sete?.mape_pct || !sete.acerto_preco_pct) {
     return <>As métricas do modelo em produção ainda não foram publicadas.</>;

@@ -218,8 +218,9 @@ type Indicador = {
 
 /** Cards logo abaixo do hero: números reais da base, iguais para todos os itens. */
 function Destaques() {
-  const itens = useItens({ por_pagina: 1 }).data;
-  const todos = useItens({ por_pagina: 100 }).data?.itens ?? [];
+  // A mesma lista completa que a vitrine e os destaques já pedem (um pedido só para a landing toda).
+  const itens = useItens({ por_pagina: 100 }).data;
+  const todos = itens?.itens ?? [];
   const oportunidades = useOportunidades(7, 1).data;
   const dataCotacao = itens?.itens[0]?.data_preco;
   const melhor = oportunidades?.itens[0];
