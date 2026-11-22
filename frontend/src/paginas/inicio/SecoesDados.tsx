@@ -189,7 +189,7 @@ export function Radar() {
                 </thead>
                 <tbody>
                   {data.itens.map((item) => (
-                    <LinhaItem key={item.id} item={item} />
+                    <LinhaItem key={item.id} item={item} chaveiros />
                   ))}
                 </tbody>
               </table>

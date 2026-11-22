@@ -6,6 +6,7 @@ import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from ".
 import { Sparkline } from "../componentes/Sparkline";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
 import { jogoDoItem } from "../lib/jogos";
+import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 
 type Ordenacao = NonNullable<FiltrosItens["ordenar"]>;
 type Direcao = NonNullable<FiltrosItens["direcao"]>;
@@ -168,14 +169,16 @@ function Cabecalho({
   );
 }
 
-export function LinhaItem({ item }: { item: ItemResumo }) {
+/** Linha da tabela de itens. Com `chaveiros`, mostra os chaveiros mini do item (jogo, tipo, evento). */
+export function LinhaItem({ item, chaveiros = false }: { item: ItemResumo; chaveiros?: boolean }) {
   const inicio = item.data_preco ? diasAntes(item.data_preco, 30) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
 
   return (
     // A linha inteira é clicável: o link do nome se estende sobre ela (after:absolute).
     <tr className="relative border-b border-borda/60 transition-colors last:border-0 hover:bg-painel-alto">
-      <td className="px-4 py-3">
+      <td className="relative px-4 py-3">
+        {chaveiros && <ChaveirosDoItem item={item} tamanho="mini" direita="0.75rem" className="hidden sm:block" />}
         <div className="flex items-center gap-3">
           <IconeItem url={item.icon_url} nome={item.nome} />
           <div className="min-w-0">

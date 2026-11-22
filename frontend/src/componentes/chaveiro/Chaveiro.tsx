@@ -3,9 +3,12 @@ import { type CSSProperties, type RefObject, useEffect, useRef } from "react";
 import { acordar, anguloDisco, type Corpo, registrar } from "./fisica";
 import { type TemaChaveiro, temasDoItem } from "./temas";
 
-const COMPRIMENTO_SEGMENTO = 8;
-const RAIO = 20;
-const ESPACAMENTO = 46; // px entre os pontos de fixação de chaveiros vizinhos
+// Tamanhos: o normal, pendurado embaixo de cards, e o mini, que cabe dentro de uma linha de tabela.
+const TAMANHOS = {
+  normal: { raio: 20, comprimento: 8, espacamento: 46, segmentos: [6, 8, 5, 7] },
+  mini: { raio: 9, comprimento: 5, espacamento: 22, segmentos: [2, 3, 2, 3] },
+} as const;
+export type TamanhoChaveiro = keyof typeof TAMANHOS;
 
 /**
  * Chaveiro pendurado embaixo de um card: uma linha com um círculo na ponta, com o ícone do tema.
@@ -15,12 +18,14 @@ const ESPACAMENTO = 46; // px entre os pontos de fixação de chaveiros vizinhos
  */
 export function Chaveiro({
   tema,
+  tamanho = "normal",
   segmentos = 6,
   parede,
   className = "",
   style,
 }: {
   tema: TemaChaveiro;
+  tamanho?: TamanhoChaveiro;
   segmentos?: number;
   parede?: RefObject<HTMLElement | null>;
   className?: string;
@@ -31,6 +36,8 @@ export function Chaveiro({
   const pingente = useRef<SVGGElement>(null);
   const corpo = useRef<Corpo | null>(null);
   const pega = useRef<{ x: number; y: number } | null>(null);
+  const { raio: RAIO, comprimento: COMPRIMENTO_SEGMENTO } = TAMANHOS[tamanho];
+  const escala = RAIO / TAMANHOS.normal.raio;
 
   useEffect(() => {
     const pontos = Array.from({ length: segmentos + 1 }, (_, i) => ({ x: 0, y: i * COMPRIMENTO_SEGMENTO }));
@@ -57,7 +64,7 @@ export function Chaveiro({
     corpo.current = novo;
     novo.desenhar();
     return registrar(novo);
-  }, [parede, segmentos]);
+  }, [parede, segmentos, RAIO, COMPRIMENTO_SEGMENTO]);
 
   function cursorLocal(evento: React.PointerEvent) {
     const ancora = corpo.current!.ancora();
@@ -100,8 +107,8 @@ export function Chaveiro({
         role="img"
         aria-label={`Chaveiro: ${tema.nome}`}
       >
-        <circle r="2.5" fill={tema.cor} />
-        <polyline ref={linha} fill="none" stroke="var(--color-suave)" strokeWidth="1.2" strokeLinejoin="round" />
+        <circle r={2.5 * Math.max(escala, 0.6)} fill={tema.cor} />
+        <polyline ref={linha} fill="none" stroke="var(--color-suave)" strokeWidth={tamanho === "mini" ? 1 : 1.2} strokeLinejoin="round" />
         <g
           ref={pingente}
           className="pointer-events-auto cursor-grab touch-none active:cursor-grabbing"
@@ -110,16 +117,16 @@ export function Chaveiro({
           onPointerUp={soltar}
           onPointerCancel={soltar}
         >
-          <circle cy={RAIO} r={RAIO} fill="var(--color-painel)" stroke={tema.cor} strokeWidth="1.5" />
+          <circle cy={RAIO} r={RAIO} fill="var(--color-painel)" stroke={tema.cor} strokeWidth={tamanho === "mini" ? 1.2 : 1.5} />
           {tema.texto ? (
             <text
               className="pointer-events-none select-none"
               aria-hidden
-              y={RAIO + (tema.texto.length > 3 ? 3.5 : 4.5)}
+              y={RAIO + (tema.texto.length > 3 ? 3.5 : 4.5) * escala}
               textAnchor="middle"
               fill={tema.cor}
               fontFamily="var(--font-sans)"
-              fontSize={tema.texto.length > 3 ? 10 : 13}
+              fontSize={(tema.texto.length > 3 ? 10 : 13) * escala}
               fontWeight="800"
               style={{ fontStretch: "112%" }}
             >
@@ -128,10 +135,10 @@ export function Chaveiro({
           ) : (
             <path
               d={tema.icone}
-              transform={`translate(0 ${RAIO})`}
+              transform={`translate(0 ${RAIO}) scale(${escala})`}
               fill="none"
               stroke={tema.cor}
-              strokeWidth="1.6"
+              strokeWidth={1.6 / Math.max(escala, 0.6)}
               strokeLinecap="round"
               strokeLinejoin="round"
               className="pointer-events-none"
@@ -152,24 +159,29 @@ export function ChaveirosDoItem({
   item,
   parede,
   direita,
+  tamanho = "normal",
   className = "",
 }: {
   item: { id: number; appid: number; nome: string; tipo?: string | null } | undefined;
   parede?: RefObject<HTMLElement | null>;
   direita: string;
+  tamanho?: TamanhoChaveiro;
   className?: string;
 }) {
+  const medidas = TAMANHOS[tamanho];
   return (
     <>
       {temasDoItem(item).map((tema, i) => (
         <Chaveiro
           key={`${item?.id}-${tema.nome}`}
           tema={tema}
+          tamanho={tamanho}
           // Comprimentos diferentes, para os círculos não ficarem todos alinhados.
-          segmentos={[6, 8, 5, 7][i]}
+          segmentos={medidas.segmentos[i]}
           parede={parede}
-          className={`absolute top-full ${className}`}
-          style={{ right: `calc(${direita} + ${i * ESPACAMENTO}px)` }}
+          // O normal pende embaixo do card; o mini pende do topo para dentro da linha.
+          className={`absolute ${tamanho === "mini" ? "top-0" : "top-full"} ${className}`}
+          style={{ right: `calc(${direita} + ${i * medidas.espacamento}px)` }}
         />
       ))}
     </>
