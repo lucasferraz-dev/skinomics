@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
 import { type ItemResumo, useHistorico, useItens } from "../../api/itens";
 import { useOportunidades } from "../../api/oportunidades";
 import { Carregando, IconeItem, Rotulo, Variacao } from "../../componentes/Basicos";
+import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { Sparkline } from "../../componentes/Sparkline";
 import { diasAntes, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
 import { CabecalhoSecao, Container } from "./ui";
@@ -13,7 +14,14 @@ const VOLUME_MINIMO = 50;
 
 const COR_RISCO = { baixo: "text-destaque", moderado: "text-amber-300", alto: "text-queda" } as const;
 
-type Base = { id: number; nome: string; tipo: string | null; icon_url: string | null; data_preco?: string | null };
+type Base = {
+  id: number;
+  appid: number;
+  nome: string;
+  tipo: string | null;
+  icon_url: string | null;
+  data_preco?: string | null;
+};
 
 /** Um "terminal" compacto: o motivo do destaque, o item, o preço, um dado e o gráfico de 30 dias. */
 function TerminalItem({
@@ -33,6 +41,7 @@ function TerminalItem({
 }) {
   const inicio = item?.data_preco ? diasAntes(item.data_preco, 30) : diasAntes(new Date().toISOString().slice(0, 10), 30);
   const { data: pontos } = useHistorico(item?.id ?? 0, inicio, item !== undefined);
+  const card = useRef<HTMLAnchorElement & HTMLDivElement>(null);
 
   const conteudo = item ? (
     <div className="space-y-4 p-4">
@@ -67,10 +76,15 @@ function TerminalItem({
   const classe = "group flex min-w-0 flex-col rounded-2xl border border-borda bg-painel transition-colors";
 
   return item ? (
-    <Link to={`/itens/${item.id}`} data-poleiro className={`${classe} hover:border-destaque/40`}>
-      {cabecalho}
-      {conteudo}
-    </Link>
+    <div className="relative flex min-w-0">
+      <Link ref={card} to={`/itens/${item.id}`} data-poleiro className={`${classe} w-full hover:border-destaque/40`}>
+        {cabecalho}
+        {conteudo}
+      </Link>
+      {/* Chaveiros do jogo e do tipo do item. Só com os quatro terminais lado a lado: em colunas
+          empilhadas eles cairiam por cima do terminal de baixo. */}
+      <ChaveirosDoItem item={item} parede={card} direita="1rem" className="hidden lg:block" />
+    </div>
   ) : (
     <div data-poleiro className={classe}>
       {cabecalho}
@@ -132,6 +146,7 @@ export function DestaquesDaSemana() {
             item={
               oportunidade && {
                 id: oportunidade.item_id,
+                appid: itemOportunidade?.appid ?? 0,
                 nome: oportunidade.nome,
                 tipo: oportunidade.tipo,
                 icon_url: oportunidade.icon_url,
