@@ -1,35 +1,36 @@
 // Física dos chaveiros: cada um é uma linha (integração de Verlet com restrições de distância)
 // presa num ponto fixo, com o círculo do jogo como peso na ponta. Todos os chaveiros da página
-// dividem o mesmo laço de animação, para os medalhões colidirem entre si. O laço dorme quando
+// dividem o mesmo laço de animação, para os círculos colidirem entre si. O laço dorme quando
 // tudo para e acorda com qualquer interação.
 
 export type Vetor = { x: number; y: number };
 
 export type Corpo = {
-  /** Posições locais (px) relativas à argola; o índice 0 é a argola, o último é o medalhão. */
+  /** Posições locais (px) relativas ao ponto de fixação; o índice 0 é a fixação, o último é a ponta. */
   pontos: Vetor[];
   anteriores: Vetor[];
   comprimentoElo: number;
-  /** Raio do disco do medalhão e distância da ponta da corrente até o centro dele. */
+  /** Raio do círculo e distância da ponta da linha até o centro dele. */
   raio: number;
   deslocamentoDisco: number;
-  /** Posição da argola na tela (coordenadas do viewport). */
+  /** Posição do ponto de fixação na tela (coordenadas do viewport). */
   ancora: () => Vetor;
-  /** Alvo do arraste, em coordenadas locais; null quando ninguém está segurando. */
+  /** Posição do cursor (local) enquanto alguém segura o círculo; null quando solto. */
   arrasto: Vetor | null;
   /** Retângulo (viewport) que funciona como parede: a linha e o círculo não entram nele. */
   parede?: () => DOMRect | undefined;
   desenhar: () => void;
 };
 
-const GRAVIDADE = 1800; // px/s²
-const AMORTECIMENTO = 0.992; // por subpasso
+const GRAVIDADE = 2200; // px/s²
+const AMORTECIMENTO = 0.985; // por subpasso: deixa o chaveiro "pesado", sem balançar à toa
+const VELOCIDADE_MAXIMA = 12; // px por subpasso, para um arremesso não virar bagunça
 const SUBPASSOS = 3;
 const ITERACOES = 10;
 const MASSA_ELO = 1;
-const MASSA_MEDALHAO = 5;
+const MASSA_PONTA = 5;
 const EMPURRAO_MAXIMO = 1.2; // px por subpasso
-const RICOCHETE = 0.45; // fração da velocidade devolvida ao bater na parede
+const RICOCHETE = 0.35; // fração da velocidade devolvida ao bater na parede
 
 const corpos = new Set<Corpo>();
 let rodando = false;
@@ -53,15 +54,22 @@ export function acordar() {
   }
 }
 
-/** Centro do disco do medalhão, em coordenadas locais (segue o ângulo do último elo). */
-export function centroDisco(corpo: Corpo): Vetor {
-  const n = corpo.pontos.length;
-  const ponta = corpo.pontos[n - 1]!;
-  const antes = corpo.pontos[n - 2]!;
-  const dx = ponta.x - antes.x;
-  const dy = ponta.y - antes.y;
-  const d = Math.hypot(dx, dy) || 1;
-  return { x: ponta.x + (dx / d) * corpo.deslocamentoDisco, y: ponta.y + (dy / d) * corpo.deslocamentoDisco };
+/** Direção da fixação até a ponta: estável mesmo quando a linha dobra. */
+function direcao(ponta: Vetor): Vetor {
+  const d = Math.hypot(ponta.x, ponta.y) || 1;
+  return { x: ponta.x / d, y: ponta.y / d };
+}
+
+/** Ângulo (graus) para desenhar o círculo pendendo da ponta. */
+export function anguloDisco(corpo: Corpo): number {
+  const ponta = corpo.pontos[corpo.pontos.length - 1]!;
+  return (Math.atan2(ponta.y, ponta.x) * 180) / Math.PI - 90;
+}
+
+/** Centro do círculo, em coordenadas locais. */
+export function centroDisco(corpo: Corpo, ponta = corpo.pontos[corpo.pontos.length - 1]!): Vetor {
+  const u = direcao(ponta);
+  return { x: ponta.x + u.x * corpo.deslocamentoDisco, y: ponta.y + u.y * corpo.deslocamentoDisco };
 }
 
 function quadro(agora: number) {
@@ -72,7 +80,10 @@ function quadro(agora: number) {
   for (let s = 0; s < SUBPASSOS; s++) {
     corpos.forEach((corpo) => integrar(corpo, dt));
     for (let i = 0; i < ITERACOES; i++) {
-      corpos.forEach(restringir);
+      corpos.forEach((corpo) => {
+        restringir(corpo);
+        afastarLinhaDaParede(corpo);
+      });
     }
     colidir();
     corpos.forEach(baterNaParede);
@@ -102,15 +113,22 @@ function integrar(corpo: Corpo, dt: number) {
     const p = corpo.pontos[i]!;
     const a = corpo.anteriores[i]!;
     if (i === ultimo && corpo.arrasto) {
-      // Segurado: segue o cursor; a diferença para a posição anterior vira a velocidade ao soltar.
+      // Segurado: vai direto para o ponto válido mais perto do cursor (fora do card e dentro do
+      // alcance da linha). O deslocamento entre quadros vira a velocidade quando soltar.
+      const alvo = alvoValido(corpo, corpo.arrasto);
       a.x = p.x;
       a.y = p.y;
-      p.x += (corpo.arrasto.x - p.x) * 0.5;
-      p.y += (corpo.arrasto.y - p.y) * 0.5;
+      p.x = alvo.x;
+      p.y = alvo.y;
       continue;
     }
-    const vx = (p.x - a.x) * AMORTECIMENTO;
-    const vy = (p.y - a.y) * AMORTECIMENTO;
+    let vx = (p.x - a.x) * AMORTECIMENTO;
+    let vy = (p.y - a.y) * AMORTECIMENTO;
+    const v = Math.hypot(vx, vy);
+    if (v > VELOCIDADE_MAXIMA) {
+      vx *= VELOCIDADE_MAXIMA / v;
+      vy *= VELOCIDADE_MAXIMA / v;
+    }
     a.x = p.x;
     a.y = p.y;
     p.x += vx;
@@ -118,11 +136,33 @@ function integrar(corpo: Corpo, dt: number) {
   }
 }
 
+/** Ponto mais perto do cursor onde a ponta pode ficar: linha sem esticar e círculo fora do card. */
+function alvoValido(corpo: Corpo, cursor: Vetor): Vetor {
+  const alcance = (corpo.pontos.length - 1) * corpo.comprimentoElo;
+  const r = corpo.parede?.();
+  const ancora = corpo.ancora();
+  let { x, y } = cursor;
+  for (let k = 0; k < 4; k++) {
+    const d = Math.hypot(x, y);
+    if (d > alcance) {
+      x *= alcance / d;
+      y *= alcance / d;
+    }
+    if (!r) break;
+    const c = centroDisco(corpo, { x, y });
+    const saida = separacao(r, ancora.x + c.x, ancora.y + c.y, corpo.raio);
+    if (!saida) break;
+    x += saida.nx * saida.penetracao;
+    y += saida.ny * saida.penetracao;
+  }
+  return { x, y };
+}
+
 function restringir(corpo: Corpo) {
   const ultimo = corpo.pontos.length - 1;
   const inversa = (i: number) => {
     if (i === 0 || (i === ultimo && corpo.arrasto)) return 0;
-    return 1 / (i === ultimo ? MASSA_MEDALHAO : MASSA_ELO);
+    return 1 / (i === ultimo ? MASSA_PONTA : MASSA_ELO);
   };
   for (let i = 0; i < ultimo; i++) {
     const p = corpo.pontos[i]!;
@@ -141,7 +181,7 @@ function restringir(corpo: Corpo) {
   }
 }
 
-/** Medalhões que se encostam são afastados; na integração de Verlet isso já vira o "empurrão". */
+/** Círculos que se encostam são afastados; na integração de Verlet isso já vira o "empurrão". */
 function colidir() {
   const lista = [...corpos];
   for (let i = 0; i < lista.length; i++) {
@@ -174,63 +214,59 @@ function colidir() {
   }
 }
 
-/** Mantém a linha e o círculo fora do card; o círculo ricocheteia ao bater. */
-function baterNaParede(corpo: Corpo) {
+/** Quanto e para onde um círculo precisa sair do retângulo; null se já está fora. */
+function separacao(r: DOMRect, cx: number, cy: number, raio: number) {
+  const px = Math.min(Math.max(cx, r.left), r.right);
+  const py = Math.min(Math.max(cy, r.top), r.bottom);
+  const dx = cx - px;
+  const dy = cy - py;
+  const d = Math.hypot(dx, dy);
+  if (d >= raio) return null;
+  if (d > 0) return { nx: dx / d, ny: dy / d, penetracao: raio - d };
+  // Centro dentro do card: sai por baixo, que é de onde o chaveiro pende.
+  return { nx: 0, ny: 1, penetracao: r.bottom - cy + raio };
+}
+
+/** Pontos da linha que entraram no card saem pela borda mais próxima. */
+function afastarLinhaDaParede(corpo: Corpo) {
   const r = corpo.parede?.();
   if (!r) return;
   const ancora = corpo.ancora();
-  const ultimo = corpo.pontos.length - 1;
-
-  // Pontos da linha: se entraram no retângulo, saem pela borda mais próxima.
-  for (let i = 1; i < ultimo; i++) {
+  for (let i = 1; i < corpo.pontos.length - 1; i++) {
     const p = corpo.pontos[i]!;
     const x = ancora.x + p.x;
     const y = ancora.y + p.y;
     if (x <= r.left || x >= r.right || y <= r.top || y >= r.bottom) continue;
-    const saidas = [
+    const saida = [
       { d: x - r.left, dx: -(x - r.left), dy: 0 },
       { d: r.right - x, dx: r.right - x, dy: 0 },
       { d: y - r.top, dx: 0, dy: -(y - r.top) },
       { d: r.bottom - y, dx: 0, dy: r.bottom - y },
     ].sort((a, b) => a.d - b.d)[0]!;
-    p.x += saidas.dx;
-    p.y += saidas.dy;
+    p.x += saida.dx;
+    p.y += saida.dy;
   }
+}
 
-  // Círculo: distância do centro ao ponto mais próximo do retângulo.
-  const centro = centroDisco(corpo);
-  const cx = ancora.x + centro.x;
-  const cy = ancora.y + centro.y;
-  const px = Math.min(Math.max(cx, r.left), r.right);
-  const py = Math.min(Math.max(cy, r.top), r.bottom);
-  let nx = cx - px;
-  let ny = cy - py;
-  let d = Math.hypot(nx, ny);
-  let penetracao: number;
-  if (d > 0) {
-    if (d >= corpo.raio) return;
-    nx /= d;
-    ny /= d;
-    penetracao = corpo.raio - d;
-  } else {
-    // Centro dentro do card: sai por baixo, que é de onde o chaveiro pende.
-    nx = 0;
-    ny = 1;
-    d = r.bottom - cy;
-    penetracao = d + corpo.raio;
-  }
-
+/** Mantém o círculo fora do card; solto, ele ricocheteia ao bater. */
+function baterNaParede(corpo: Corpo) {
+  const r = corpo.parede?.();
+  if (!r || corpo.arrasto) return; // segurado, o alvo já respeita a parede
+  const ancora = corpo.ancora();
+  const c = centroDisco(corpo);
+  const saida = separacao(r, ancora.x + c.x, ancora.y + c.y, corpo.raio);
+  if (!saida) return;
+  const ultimo = corpo.pontos.length - 1;
   const ponta = corpo.pontos[ultimo]!;
   const anterior = corpo.anteriores[ultimo]!;
-  ponta.x += nx * penetracao;
-  ponta.y += ny * penetracao;
-  if (corpo.arrasto) return;
+  ponta.x += saida.nx * saida.penetracao;
+  ponta.y += saida.ny * saida.penetracao;
   // Inverte (e amortece) a componente da velocidade que entrava na parede.
   const vx = ponta.x - anterior.x;
   const vy = ponta.y - anterior.y;
-  const vn = vx * nx + vy * ny;
+  const vn = vx * saida.nx + vy * saida.ny;
   if (vn < 0) {
-    anterior.x = ponta.x - (vx - (1 + RICOCHETE) * vn * nx);
-    anterior.y = ponta.y - (vy - (1 + RICOCHETE) * vn * ny);
+    anterior.x = ponta.x - (vx - (1 + RICOCHETE) * vn * saida.nx);
+    anterior.y = ponta.y - (vy - (1 + RICOCHETE) * vn * saida.ny);
   }
 }

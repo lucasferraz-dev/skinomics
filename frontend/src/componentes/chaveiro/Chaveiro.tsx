@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useRef } from "react";
 
-import { acordar, type Corpo, registrar } from "./fisica";
+import { acordar, anguloDisco, type Corpo, registrar } from "./fisica";
 
 /**
  * Identidade de cada jogo no chaveiro, pelo appid da Steam. Para um jogo novo (ex.: CS2, appid 730),
@@ -54,9 +54,10 @@ export function Chaveiro({
       desenhar: () => {
         linha.current?.setAttribute("points", pontos.map((p) => `${p.x},${p.y}`).join(" "));
         const ponta = pontos[SEGMENTOS]!;
-        const antes = pontos[SEGMENTOS - 1]!;
-        const angulo = (Math.atan2(ponta.y - antes.y, ponta.x - antes.x) * 180) / Math.PI - 90;
-        pingente.current?.setAttribute("transform", `translate(${ponta.x} ${ponta.y}) rotate(${angulo})`);
+        pingente.current?.setAttribute(
+          "transform",
+          `translate(${ponta.x} ${ponta.y}) rotate(${anguloDisco(novo)})`,
+        );
       },
     };
     corpo.current = novo;
@@ -88,17 +89,9 @@ export function Chaveiro({
     const c = corpo.current;
     // Só mexe enquanto está segurando; o cursor passando por cima não empurra.
     if (!c?.arrasto || !pega.current) return;
+    // A física limita o alvo ao alcance da linha e à área fora do card.
     const cursor = cursorLocal(evento);
-    let x = cursor.x + pega.current.x;
-    let y = cursor.y + pega.current.y;
-    // A linha não estica: o alvo fica dentro do alcance a partir do ponto de fixação.
-    const d = Math.hypot(x, y);
-    const limite = SEGMENTOS * COMPRIMENTO_SEGMENTO;
-    if (d > limite) {
-      x = (x / d) * limite;
-      y = (y / d) * limite;
-    }
-    c.arrasto = { x, y };
+    c.arrasto = { x: cursor.x + pega.current.x, y: cursor.y + pega.current.y };
   }
 
   function soltar() {
