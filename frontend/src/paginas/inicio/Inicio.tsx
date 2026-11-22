@@ -13,7 +13,8 @@ import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarPreco } from "../../lib/formato";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
-import { DecidaComContexto, Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
+import { DestaquesDaSemana } from "./Destaques";
+import { Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
 import { BotaoPrimario, Container } from "./ui";
 import { jogoDoItem } from "../../lib/jogos";
 
@@ -27,7 +28,7 @@ export function Inicio() {
         <PreviaDaPlataforma />
         <Radar />
         <FluxoSimples />
-        <DecidaComContexto />
+        <DestaquesDaSemana />
         <Transparencia />
         <Faq />
       </main>
