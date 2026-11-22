@@ -124,7 +124,7 @@ function VitrineHero() {
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
             <img
-              key={item.id}
+              key={`imagem-${item.id}`}
               src={`${item.icon_url}/360fx360f`}
               alt={item.nome}
               draggable={false}
@@ -134,7 +134,7 @@ function VitrineHero() {
 
           {/* Medalha do motivo do destaque; entra com um "pop" a cada troca de item */}
           {item && tipoMotivo && (
-            <Medalha key={item.id} tipo={tipoMotivo} className="absolute top-16 right-6 rotate-[8deg] sm:right-10" />
+            <Medalha key={`medalha-${item.id}`} tipo={tipoMotivo} className="absolute top-3 left-4 z-10 -rotate-[8deg] sm:left-6" />
           )}
 
           <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
