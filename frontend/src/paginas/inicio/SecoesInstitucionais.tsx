@@ -39,7 +39,7 @@ export function FluxoSimples() {
         <ol className="grid gap-10 md:grid-cols-3">
           {PASSOS.map((passo, i) => (
             <li key={passo.titulo} className="space-y-4">
-              <span className="block border-b border-borda pb-3 font-mono text-sm text-destaque">/0{i + 1}</span>
+              <span className="block border-b border-borda pb-3 font-mono text-sm text-destaque">Passo {i + 1}</span>
               <h3 className="text-xl">{passo.titulo}</h3>
               <p className="text-sm text-suave">{passo.texto}</p>
               <Rotulo>{passo.rodape}</Rotulo>

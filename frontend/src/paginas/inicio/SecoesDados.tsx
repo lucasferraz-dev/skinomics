@@ -37,7 +37,7 @@ export function PreviaDaPlataforma() {
             <div className="flex h-12 items-center justify-between border-b border-borda px-4">
               <span className="flex items-center gap-2.5 text-sm font-semibold">
                 <MarcaLogo tamanho={18} />
-                Terminal <span className="font-normal text-apagado">/ Team Fortress 2</span>
+                Terminal
               </span>
               <span className="rounded bg-destaque-fundo px-2 py-0.5 font-rotulo text-xs font-semibold tracking-[0.06em] text-destaque">
                 Prévia
@@ -51,7 +51,7 @@ export function PreviaDaPlataforma() {
                     {item && <IconeItem url={item.icon_url} nome={item.nome} tamanho={44} />}
                     <div className="min-w-0">
                       <p className="truncate text-lg">{item?.nome ?? " "}</p>
-                      <Rotulo>TF2 / {item?.tipo ?? "Item"}</Rotulo>
+                      <Rotulo>{item?.tipo ?? "Item"}</Rotulo>
                     </div>
                   </div>
                   {item && (
@@ -77,7 +77,7 @@ export function PreviaDaPlataforma() {
               </div>
 
               <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
-                <Rotulo>Cenário / 7 dias</Rotulo>
+                <Rotulo>Cenário em 7 dias</Rotulo>
                 <p className="text-lg">Previsão em breve</p>
                 <p className="text-sm text-suave">
                   A faixa de preço estimada pelo modelo entra aqui, ao lado do histórico.
@@ -101,14 +101,8 @@ export function PreviaDaPlataforma() {
               {item?.data_preco ? `, atualizados até ${formatarData(item.data_preco)}` : ""}. Preços em dólar (US$).
             </p>
           </div>
-          {/* Pendurado embaixo do card, entre as legendas, com o card como parede. */}
+          {/* Pendurado embaixo do card, que funciona como parede para ele. */}
           <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-[30%] hidden sm:block" />
-        </div>
-
-        <div className="grid gap-4 font-rotulo text-[13px] font-semibold tracking-[0.06em] text-apagado sm:grid-cols-3">
-          <span>01 / Histórico e tendência no mesmo gráfico</span>
-          <span className="sm:text-center">02 / Incerteza visível, não escondida</span>
-          <span className="sm:text-right">03 / Contexto para a sua decisão</span>
         </div>
       </Container>
     </section>
@@ -123,7 +117,7 @@ export function Radar() {
     <section className="border-t border-borda py-20 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
-          rotulo="No radar / Team Fortress 2"
+          rotulo="No radar"
           titulo={
             <>
               Cada item conta uma história.

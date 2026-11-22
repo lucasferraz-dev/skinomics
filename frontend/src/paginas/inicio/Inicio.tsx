@@ -110,9 +110,6 @@ function VitrineHero() {
     <div>
       <div className="relative">
         <div ref={card} className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
-          <span className="absolute top-5 left-5">
-            <Rotulo destaque>TF2 / Economia em movimento</Rotulo>
-          </span>
           {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
@@ -143,10 +140,9 @@ function VitrineHero() {
         {/* Pendurado embaixo do card, que funciona como parede para ele. */}
         <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-28" />
       </div>
-      <div className="mt-4 flex items-center justify-between">
+      <p className="mt-4">
         <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>
-        <span className="font-mono text-2xl text-apagado">/ 01</span>
-      </div>
+      </p>
     </div>
   );
 }
