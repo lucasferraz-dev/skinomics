@@ -102,6 +102,8 @@ export function Mascote() {
   const { data } = useItens({ por_pagina: 100 });
   const linhas = useMemo(() => boletim(data?.itens ?? []), [data]);
   const ultimaLinha = useRef(-1);
+  // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
+  const falarRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     try {
@@ -139,6 +141,8 @@ export function Mascote() {
     let piscarEm = performance.now() + sortear(1500, 4000);
     let bicadaAte = 0;
     let caudaAte = 0;
+    // Fala sozinho de tempos em tempos (a primeira logo, para se apresentar).
+    let proximaFalaEm = performance.now() + sortear(12000, 20000);
     let anterior = performance.now();
     let quadro = 0;
 
@@ -322,7 +326,14 @@ export function Mascote() {
           alvo.cabecaGiro = agora < bicadaAte ? 42 : giroCabeca;
           if (agora < bicadaAte) alvo.cabecaX = 2.5;
           alvo.cauda = agora < caudaAte ? -12 : 0;
-          if (agora > ate && !falando.current) decidir(agora);
+          if (agora > proximaFalaEm && !falando.current && visivel(atual, ref)) {
+            // Pousado, parado e à vista: grasna e conta um dado; fica no lugar enquanto fala.
+            falarRef.current();
+            proximaFalaEm = agora + sortear(30000, 60000);
+            ate = Math.max(ate, agora + 2500);
+          } else if (agora > ate && !falando.current) {
+            decidir(agora);
+          }
         }
       }
 
@@ -364,7 +375,8 @@ export function Mascote() {
     return () => clearTimeout(t);
   }, [fala]);
 
-  function aoClicar() {
+  /** Grasna e mostra no balão um dado da base (sem repetir o último). */
+  function falar() {
     grasnandoDesde.current = performance.now();
     if (!linhas.length) return;
     let indice = Math.floor(Math.random() * linhas.length);
@@ -372,6 +384,9 @@ export function Mascote() {
     ultimaLinha.current = indice;
     setFala(linhas[indice]!);
   }
+  falarRef.current = falar;
+
+  const aoClicar = falar;
 
   return (
     <div
