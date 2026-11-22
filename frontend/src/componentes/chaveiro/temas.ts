@@ -1,5 +1,6 @@
-// Temas dos chaveiros: cada item ganha chaveiros que dizem o que ele é (caixa, chave, presente...)
-// e, se for o caso, de que evento ou qualidade é (Halloween, inverno, Unusual...). Os ícones são
+// Temas dos chaveiros: cada item ganha o chaveiro do jogo (pelo appid da Steam) e chaveiros que
+// dizem o que ele é (caixa, chave, presente...) e, se for o caso, de que evento ou qualidade é
+// (Halloween, inverno, Unusual...). Os ícones são
 // desenhados em traço, centrados em (0, 0), cabendo num círculo de raio ~10.
 
 export type TemaChaveiro = {
@@ -87,8 +88,14 @@ const T = {
     cor: "#ff8c42",
     icone: "M-8 -6.5v13M-4 -6.5v13M0 -6.5v13M4 -6.5v13M-9.5 4.5l15 -9M7.5 -6.5v13",
   },
-  tf2: { nome: "Team Fortress 2", cor: "#ff8c42", icone: "", texto: "TF2" },
 } satisfies Record<string, TemaChaveiro>;
+
+/** Chaveiro de cada jogo, pelo appid da Steam. Para um jogo novo, basta acrescentar uma entrada. */
+const JOGOS: Record<number, TemaChaveiro> = {
+  440: { nome: "Team Fortress 2", cor: "#ff8c42", icone: "", texto: "TF2" },
+  730: { nome: "Counter-Strike 2", cor: "#f0b232", icone: "", texto: "CS2" },
+  252490: { nome: "Rust", cor: "#ce422b", icone: "", texto: "RUST" },
+};
 
 const TIPOS: [RegExp, TemaChaveiro][] = [
   [/\bkey\b/, T.chave],
@@ -110,12 +117,15 @@ const TEMAS: [RegExp, TemaChaveiro][] = [
   [/^strange/, T.strange],
 ];
 
-/** Até três chaveiros para o item: o que ele é, e depois o evento e a qualidade. */
-export function temasDoItem(item: { nome: string; tipo?: string | null } | undefined): TemaChaveiro[] {
+/** Chaveiros do item: primeiro o do jogo; depois até três com o que ele é, o evento e a qualidade. */
+export function temasDoItem(
+  item: { appid: number; nome: string; tipo?: string | null } | undefined,
+): TemaChaveiro[] {
   if (!item) return [];
   const texto = `${item.nome} ${item.tipo ?? ""}`.toLowerCase();
   const tipo = TIPOS.find(([regra]) => regra.test(texto))?.[1];
   const extras = TEMAS.filter(([regra]) => regra.test(texto)).map(([, tema]) => tema);
-  const lista = [tipo, ...extras].filter((t): t is TemaChaveiro => Boolean(t));
-  return (lista.length ? lista : [T.tf2]).slice(0, 3);
+  const doItem = [tipo, ...extras].filter((t): t is TemaChaveiro => Boolean(t)).slice(0, 3);
+  const jogo = JOGOS[item.appid];
+  return jogo ? [jogo, ...doItem] : doItem;
 }

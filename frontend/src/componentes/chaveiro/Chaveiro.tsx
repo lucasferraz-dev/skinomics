@@ -115,11 +115,11 @@ export function Chaveiro({
             <text
               className="pointer-events-none select-none"
               aria-hidden
-              y={RAIO + 4.5}
+              y={RAIO + (tema.texto.length > 3 ? 3.5 : 4.5)}
               textAnchor="middle"
               fill={tema.cor}
               fontFamily="var(--font-sans)"
-              fontSize="13"
+              fontSize={tema.texto.length > 3 ? 10 : 13}
               fontWeight="800"
               style={{ fontStretch: "112%" }}
             >
@@ -144,8 +144,8 @@ export function Chaveiro({
 }
 
 /**
- * Os chaveiros de um item, lado a lado embaixo do card: o que o item é e, se for o caso, o evento e
- * a qualidade. Trocar de item troca os chaveiros (e eles entram balançando). `direita` é a distância
+ * Os chaveiros de um item, lado a lado embaixo do card: o do jogo, o que o item é e, se for o caso,
+ * o evento e a qualidade. Trocar de item troca os chaveiros (e eles entram balançando). `direita` é a distância
  * da borda direita do card até o primeiro chaveiro, em CSS (ex.: "7rem" ou "30%").
  */
 export function ChaveirosDoItem({
@@ -154,7 +154,7 @@ export function ChaveirosDoItem({
   direita,
   className = "",
 }: {
-  item: { id: number; nome: string; tipo?: string | null } | undefined;
+  item: { id: number; appid: number; nome: string; tipo?: string | null } | undefined;
   parede?: RefObject<HTMLElement | null>;
   direita: string;
   className?: string;
@@ -166,7 +166,7 @@ export function ChaveirosDoItem({
           key={`${item?.id}-${tema.nome}`}
           tema={tema}
           // Comprimentos diferentes, para os círculos não ficarem todos alinhados.
-          segmentos={[6, 8, 5][i]}
+          segmentos={[6, 8, 5, 7][i]}
           parede={parede}
           className={`absolute top-full ${className}`}
           style={{ right: `calc(${direita} + ${i * ESPACAMENTO}px)` }}
