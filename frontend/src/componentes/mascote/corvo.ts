@@ -6,7 +6,7 @@
 export type Vetor = { x: number; y: number };
 
 export const CHAO = 96;
-export const APOIO_X = 55;
+export const APOIO_X = 59; // entre os dois pés, contando os dedos
 const TIBIA = 12;
 const TARSO = 15;
 const QUADRIS: [Vetor, Vetor] = [
@@ -28,6 +28,7 @@ export type Pose = {
   asaLonge: number;
   asaFechadaGiro: number;
   cauda: number;
+  bico: number; // abertura do bico, em graus (grasnando)
 };
 
 export function poseParada(): Pose {
@@ -46,6 +47,7 @@ export function poseParada(): Pose {
     asaLonge: 90,
     asaFechadaGiro: 0,
     cauda: 0,
+    bico: 0,
   };
 }
 
@@ -161,6 +163,7 @@ export function misturar(a: Pose, b: Pose, t: number): Pose {
     asaLonge: l(a.asaLonge, b.asaLonge),
     asaFechadaGiro: l(a.asaFechadaGiro, b.asaFechadaGiro),
     cauda: l(a.cauda, b.cauda),
+    bico: l(a.bico, b.bico),
   };
 }
 
@@ -211,3 +214,35 @@ export function transformarCorpo(pose: Pose): string {
 export const PESCOCO = { x: 88, y: 38 };
 export const OMBRO = { x: 80, y: 41 };
 export const BASE_CAUDA = { x: 40, y: 64 };
+
+/** Empoleirado numa letra: pés juntos, no centro do trecho plano do topo. */
+export function pesJuntos(pose: Pose): Pose {
+  return {
+    ...pose,
+    pes: [
+      { ...pose.pes[0], x: APOIO_X + 1 },
+      { ...pose.pes[1], x: APOIO_X - 3 },
+    ],
+  };
+}
+
+/**
+ * Grasnando: três grasnadas em `duracao` ms. A cabeça sobe e vai à frente, o bico abre e fecha,
+ * o corpo estufa e as asas e a cauda acompanham.
+ */
+export function grasnar(pose: Pose, decorrido: number, duracao: number): Pose {
+  const t = Math.min(Math.max(decorrido / duracao, 0), 1);
+  const envelope = Math.sin(Math.PI * t);
+  const grito = Math.abs(Math.sin(t * Math.PI * 3));
+  return {
+    ...pose,
+    corpoY: pose.corpoY - 1.5 * envelope,
+    inclinacao: pose.inclinacao - 6 * envelope,
+    cabecaX: pose.cabecaX + 2.5 * grito,
+    cabecaY: pose.cabecaY - 1 * grito,
+    cabecaGiro: pose.cabecaGiro - 16 * envelope - 6 * grito,
+    bico: 26 * grito,
+    asaFechadaGiro: pose.asaFechadaGiro - 10 * grito,
+    cauda: pose.cauda + 8 * grito,
+  };
+}

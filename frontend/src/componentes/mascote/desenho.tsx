@@ -100,6 +100,7 @@ export type Partes = {
   asaPerto: React.RefObject<SVGGElement | null>;
   asaLonge: React.RefObject<SVGGElement | null>;
   olho: React.RefObject<SVGGElement | null>;
+  bico: React.RefObject<SVGGElement | null>;
   pernas: React.RefObject<(SVGPathElement | null)[]>;
 };
 
@@ -113,11 +114,13 @@ export function usePartes(): Partes {
     asaPerto: useRef(null),
     asaLonge: useRef(null),
     olho: useRef(null),
+    bico: useRef(null),
     pernas: useRef([]),
   };
 }
 
 const OLHO_Y = 30.2;
+const ARTICULACAO_BICO = { x: 104.2, y: 34.8 };
 
 /** Aplica uma pose às partes do desenho (sem passar pelo React). `piscada` vai de 0 (aberto) a 1. */
 export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada = 0) {
@@ -137,6 +140,7 @@ export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada
     ref.current?.setAttribute("opacity", pose.asa === "aberta" ? "1" : "0");
   }
   t(partes.olho, `translate(0 ${OLHO_Y}) scale(1 ${n(1 - piscada)}) translate(0 ${-OLHO_Y})`);
+  t(partes.bico, `rotate(${n(pose.bico)} ${ARTICULACAO_BICO.x} ${ARTICULACAO_BICO.y})`);
   ([0, 1] as const).forEach((lado) => {
     const p = perna(pose, lado);
     partes.pernas.current[lado * 3]?.setAttribute("d", p.tibia);
@@ -234,8 +238,11 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
           <g ref={partes.cabeca}>
             <path d={CABECA} />
             <path d={escamas(78, 32, 96, 42, 2.6)} fill="none" strokeWidth="0.4" strokeOpacity="0.45" clipPath={`url(#${id}-cabeca)`} />
+            {/* A parte de baixo do bico abre ao grasnar */}
+            <g ref={partes.bico}>
+              <path d={BICO_BAIXO} />
+            </g>
             <path d={BICO_CIMA} />
-            <path d={BICO_BAIXO} />
             <path d="M99.6 26.6C101.8 26.6 104 27.6 106.4 29.4M99.4 28.4c2 .2 3.8 1 5.6 2.4" fill="none" strokeWidth="0.55" />
             {/* Olho de bravo: fenda inclinada sob a sobrancelha; pisca fechando a fenda */}
             <g ref={partes.olho}>

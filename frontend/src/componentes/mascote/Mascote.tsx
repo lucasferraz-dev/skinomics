@@ -14,6 +14,8 @@ import {
   poseParada,
   posePulo,
   poseVoando,
+  grasnar as poseGrasnando,
+  pesJuntos,
 } from "./corvo";
 import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
@@ -23,7 +25,8 @@ import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./pol
 // acima ou abaixo (ou quando o atual sai da tela). Parado, pisca, vira a cabeça, bica e mexe a cauda.
 // Clicado, mostra um dado real da base. Precisa de um pai com `position: relative`.
 
-const ESCALA = 0.95;
+const ESCALA = 0.72;
+const DURACAO_GRASNADO = 900; // ms
 const LARGURA = 120 * ESCALA;
 const ALTURA = 100 * ESCALA;
 const VELOCIDADE = 30; // px/s andando
@@ -95,6 +98,7 @@ export function Mascote() {
   const raiz = useRef<HTMLDivElement>(null);
   const partes = usePartes();
   const falando = useRef(false);
+  const grasnandoDesde = useRef(-Infinity);
   const { data } = useItens({ por_pagina: 100 });
   const linhas = useMemo(() => boletim(data?.itens ?? []), [data]);
   const ultimaLinha = useRef(-1);
@@ -127,7 +131,6 @@ export function Mascote() {
     let fase = 0;
     let trajeto: Trajeto | null = null;
     let proximoTrajeto: Trajeto | null = null;
-    let invisivelDesde = 0;
     let pose: Pose = poseParada();
     // Comportamentos de quando está parado.
     let giroCabeca = 0;
@@ -200,7 +203,7 @@ export function Mascote() {
       virarPara(t.pontos[3].x - t.pontos[0].x);
       mudar(t.tipo === "pulo" ? "pulando" : "voando", agora);
     };
-    const decidir = (agora: number, ref: DOMRect) => {
+    const decidir = (agora: number) => {
       if (!atual) return;
       // Nos cards ele anda; nas letras só se empoleira.
       if (!atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
@@ -211,8 +214,9 @@ export function Mascote() {
         mudar("andando", agora);
         return;
       }
+      // Passeia pela página inteira, de poleiro em poleiro próximo, sem seguir a área visível.
       const candidatos = poleiros
-        .filter((p) => p.chave !== atual!.chave && visivel(p, ref))
+        .filter((p) => p.chave !== atual!.chave)
         .map((p) => ({ p, d: Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) }))
         .filter(({ d }) => d < 750)
         .sort((a, b) => a.d - b.d)
@@ -248,9 +252,10 @@ export function Mascote() {
       if (agora - atualizadoEm > 1200) atualizarPoleiros(agora);
       const desde = agora - modoDesde;
 
-      // Primeiro pouso: o primeiro poleiro visível (normalmente o título principal).
+      // Primeiro pouso: o primeiro poleiro visível (normalmente o título principal) ou, se a página
+      // abriu já rolada, o primeiro da página.
       if (!atual && !trajeto && !proximoTrajeto) {
-        const inicial = poleiros.find((p) => visivel(p, ref));
+        const inicial = poleiros.find((p) => visivel(p, ref)) ?? poleiros[0];
         if (inicial) {
           atual = inicial;
           x = sortear(inicial.x0, Math.min(inicial.x1, inicial.x0 + 220));
@@ -292,22 +297,7 @@ export function Mascote() {
           mudar("parado", agora);
           ate = agora + sortear(800, 2600);
         }
-      } else if (atual && !calmo && !visivel(atual, ref)) {
-        // O poleiro saiu da tela: depois de um instante, voa para um visível, entrando pela borda.
-        invisivelDesde ||= agora;
-        if (agora - invisivelDesde > 500) {
-          y = limitar(y, -ref.top + 40, -ref.top + window.innerHeight + 40);
-          const opcoes = poleiros.filter((p) => visivel(p, ref));
-          const rotas = opcoes.map((p) => planejar(p, agora, "voo")).filter((t): t is Trajeto => t !== null);
-          // Se nenhuma rota estiver livre (vindo de fora da tela), aceita a mais simples.
-          const rota =
-            rotas[Math.floor(Math.random() * rotas.length)] ??
-            (opcoes[0] ? planejar(opcoes[0], agora, "voo", false) : null);
-          if (rota) iniciarTrajeto(rota, agora);
-          invisivelDesde = 0;
-        }
       } else if (modo === "andando" && atual) {
-        invisivelDesde = 0;
         const dx = alvoX - x;
         const passoX = Math.sign(dx) * Math.min(Math.abs(dx), VELOCIDADE * dt);
         x += passoX;
@@ -318,7 +308,6 @@ export function Mascote() {
           ate = agora + sortear(900, 2600);
         }
       } else if (atual) {
-        invisivelDesde = 0;
         // Parado: respira, vira a cabeça de vez em quando, às vezes bica o chão ou mexe a cauda.
         alvo = poseParada();
         alvo.corpoY = Math.sin(agora / 700) * 0.4;
@@ -333,12 +322,18 @@ export function Mascote() {
           alvo.cabecaGiro = agora < bicadaAte ? 42 : giroCabeca;
           if (agora < bicadaAte) alvo.cabecaX = 2.5;
           alvo.cauda = agora < caudaAte ? -12 : 0;
-          if (agora > ate && !falando.current) decidir(agora, ref);
+          if (agora > ate && !falando.current) decidir(agora);
         }
       }
 
-      // Suaviza a passagem entre poses (a caminhada e o voo já são contínuos por si).
-      const rapidez = modo === "andando" || modo === "voando" ? 30 : 16;
+      // Numa letra, os pés ficam juntos no topo dela.
+      if (atual?.letra && (modo === "parado" || modo === "pousando")) alvo = pesJuntos(alvo);
+      // Clicado: grasna (cabeça para cima e para frente, bico abrindo e fechando).
+      const grasnando = agora - grasnandoDesde.current < DURACAO_GRASNADO;
+      if (grasnando) alvo = poseGrasnando(alvo, agora - grasnandoDesde.current, DURACAO_GRASNADO);
+
+      // Suaviza a passagem entre poses (a caminhada, o voo e o grasnado já são contínuos por si).
+      const rapidez = modo === "andando" || modo === "voando" || grasnando ? 30 : 16;
       const asa = alvo.asa;
       pose = misturar(pose, alvo, 1 - Math.exp(-dt * rapidez));
       pose.asa = asa;
@@ -369,7 +364,8 @@ export function Mascote() {
     return () => clearTimeout(t);
   }, [fala]);
 
-  function grasnar() {
+  function aoClicar() {
+    grasnandoDesde.current = performance.now();
     if (!linhas.length) return;
     let indice = Math.floor(Math.random() * linhas.length);
     if (indice === ultimaLinha.current) indice = (indice + 1) % linhas.length;
@@ -391,7 +387,7 @@ export function Mascote() {
           {fala}
         </p>
       )}
-      <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={grasnar} />
+      <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
     </div>
   );
 }
