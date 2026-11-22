@@ -17,20 +17,24 @@ export type Corpo = {
   ancora: () => Vetor;
   /** Posição do cursor (local) enquanto alguém segura o círculo; null quando solto. */
   arrasto: Vetor | null;
+  /** Enquanto segurado: onde a ponta está e a velocidade (suavizada) com que o cursor a move. */
+  alvoArrasto?: Vetor;
+  velocidadeArrasto?: Vetor;
   /** Retângulo (viewport) que funciona como parede: a linha e o círculo não entram nele. */
   parede?: () => DOMRect | undefined;
   desenhar: () => void;
 };
 
 const GRAVIDADE = 2200; // px/s²
-const AMORTECIMENTO = 0.985; // por subpasso: deixa o chaveiro "pesado", sem balançar à toa
-const VELOCIDADE_MAXIMA = 12; // px por subpasso, para um arremesso não virar bagunça
+const AMORTECIMENTO = 0.997; // por subpasso: balança de um lado ao outro algumas vezes até parar
+const VELOCIDADE_MAXIMA = 22; // px por subpasso, para um arremesso não virar bagunça
 const SUBPASSOS = 3;
 const ITERACOES = 10;
 const MASSA_ELO = 1;
 const MASSA_PONTA = 5;
-const EMPURRAO_MAXIMO = 1.2; // px por subpasso
-const RICOCHETE = 0.35; // fração da velocidade devolvida ao bater na parede
+const EMPURRAO_MAXIMO = 2.5; // px por subpasso
+const ELASTICIDADE = 0.6; // quanto da velocidade de aproximação volta numa batida entre chaveiros
+const RICOCHETE = 0.5; // fração da velocidade devolvida ao bater na parede
 
 const corpos = new Set<Corpo>();
 let rodando = false;
@@ -77,6 +81,22 @@ function quadro(agora: number) {
   const dt = Math.min((agora - ultimoTempo) / 1000, 1 / 30) / SUBPASSOS;
   ultimoTempo = agora;
 
+  // Segurado: acompanha o cursor e mede a velocidade com que ele move a ponta, para o chaveiro
+  // sair com esse embalo quando for solto (um arremesso continua balançando).
+  corpos.forEach((corpo) => {
+    if (!corpo.arrasto) {
+      corpo.alvoArrasto = undefined;
+      corpo.velocidadeArrasto = undefined;
+      return;
+    }
+    const alvo = alvoValido(corpo, corpo.arrasto);
+    const antes = corpo.alvoArrasto ?? alvo;
+    const medida = { x: (alvo.x - antes.x) / SUBPASSOS, y: (alvo.y - antes.y) / SUBPASSOS };
+    const v = corpo.velocidadeArrasto ?? medida;
+    corpo.velocidadeArrasto = { x: v.x * 0.4 + medida.x * 0.6, y: v.y * 0.4 + medida.y * 0.6 };
+    corpo.alvoArrasto = alvo;
+  });
+
   for (let s = 0; s < SUBPASSOS; s++) {
     corpos.forEach((corpo) => integrar(corpo, dt));
     for (let i = 0; i < ITERACOES; i++) {
@@ -112,14 +132,14 @@ function integrar(corpo: Corpo, dt: number) {
   for (let i = 1; i <= ultimo; i++) {
     const p = corpo.pontos[i]!;
     const a = corpo.anteriores[i]!;
-    if (i === ultimo && corpo.arrasto) {
-      // Segurado: vai direto para o ponto válido mais perto do cursor (fora do card e dentro do
-      // alcance da linha). O deslocamento entre quadros vira a velocidade quando soltar.
-      const alvo = alvoValido(corpo, corpo.arrasto);
-      a.x = p.x;
-      a.y = p.y;
-      p.x = alvo.x;
-      p.y = alvo.y;
+    if (i === ultimo && corpo.arrasto && corpo.alvoArrasto) {
+      // Segurado: fica no ponto válido mais perto do cursor (fora do card e dentro do alcance da
+      // linha); a posição anterior guarda a velocidade do cursor, que vira o embalo ao soltar.
+      const v = corpo.velocidadeArrasto ?? { x: 0, y: 0 };
+      p.x = corpo.alvoArrasto.x;
+      p.y = corpo.alvoArrasto.y;
+      a.x = p.x - v.x;
+      a.y = p.y - v.y;
       continue;
     }
     let vx = (p.x - a.x) * AMORTECIMENTO;
@@ -200,16 +220,38 @@ function colidir() {
       const pa = a.arrasto ? 0 : 1;
       const pb = b.arrasto ? 0 : 1;
       if (pa + pb === 0) continue;
-      // Correção limitada por subpasso: o empurrão vira uma batida suave, não um arremesso.
-      const empurrao = Math.min(minimo - d, EMPURRAO_MAXIMO) / (pa + pb);
       const nx = dx / d;
       const ny = dy / d;
       const pontaA = a.pontos[a.pontos.length - 1]!;
       const pontaB = b.pontos[b.pontos.length - 1]!;
+      const antA = a.anteriores[a.anteriores.length - 1]!;
+      const antB = b.anteriores[b.anteriores.length - 1]!;
+      // Batida: troca de impulso na direção do contato (o que vem rápido empurra o outro, que sai
+      // balançando), com parte da energia perdida.
+      const va = { x: pontaA.x - antA.x, y: pontaA.y - antA.y };
+      const vb = { x: pontaB.x - antB.x, y: pontaB.y - antB.y };
+      const aproximacao = (vb.x - va.x) * nx + (vb.y - va.y) * ny;
+      if (aproximacao < 0) {
+        const j = (-(1 + ELASTICIDADE) * aproximacao) / (pa + pb);
+        va.x -= j * pa * nx;
+        va.y -= j * pa * ny;
+        vb.x += j * pb * nx;
+        vb.y += j * pb * ny;
+      }
+      // Separa os círculos (limitado por subpasso, para não dar tranco).
+      const empurrao = Math.min(minimo - d, EMPURRAO_MAXIMO) / (pa + pb);
       pontaA.x -= nx * empurrao * pa;
       pontaA.y -= ny * empurrao * pa;
       pontaB.x += nx * empurrao * pb;
       pontaB.y += ny * empurrao * pb;
+      if (pa) {
+        antA.x = pontaA.x - va.x;
+        antA.y = pontaA.y - va.y;
+      }
+      if (pb) {
+        antB.x = pontaB.x - vb.x;
+        antB.y = pontaB.y - vb.y;
+      }
     }
   }
 }
