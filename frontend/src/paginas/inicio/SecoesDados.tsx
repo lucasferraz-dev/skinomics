@@ -9,7 +9,7 @@ import { MarcaLogo } from "../../componentes/Logo";
 import { formatarData, formatarDiaMes, formatarPreco } from "../../lib/formato";
 import { LinhaItem } from "../ExplorarItens";
 import { useItemVitrine } from "./dados";
-import { CabecalhoSecao, Container } from "./ui";
+import { BotaoSecundario, CabecalhoSecao, Container, SetaTrocando } from "./ui";
 
 /** Seção 2: uma "janela" do Terminal com o histórico e a previsão reais do item da vitrine. */
 export function PreviaDaPlataforma() {
@@ -55,12 +55,11 @@ export function PreviaDaPlataforma() {
                     </div>
                   </div>
                   {item && (
-                    <Link
-                      to={`/itens/${item.id}`}
-                      className="shrink-0 rounded-lg border border-borda px-3 py-1.5 text-sm transition-colors hover:border-suave"
-                    >
-                      Abrir no Terminal ↗
-                    </Link>
+                    <BotaoSecundario para={`/itens/${item.id}`} tamanho="sm" className="text-sm">
+                      <span className="inline-flex items-center gap-1.5">
+                        Abrir no Terminal <SetaTrocando />
+                      </span>
+                    </BotaoSecundario>
                   )}
                 </div>
 
@@ -201,8 +200,13 @@ export function Radar() {
 
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-apagado">
           <p>Preços em US$ do Mercado da Comunidade Steam. Efeitos e qualidades alteram o valor de um item.</p>
-          <Link to="/itens" className="text-sm text-destaque hover:underline">
-            Explorar todos os itens →
+          <Link to="/itens" className="group/botao inline-flex items-center gap-1.5 text-sm text-destaque">
+            <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-300 group-hover/botao:bg-[length:100%_1px]">
+              Explorar todos os itens
+            </span>
+            <span aria-hidden className="transition-transform duration-300 group-hover/botao:translate-x-1">
+              →
+            </span>
           </Link>
         </div>
       </Container>

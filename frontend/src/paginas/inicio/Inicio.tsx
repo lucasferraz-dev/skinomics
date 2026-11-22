@@ -16,7 +16,7 @@ import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DestaquesDaSemana } from "./Destaques";
 import { Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
-import { BotaoPrimario, Container } from "./ui";
+import { BotaoPrimario, BotaoSecundario, Container } from "./ui";
 import { jogoDoItem } from "../../lib/jogos";
 
 export function Inicio() {
@@ -87,12 +87,16 @@ function Hero() {
           </p>
           <div className="flex flex-wrap gap-3">
             <BotaoPrimario para="/itens">Explorar a plataforma</BotaoPrimario>
-            <a
+            <BotaoSecundario
               href="#plataforma"
-              className="rounded-lg border border-borda px-4 py-2.5 text-sm transition-colors hover:border-suave"
+              icone={
+                <span aria-hidden className="transition-transform duration-300 group-hover/botao:translate-y-0.5">
+                  ↓
+                </span>
+              }
             >
               Ver demonstração
-            </a>
+            </BotaoSecundario>
           </div>
           <p className="flex items-center gap-2 text-xs text-apagado">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -129,16 +133,29 @@ function VitrineHero() {
 
           <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
             {motivo && <Rotulo destaque>{motivo}</Rotulo>}
-            <button
-              type="button"
-              onClick={trocar}
-              className="ml-auto flex items-center gap-2 rounded-lg border border-borda bg-painel/80 px-3 py-1.5 text-xs text-suave backdrop-blur transition-colors hover:border-suave hover:text-texto"
+            <BotaoSecundario
+              aoClicar={trocar}
+              tamanho="sm"
+              className="ml-auto bg-painel/80 text-suave backdrop-blur"
+              icone={
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  className="transition-transform duration-500 group-hover/botao:rotate-180"
+                >
+                  <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                </svg>
+              }
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-              </svg>
               Outro item
-            </button>
+            </BotaoSecundario>
           </div>
 
           <div className="absolute right-4 bottom-4 left-4 rounded-xl border border-borda bg-painel/90 p-4 backdrop-blur sm:right-auto sm:w-80">
