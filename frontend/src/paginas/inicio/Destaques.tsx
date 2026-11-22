@@ -7,6 +7,7 @@ import { Carregando, IconeItem, Rotulo, Variacao } from "../../componentes/Basic
 import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { Sparkline } from "../../componentes/Sparkline";
 import { diasAntes, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
+import { Medalha, type TipoMedalha } from "./Medalha";
 import { CabecalhoSecao, Container } from "./ui";
 
 // Abaixo disso a variação da semana vem de pouquíssimas vendas e não diz muito.
@@ -31,8 +32,10 @@ function TerminalItem({
   detalhe,
   rodape,
   semDados,
+  medalha,
 }: {
   semDados?: string;
+  medalha: TipoMedalha;
   rotulo: string;
   item: Base | undefined;
   preco: number | null | undefined;
@@ -46,7 +49,10 @@ function TerminalItem({
   const conteudo = item ? (
     <div className="space-y-4 p-4">
       <div className="flex min-w-0 items-center gap-3">
-        <IconeItem url={item.icon_url} nome={item.nome} tamanho={40} />
+        <span className="relative shrink-0">
+          <IconeItem url={item.icon_url} nome={item.nome} tamanho={40} />
+          <Medalha tipo={medalha} tamanho="pequena" className="absolute -top-2.5 -right-2.5" />
+        </span>
         <div className="min-w-0">
           <p className="truncate text-sm">{item.nome}</p>
           <p className="truncate text-xs text-apagado">{item.tipo ?? " "}</p>
@@ -121,6 +127,7 @@ export function DestaquesDaSemana() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TerminalItem
             rotulo="Maior alta em 7 dias"
+            medalha="alta"
             item={alta}
             preco={alta?.preco_atual}
             detalhe={<Variacao valor={alta?.variacao_7d} />}
@@ -128,6 +135,7 @@ export function DestaquesDaSemana() {
           />
           <TerminalItem
             rotulo="Maior queda em 7 dias"
+            medalha="queda"
             item={queda}
             preco={queda?.preco_atual}
             detalhe={<Variacao valor={queda?.variacao_7d} />}
@@ -135,6 +143,7 @@ export function DestaquesDaSemana() {
           />
           <TerminalItem
             rotulo="Mais negociado"
+            medalha="volume"
             item={maisNegociado}
             preco={maisNegociado?.preco_atual}
             detalhe={<Variacao valor={maisNegociado?.variacao_7d} />}
@@ -142,6 +151,7 @@ export function DestaquesDaSemana() {
           />
           <TerminalItem
             rotulo="Maior margem prevista"
+            medalha="margem"
             semDados={ranking && !oportunidade ? "Nenhum item com margem positiva prevista agora." : undefined}
             item={
               oportunidade && {

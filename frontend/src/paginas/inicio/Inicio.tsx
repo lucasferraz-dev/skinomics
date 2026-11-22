@@ -12,6 +12,7 @@ import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
 import { Adesivo } from "./Adesivo";
+import { Medalha } from "./Medalha";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DestaquesDaSemana } from "./Destaques";
@@ -112,7 +113,7 @@ function Hero() {
 }
 
 function VitrineHero() {
-  const { item, pontos, motivo, trocar } = useItemVitrine(30);
+  const { item, pontos, tipoMotivo, trocar } = useItemVitrine(30);
   const card = useRef<HTMLDivElement>(null);
 
   return (
@@ -131,8 +132,12 @@ function VitrineHero() {
             />
           )}
 
+          {/* Medalha do motivo do destaque; entra com um "pop" a cada troca de item */}
+          {item && tipoMotivo && (
+            <Medalha key={item.id} tipo={tipoMotivo} className="absolute top-16 right-6 rotate-[8deg] sm:right-10" />
+          )}
+
           <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
-            {motivo && <Rotulo destaque>{motivo}</Rotulo>}
             <BotaoSecundario
               aoClicar={trocar}
               tamanho="sm"

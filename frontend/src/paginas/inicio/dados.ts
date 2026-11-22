@@ -7,7 +7,7 @@ import { diasAntes } from "../../lib/formato";
 // mais negociado ou um item qualquer) e um item que se encaixa nele. O botão "Outro item" sorteia de
 // novo. A escolha fica num estado do módulo para a vitrine e a prévia do Terminal mostrarem o mesmo item.
 
-type Motivo = "alta" | "queda" | "volume" | "aleatorio";
+export type Motivo = "alta" | "queda" | "volume" | "aleatorio";
 
 const ROTULOS: Record<Motivo, string> = {
   alta: "Maior alta em 7 dias",
@@ -69,6 +69,7 @@ export function useItemVitrine(dias: number) {
     item,
     pontos: historico.data,
     motivo: motivo ? ROTULOS[motivo] : undefined,
+    tipoMotivo: motivo,
     trocar: () => escolher(itens, item?.id),
   };
 }
