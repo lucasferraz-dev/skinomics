@@ -1,9 +1,14 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router";
+
+import { useItens } from "../../api/itens";
+import { useOportunidades } from "../../api/oportunidades";
 import { Rotulo, Variacao } from "../../componentes/Basicos";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
-import { formatarPreco } from "../../lib/formato";
+import { formatarData, formatarPreco } from "../../lib/formato";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
 import { DecidaComContexto, Faq, FluxoSimples, Transparencia } from "./SecoesInstitucionais";
@@ -139,27 +144,87 @@ function VitrineHero() {
   );
 }
 
+// Ícones de traço (24×24), no mesmo estilo dos demais da landing.
+const ICONES = {
+  itens: "M12 3 3 7.5l9 4.5 9-4.5zM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5",
+  calendario: "M7 3v3m10-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm3 8h3v3H8z",
+  oportunidade: "M3 17l6-6 4 4 7-7m0 0h-5m5 0v5",
+  horizonte: "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+} as const;
+
+type Indicador = {
+  rotulo: string;
+  valor: ReactNode;
+  detalhe: ReactNode;
+  icone: keyof typeof ICONES;
+  para?: string;
+};
+
+/** Cards logo abaixo do hero: números reais da base, iguais para todos os itens. */
 function Destaques() {
-  const itens = [
-    ["Histórico + projeções", "M3 17l6-6 4 4 8-8"],
-    ["Sinais com contexto", "M12 3v3m0 12v3M3 12h3m12 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8"],
-    ["Team Fortress 2, primeiro", "M12 3 3 8l9 5 9-5zM3 13l9 5 9-5"],
-  ] as const;
+  const itens = useItens({ por_pagina: 1 }).data;
+  const oportunidades = useOportunidades(7, 1).data;
+  const dataCotacao = itens?.itens[0]?.data_preco;
+
+  const indicadores: Indicador[] = [
+    { rotulo: "Itens monitorados", valor: itens?.total ?? "—", detalhe: "Mercado da Steam · TF2", icone: "itens" },
+    {
+      rotulo: "Última cotação",
+      valor: dataCotacao ? formatarData(dataCotacao) : "—",
+      detalhe: "Atualizada a cada coleta",
+      icone: "calendario",
+    },
+    {
+      rotulo: "Oportunidades · 7 dias",
+      valor: oportunidades?.total ?? "—",
+      detalhe: "com margem prevista positiva",
+      icone: "oportunidade",
+      para: "/oportunidades",
+    },
+    { rotulo: "Horizontes", valor: "7 · 15 · 30", detalhe: "dias, com faixa de 80%", icone: "horizonte" },
+  ];
 
   return (
     <section className="border-y border-borda">
-      <Container className="flex flex-wrap items-center justify-between gap-x-10 gap-y-4 py-5">
-        <Rotulo>Construída para entender o mercado</Rotulo>
-        {itens.map(([texto, icone]) => (
-          <span key={texto} className="flex items-center gap-2 text-sm text-suave">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-destaque)" strokeWidth="1.8" aria-hidden>
-              <path d={icone} />
-            </svg>
-            {texto}
-          </span>
+      <Container className="grid grid-cols-2 gap-3 py-6 sm:gap-4 lg:grid-cols-4">
+        {indicadores.map((indicador) => (
+          <CardIndicador key={indicador.rotulo} {...indicador} />
         ))}
       </Container>
     </section>
+  );
+}
+
+function CardIndicador({ rotulo, valor, detalhe, icone, para }: Indicador) {
+  const conteudo = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <span className="grid size-10 place-items-center rounded-xl border border-destaque/20 bg-destaque-fundo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-destaque)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d={ICONES[icone]} />
+          </svg>
+        </span>
+        {para && (
+          <span className="font-mono text-sm text-apagado transition-colors group-hover:text-destaque" aria-hidden>
+            ↗
+          </span>
+        )}
+      </div>
+      <div className="space-y-1">
+        <Rotulo>{rotulo}</Rotulo>
+        <p className="font-mono text-2xl sm:text-3xl">{valor}</p>
+        <p className="font-mono text-[11px] text-apagado">{detalhe}</p>
+      </div>
+    </>
+  );
+  const classe = "flex flex-col justify-between gap-6 rounded-2xl border border-borda bg-painel p-4 sm:p-5";
+
+  return para ? (
+    <Link to={para} className={`group ${classe} transition-colors hover:border-destaque/40`}>
+      {conteudo}
+    </Link>
+  ) : (
+    <div className={classe}>{conteudo}</div>
   );
 }
 
