@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { useItens } from "../../api/itens";
 import { useOportunidades } from "../../api/oportunidades";
 import { Rotulo, Variacao } from "../../componentes/Basicos";
-import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
+import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
@@ -160,8 +160,8 @@ function VitrineHero() {
             </div>
           </div>
         </div>
-        {/* Pendurado embaixo do card, que funciona como parede para ele. */}
-        <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-28" />
+        {/* Chaveiros do item (o que ele é, evento e qualidade), pendurados embaixo do card, que é parede para eles */}
+        <ChaveirosDoItem item={item} parede={card} direita="1.5rem" />
       </div>
       <p className="mt-4">
         <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>

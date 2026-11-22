@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 import { useItens, usePrevisao } from "../../api/itens";
 import { Carregando, IconeItem, Painel, Rotulo, Variacao } from "../../componentes/Basicos";
-import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
+import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { GraficoHistorico } from "../../componentes/GraficoHistorico";
 import { MarcaLogo } from "../../componentes/Logo";
 import { formatarData, formatarDiaMes, formatarPreco } from "../../lib/formato";
@@ -85,7 +85,7 @@ export function PreviaDaPlataforma() {
             </p>
           </div>
           {/* Pendurado embaixo do card, que funciona como parede para ele. */}
-          <Chaveiro appid={item?.appid} parede={card} className="absolute top-full right-[30%] hidden sm:block" />
+          <ChaveirosDoItem item={item} parede={card} direita="30%" className="hidden sm:block" />
         </div>
       </Container>
     </section>
