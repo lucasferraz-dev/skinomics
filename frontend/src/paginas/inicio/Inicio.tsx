@@ -68,7 +68,7 @@ function Hero() {
     <section>
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
-          <Rotulo destaque>Inteligência de mercado para Team Fortress 2</Rotulo>
+          <Rotulo destaque>Preços e previsões para itens de Team Fortress 2</Rotulo>
           <h1 className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
             Seu inventário.
             <br />
@@ -77,8 +77,8 @@ function Hero() {
             <span className="text-destaque">movimento.</span>
           </h1>
           <p className="max-w-md text-lg text-suave">
-            Menos achismo. Mais contexto. Explore preços, tendências e cenários futuros dos seus itens de TF2
-            em um só lugar.
+            Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a
+            faixa onde o preço deve ficar.
           </p>
           <div className="flex flex-wrap gap-3">
             <BotaoPrimario para="/itens">Explorar a plataforma</BotaoPrimario>
@@ -93,7 +93,7 @@ function Hero() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" />
             </svg>
-            Previsões são estimativas. Decisões continuam sendo suas.
+            Previsões são estimativas, não recomendação de investimento.
           </p>
         </div>
         <VitrineHero />
@@ -170,7 +170,7 @@ function Destaques() {
   const dataCotacao = itens?.itens[0]?.data_preco;
 
   const indicadores: Indicador[] = [
-    { rotulo: "Itens monitorados", valor: itens?.total ?? "—", detalhe: "Mercado da Steam · TF2", icone: "itens" },
+    { rotulo: "Itens monitorados", valor: itens?.total ?? "—", detalhe: "no Mercado da Steam", icone: "itens" },
     {
       rotulo: "Última cotação",
       valor: dataCotacao ? formatarDataNumerica(dataCotacao) : "—",
@@ -178,13 +178,13 @@ function Destaques() {
       icone: "calendario",
     },
     {
-      rotulo: "Oportunidades · 7 dias",
+      rotulo: "Oportunidades em 7 dias",
       valor: oportunidades?.total ?? "—",
       detalhe: "com margem prevista positiva",
       icone: "oportunidade",
       para: "/oportunidades",
     },
-    { rotulo: "Horizontes", valor: "7 · 15 · 30", detalhe: "dias, com faixa de 80%", icone: "horizonte" },
+    { rotulo: "Horizontes", valor: "7, 15 e 30", detalhe: "dias, com faixa de 80%", icone: "horizonte" },
   ];
 
   return (

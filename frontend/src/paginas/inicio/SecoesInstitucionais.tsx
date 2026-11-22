@@ -10,19 +10,19 @@ import { CabecalhoSecao, Container } from "./ui";
 
 const PASSOS = [
   {
-    titulo: "Encontre seu item",
-    texto: "Navegue pelo mercado de TF2 e escolha o item que você quer entender melhor.",
-    rodape: "Busque por nome ou categoria",
+    titulo: "Encontre o item",
+    texto: "Busque pelo nome entre os itens de TF2 que a base acompanha.",
+    rodape: "Busca por nome",
   },
   {
-    titulo: "Conecte os sinais",
-    texto: "Coloque histórico, tendência e cenários projetados lado a lado. Veja o movimento, não só o número.",
-    rodape: "Histórico + faixa de cenários",
+    titulo: "Veja histórico e previsão",
+    texto: "O gráfico mostra o preço de cada dia e a previsão para 7, 15 ou 30 dias, com a faixa de 80%.",
+    rodape: "Um modelo por horizonte",
   },
   {
-    titulo: "Faça sua leitura",
-    texto: "Acompanhe o que importa para você e decida no seu tempo, com os riscos em perspectiva.",
-    rodape: "Mais contexto. Sua decisão.",
+    titulo: "Acompanhe e compare",
+    texto: "Salve itens na sua lista ou veja o ranking de oportunidades, com o risco de cada uma.",
+    rodape: "Minha lista e Oportunidades",
   },
 ];
 
@@ -32,9 +32,9 @@ export function FluxoSimples() {
     <section id="como-funciona" className="scroll-mt-16 border-t border-borda py-20 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
-          rotulo="Do item à decisão"
-          titulo="Um fluxo simples. Uma visão melhor."
-          texto="Você não precisa de mais abas abertas. Precisa de uma leitura mais clara."
+          rotulo="Como funciona"
+          titulo="Do item à previsão, em três passos."
+          texto="Tudo parte dos preços públicos do Mercado da Comunidade Steam."
         />
         <ol className="grid gap-10 md:grid-cols-3">
           {PASSOS.map((passo, i) => (
@@ -106,26 +106,25 @@ function LinhaRadar({ item }: { item: ItemResumo }) {
 export function DecidaComContexto() {
   const { item: vitrine } = useItemVitrine(30);
   const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 2 });
-  const detalhe = (periodo: string) => (vitrine ? `/itens/${vitrine.id}?periodo=${periodo}` : undefined);
+  const detalhe = (parametro: string) => (vitrine ? `/itens/${vitrine.id}?${parametro}` : undefined);
 
   return (
     <section className="border-t border-borda py-20 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
-          rotulo="Menos ruído. Mais intenção."
+          rotulo="Ferramentas"
           titulo={
             <>
-              Decida com contexto.
-              <br />
-              Não no impulso.
+              Acompanhe, compare
+              <br />e leia a previsão.
             </>
           }
-          texto="Uma rotina de análise para quem coleciona, negocia ou só quer entender melhor o próprio inventário."
+          texto="Para quem coleciona, negocia ou quer saber quanto valem os próprios itens."
         />
         <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
           <Cartao
-            titulo="Seu radar, do seu jeito."
-            texto="Reúna os itens que você acompanha. Compare o movimento sem perder de vista o que importa."
+            titulo="Minha lista"
+            texto="Salve os itens que você acompanha e veja quanto cada um variou desde que entrou na lista."
           >
             <div className="rounded-xl border border-borda bg-fundo/40 p-3">
               <div className="mb-2 flex items-center justify-between px-2">
@@ -134,29 +133,36 @@ export function DecidaComContexto() {
               </div>
               {data?.itens.map((item) => <LinhaRadar key={item.id} item={item} />)}
             </div>
-            <Rotulo>Acompanhe a evolução. Não apenas a cotação.</Rotulo>
+            <Rotulo>Exige login com a Steam</Rotulo>
           </Cartao>
 
           <div className="grid gap-4">
             <Cartao
-              titulo="O zoom certo para cada decisão."
-              texto="Um dia conta uma parte da história. Mude o período e enxergue a tendência em perspectiva."
+              titulo="Período do gráfico"
+              texto="Veja de 7 dias a 1 ano de histórico para separar uma oscilação de uma tendência."
             >
               <Chips
                 ativa="30 dias"
                 opcoes={[
-                  { rotulo: "7 dias", para: detalhe("7d") },
-                  { rotulo: "30 dias", para: detalhe("30d") },
-                  { rotulo: "90 dias", para: detalhe("90d") },
-                  { rotulo: "1 ano", para: detalhe("1a") },
+                  { rotulo: "7 dias", para: detalhe("periodo=7d") },
+                  { rotulo: "30 dias", para: detalhe("periodo=30d") },
+                  { rotulo: "90 dias", para: detalhe("periodo=90d") },
+                  { rotulo: "1 ano", para: detalhe("periodo=1a") },
                 ]}
               />
             </Cartao>
             <Cartao
-              titulo="Uma faixa, não uma promessa."
-              texto="Cenários ajudam a pensar no que pode acontecer — inclusive quando o mercado sai do esperado."
+              titulo="Horizonte da previsão"
+              texto="Cada horizonte tem um modelo próprio e uma faixa onde o preço deve ficar em 80% dos casos."
             >
-              <Chips ativa="Central" opcoes={[{ rotulo: "Conservador" }, { rotulo: "Central" }, { rotulo: "Otimista" }]} />
+              <Chips
+                ativa="7 dias"
+                opcoes={[
+                  { rotulo: "7 dias", para: detalhe("horizonte=7") },
+                  { rotulo: "15 dias", para: detalhe("horizonte=15") },
+                  { rotulo: "30 dias", para: detalhe("horizonte=30") },
+                ]}
+              />
             </Cartao>
           </div>
         </div>
@@ -174,7 +180,7 @@ const COMPROMISSOS = [
   {
     titulo: "Quão bom é o modelo",
     texto:
-      "No teste com os últimos seis meses de dados, o protótipo errou em média 8,1% na previsão de 7 dias e superou a referência ingênua (\"o preço não muda\") em 32 de 36 itens.",
+      "No teste com os últimos 180 dias, o modelo de 7 dias errou em média 8,6% e acertou o preço, com tolerância de 15%, em 89,7% das previsões. Cada versão treinada fica registrada com seus números.",
   },
   {
     titulo: "O que não fazemos",
@@ -190,8 +196,8 @@ export function Transparencia() {
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo="Transparência"
-          titulo="Números com origem. Limites às claras."
-          texto="Uma ferramenta de análise só é útil se você souber de onde ela tira as conclusões."
+          titulo="De onde vêm os números."
+          texto="A origem dos dados, a qualidade do modelo e o que a plataforma não faz."
         />
         <div className="grid gap-4 md:grid-cols-3">
           {COMPROMISSOS.map(({ titulo, texto }) => (
@@ -210,7 +216,7 @@ const PERGUNTAS = [
   {
     pergunta: "Preciso de uma conta Steam?",
     resposta:
-      "Para explorar preços e históricos, não. O login com a Steam vai liberar a lista de acompanhamento, os alertas e a leitura do seu inventário.",
+      "Para ver preços, históricos e previsões, não. O login com a Steam libera a Minha lista, onde você salva os itens que acompanha.",
   },
   {
     pergunta: "Com que frequência os preços são atualizados?",
@@ -224,7 +230,7 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Quais jogos são cobertos?",
-    resposta: "Por enquanto, só Team Fortress 2. Preferimos começar por um jogo e fazer bem feito.",
+    resposta: "Por enquanto, só Team Fortress 2. Outros jogos da Steam podem entrar depois.",
   },
 ];
 
