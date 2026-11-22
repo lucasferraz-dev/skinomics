@@ -188,7 +188,7 @@ type Indicador = {
   icone: keyof typeof ICONES;
   para?: string;
   /** O que aparece escrito embaixo do adesivo quando ele é descolado. */
-  verso: { rotulo: string; valor: ReactNode };
+  verso: { rotulo: string; valor: ReactNode; extra?: string };
 };
 
 /** Cards logo abaixo do hero: números reais da base, iguais para todos os itens. */
@@ -224,7 +224,8 @@ function Destaques() {
       para: "/oportunidades",
       verso: {
         rotulo: "Melhor margem prevista",
-        valor: melhor ? `${melhor.nome} (${formatarVariacao(melhor.margem_estimada)})` : "—",
+        valor: melhor ? formatarVariacao(melhor.margem_estimada) : "—",
+        extra: melhor?.nome,
       },
     },
     {

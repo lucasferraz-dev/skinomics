@@ -66,7 +66,7 @@ export function Adesivo({
 }: {
   estilo: CSSProperties;
   frente: ReactNode;
-  verso: { rotulo: string; valor: ReactNode };
+  verso: { rotulo: string; valor: ReactNode; extra?: string };
   para?: string;
   titulo?: string;
 }) {
@@ -178,9 +178,10 @@ export function Adesivo({
   return (
     <div ref={raiz} data-poleiro className="relative select-none" style={estilo}>
       {/* Embaixo do adesivo: um dado a mais, com a marca tracejada de onde ele está colado */}
-      <div className="absolute inset-[3px] flex flex-col items-end justify-center gap-0.5 rounded-2xl border-2 border-dashed border-destaque/35 px-4 text-right">
+      <div className="absolute inset-[3px] flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 border-dashed border-destaque/35 px-4 text-center">
         <span className="font-rotulo text-[11px] font-bold tracking-[0.06em] text-suave">{verso.rotulo}</span>
-        <span className="max-w-[70%] truncate font-mono text-sm text-destaque">{verso.valor}</span>
+        <span className="font-mono text-base leading-tight text-destaque">{verso.valor}</span>
+        {verso.extra && <span className="max-w-full truncate font-mono text-[11px] text-suave">{verso.extra}</span>}
       </div>
 
       {para ? (
