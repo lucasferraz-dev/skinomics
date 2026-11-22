@@ -1,17 +1,17 @@
 import { useRef } from "react";
 import { Link } from "react-router";
 
-import { useItens } from "../../api/itens";
+import { useItens, usePrevisao } from "../../api/itens";
 import { Carregando, IconeItem, Painel, Rotulo, Variacao } from "../../componentes/Basicos";
 import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
 import { GraficoHistorico } from "../../componentes/GraficoHistorico";
 import { MarcaLogo } from "../../componentes/Logo";
-import { formatarData, formatarPreco } from "../../lib/formato";
+import { formatarData, formatarDiaMes, formatarPreco } from "../../lib/formato";
 import { LinhaItem } from "../ExplorarItens";
 import { useItemVitrine } from "./dados";
 import { CabecalhoSecao, Container } from "./ui";
 
-/** Seção 2: uma "janela" do Terminal com o gráfico real da Key. */
+/** Seção 2: uma "janela" do Terminal com o histórico e a previsão reais do item da vitrine. */
 export function PreviaDaPlataforma() {
   const { item, pontos } = useItemVitrine(90);
   const card = useRef<HTMLDivElement>(null);
@@ -20,16 +20,16 @@ export function PreviaDaPlataforma() {
     <section id="plataforma" className="scroll-mt-16 py-20 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
-          rotulo="Uma visão além do preço"
+          rotulo="Prévia"
           titulo={
             <>
-              O mercado muda.
+              Histórico e previsão
               <br />
-              Sua leitura também.
+              na mesma tela.
             </>
           }
-          texto="Do histórico ao próximo cenário: conecte os sinais antes de decidir o que fazer com seus itens."
-          selo="Prévia da plataforma · dados reais"
+          texto="É assim que cada item aparece no Terminal: o preço diário dos últimos meses e a previsão do modelo, com a faixa onde o preço deve ficar."
+          selo="Dados reais"
         />
 
         <div className="relative">
@@ -76,24 +76,7 @@ export function PreviaDaPlataforma() {
                 </div>
               </div>
 
-              <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
-                <Rotulo>Cenário em 7 dias</Rotulo>
-                <p className="text-lg">Previsão em breve</p>
-                <p className="text-sm text-suave">
-                  A faixa de preço estimada pelo modelo entra aqui, ao lado do histórico.
-                </p>
-                <div className="border-t border-borda pt-4">
-                  <p className="mb-3 text-sm">O que observar</p>
-                  <ul className="space-y-2 text-sm text-suave">
-                    {["Movimento recente de preço", "Oscilação dentro do período", "Liquidez antes de negociar"].map((dica) => (
-                      <li key={dica} className="flex gap-2">
-                        <span className="text-destaque" aria-hidden>↗</span>
-                        {dica}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </aside>
+              <PrevisaoVitrine itemId={item?.id} />
             </div>
 
             <p className="mx-4 mb-4 rounded-lg border border-borda px-4 py-3 text-xs text-suave sm:mx-6 sm:mb-6">
@@ -109,6 +92,61 @@ export function PreviaDaPlataforma() {
   );
 }
 
+/** Painel lateral da prévia: a previsão de 7 dias publicada para o item. */
+function PrevisaoVitrine({ itemId }: { itemId: number | undefined }) {
+  const { data: previsao } = usePrevisao(itemId ?? 0, 7, itemId !== undefined);
+  const linhas: [string, string][] =
+    previsao?.disponivel && previsao.preco_previsto != null
+      ? [
+          [
+            "Faixa de 80%",
+            previsao.intervalo_inferior != null && previsao.intervalo_superior != null
+              ? `${formatarPreco(previsao.intervalo_inferior)} a ${formatarPreco(previsao.intervalo_superior)}`
+              : "indisponível",
+          ],
+          [
+            "Média entre",
+            previsao.janela_inicio && previsao.janela_fim
+              ? `${formatarDiaMes(previsao.janela_inicio)} e ${formatarDiaMes(previsao.janela_fim)}`
+              : "—",
+          ],
+          ["Preço de base", previsao.preco_base != null ? formatarPreco(previsao.preco_base) : "—"],
+        ]
+      : [];
+
+  return (
+    <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
+      <Rotulo>Previsão para 7 dias</Rotulo>
+      {!previsao ? (
+        <Carregando />
+      ) : previsao.disponivel && previsao.preco_previsto != null ? (
+        <>
+          <div className="space-y-1">
+            <p className="font-mono text-3xl">{formatarPreco(previsao.preco_previsto)}</p>
+            <p className="font-mono text-sm">
+              <Variacao valor={previsao.variacao_prevista} /> <span className="text-apagado">em relação a hoje</span>
+            </p>
+          </div>
+          <dl className="space-y-2 border-t border-borda pt-4 text-sm">
+            {linhas.map(([rotulo, valor]) => (
+              <div key={rotulo} className="flex justify-between gap-3">
+                <dt className="whitespace-nowrap text-suave">{rotulo}</dt>
+                <dd className="text-right font-mono">{valor}</dd>
+              </div>
+            ))}
+          </dl>
+          {previsao.incerteza_elevada && (
+            <p className="text-xs text-queda">Incerteza elevada: a faixa está larga para este item.</p>
+          )}
+          <p className="text-xs text-apagado">Estimativa do modelo, não recomendação de compra ou venda.</p>
+        </>
+      ) : (
+        <p className="text-sm text-suave">Ainda não há previsão publicada para este item.</p>
+      )}
+    </aside>
+  );
+}
+
 /** Seção 3: os itens mais negociados da semana, com dados reais. */
 export function Radar() {
   const { data } = useItens({ ordenar: "volume_7d", direcao: "desc", por_pagina: 5 });
@@ -120,13 +158,12 @@ export function Radar() {
           rotulo="No radar"
           titulo={
             <>
-              Cada item conta uma história.
+              Os itens mais negociados
               <br />
-              Leia os sinais.
+              da semana.
             </>
           }
-          texto="Compare movimentos recentes e a liquidez de cada item. Oportunidade começa com uma boa pergunta."
-          selo="Os mais negociados da semana"
+          texto="Preço, variação em 7 dias, tendência de 30 dias e quantas unidades foram vendidas no Mercado da Steam."
         />
 
         <Painel>
