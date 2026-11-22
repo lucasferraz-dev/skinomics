@@ -5,8 +5,8 @@ import { type TemaChaveiro, temasDoItem } from "./temas";
 
 // Tamanhos: o normal, pendurado embaixo de cards, e o mini, que cabe dentro de uma linha de tabela.
 const TAMANHOS = {
-  normal: { raio: 20, comprimento: 8, espacamento: 46, segmentos: [6, 8, 5, 7] },
-  mini: { raio: 9, comprimento: 5, espacamento: 22, segmentos: [2, 3, 2, 3] },
+  normal: { raio: 20, comprimento: 8, espacamento: 46, segmentos: [6, 8, 5, 7], balanco: 1.5 },
+  mini: { raio: 9, comprimento: 5, espacamento: 22, segmentos: [2, 3, 2, 3], balanco: 1 },
 } as const;
 export type TamanhoChaveiro = keyof typeof TAMANHOS;
 
@@ -36,7 +36,7 @@ export function Chaveiro({
   const pingente = useRef<SVGGElement>(null);
   const corpo = useRef<Corpo | null>(null);
   const pega = useRef<{ x: number; y: number } | null>(null);
-  const { raio: RAIO, comprimento: COMPRIMENTO_SEGMENTO } = TAMANHOS[tamanho];
+  const { raio: RAIO, comprimento: COMPRIMENTO_SEGMENTO, balanco } = TAMANHOS[tamanho];
   const escala = RAIO / TAMANHOS.normal.raio;
 
   useEffect(() => {
@@ -49,6 +49,8 @@ export function Chaveiro({
       comprimentoElo: COMPRIMENTO_SEGMENTO,
       raio: RAIO,
       deslocamentoDisco: RAIO,
+      // Balanço leve e constante, para os chaveiros nunca ficarem totalmente parados.
+      balanco,
       arrasto: null,
       parede: () => parede?.current?.getBoundingClientRect(),
       ancora: () => {
@@ -64,7 +66,7 @@ export function Chaveiro({
     corpo.current = novo;
     novo.desenhar();
     return registrar(novo);
-  }, [parede, segmentos, RAIO, COMPRIMENTO_SEGMENTO]);
+  }, [parede, segmentos, RAIO, COMPRIMENTO_SEGMENTO, balanco]);
 
   function cursorLocal(evento: React.PointerEvent) {
     const ancora = corpo.current!.ancora();

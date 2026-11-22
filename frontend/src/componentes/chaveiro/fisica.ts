@@ -20,6 +20,11 @@ export type Corpo = {
   /** Enquanto segurado: onde a ponta está e a velocidade (suavizada) com que o cursor a move. */
   alvoArrasto?: Vetor;
   velocidadeArrasto?: Vetor;
+  /** Amplitude (px) do balanço leve e constante da ponta; 0 = parado quando ninguém mexe. */
+  balanco?: number;
+  /** Ritmo (rad/s) e fase do balanço, sorteados por chaveiro para não balançarem juntos. */
+  ritmo?: number;
+  fase?: number;
   /** Retângulo (viewport) que funciona como parede: a linha e o círculo não entram nele. */
   parede?: () => DOMRect | undefined;
   desenhar: () => void;
@@ -37,11 +42,16 @@ const ELASTICIDADE = 0.6; // quanto da velocidade de aproximação volta numa ba
 const RICOCHETE = 0.5; // fração da velocidade devolvida ao bater na parede
 
 const corpos = new Set<Corpo>();
+// Com "reduzir movimento" ligado, nada de balanço constante.
+const calmo = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let tempo = 0; // s, para o balanço
 let rodando = false;
 let quadrosParados = 0;
 let ultimoTempo = 0;
 
 export function registrar(corpo: Corpo): () => void {
+  corpo.ritmo ??= 1.25 + Math.random() * 0.55; // ida e volta em ~3,5 a 5 s
+  corpo.fase ??= Math.random() * Math.PI * 2;
   corpos.add(corpo);
   acordar();
   return () => {
@@ -80,6 +90,7 @@ function quadro(agora: number) {
   // Aba em segundo plano devolve intervalos enormes: limita para a simulação não explodir.
   const dt = Math.min((agora - ultimoTempo) / 1000, 1 / 30) / SUBPASSOS;
   ultimoTempo = agora;
+  tempo += dt * SUBPASSOS;
 
   // Segurado: acompanha o cursor e mede a velocidade com que ele move a ponta, para o chaveiro
   // sair com esse embalo quando for solto (um arremesso continua balançando).
@@ -119,7 +130,9 @@ function quadro(agora: number) {
   });
 
   const segurando = [...corpos].some((corpo) => corpo.arrasto);
-  quadrosParados = !segurando && movimento < 0.01 ? quadrosParados + 1 : 0;
+  // Com balanço constante o laço não dorme (o navegador já o pausa com a aba escondida).
+  const balancando = !calmo && [...corpos].some((corpo) => (corpo.balanco ?? 0) > 0);
+  quadrosParados = !segurando && !balancando && movimento < 0.01 ? quadrosParados + 1 : 0;
   if (corpos.size === 0 || quadrosParados > 45) {
     rodando = false;
     return;
@@ -144,6 +157,13 @@ function integrar(corpo: Corpo, dt: number) {
     }
     let vx = (p.x - a.x) * AMORTECIMENTO;
     let vy = (p.y - a.y) * AMORTECIMENTO;
+    if (i === ultimo && !calmo && corpo.balanco) {
+      // Empurrão lateral lento e periódico na ponta. Bem abaixo da frequência natural do pêndulo,
+      // o deslocamento fica perto de amplitude: a aceleração é proporcional a g / comprimento.
+      const comprimento = ultimo * corpo.comprimentoElo + corpo.deslocamentoDisco;
+      const aceleracao = ((corpo.balanco * GRAVIDADE) / comprimento) * Math.sin(tempo * corpo.ritmo! + corpo.fase!);
+      vx += aceleracao * dt * dt;
+    }
     const v = Math.hypot(vx, vy);
     if (v > VELOCIDADE_MAXIMA) {
       vx *= VELOCIDADE_MAXIMA / v;
