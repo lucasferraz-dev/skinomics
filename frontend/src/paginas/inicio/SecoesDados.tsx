@@ -2,6 +2,7 @@ import { Link } from "react-router";
 
 import { useItens } from "../../api/itens";
 import { Carregando, IconeItem, Painel, Rotulo, Variacao } from "../../componentes/Basicos";
+import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
 import { GraficoHistorico } from "../../componentes/GraficoHistorico";
 import { MarcaLogo } from "../../componentes/Logo";
 import { formatarData, formatarPreco } from "../../lib/formato";
@@ -29,73 +30,76 @@ export function PreviaDaPlataforma() {
           selo="Prévia da plataforma · dados reais"
         />
 
-        <div className="overflow-hidden rounded-2xl border border-borda bg-painel">
-          <div className="flex h-12 items-center justify-between border-b border-borda px-4">
-            <span className="flex items-center gap-2.5 text-sm font-semibold">
-              <MarcaLogo tamanho={18} />
-              Terminal <span className="font-normal text-apagado">/ Team Fortress 2</span>
-            </span>
-            <span className="rounded bg-destaque-fundo px-2 py-0.5 font-rotulo text-xs font-semibold tracking-[0.06em] text-destaque">
-              Prévia
-            </span>
-          </div>
-
-          <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
-            <div className="min-w-0 space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  {item && <IconeItem url={item.icon_url} nome={item.nome} tamanho={44} />}
-                  <div className="min-w-0">
-                    <p className="truncate text-lg">{item?.nome ?? " "}</p>
-                    <Rotulo>TF2 / {item?.tipo ?? "Item"}</Rotulo>
-                  </div>
-                </div>
-                {item && (
-                  <Link
-                    to={`/itens/${item.id}`}
-                    className="shrink-0 rounded-lg border border-borda px-3 py-1.5 text-sm transition-colors hover:border-suave"
-                  >
-                    Abrir no Terminal ↗
-                  </Link>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-borda bg-fundo/40 p-4">
-                <div className="mb-4 flex items-baseline gap-3">
-                  <span className="font-mono text-2xl">
-                    {item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}
-                  </span>
-                  <Variacao valor={item?.variacao_7d} sufixo="7d" />
-                  <span className="ml-auto font-mono text-[11px] text-apagado">90 dias</span>
-                </div>
-                {pontos ? <GraficoHistorico pontos={pontos} altura={260} /> : <div className="h-[260px]"><Carregando /></div>}
-              </div>
+        <div className="relative">
+          <Chaveiro appid={item?.appid} className="absolute top-3 right-40 hidden sm:block" />
+          <div className="overflow-hidden rounded-2xl border border-borda bg-painel">
+            <div className="flex h-12 items-center justify-between border-b border-borda px-4">
+              <span className="flex items-center gap-2.5 text-sm font-semibold">
+                <MarcaLogo tamanho={18} />
+                Terminal <span className="font-normal text-apagado">/ Team Fortress 2</span>
+              </span>
+              <span className="rounded bg-destaque-fundo px-2 py-0.5 font-rotulo text-xs font-semibold tracking-[0.06em] text-destaque">
+                Prévia
+              </span>
             </div>
 
-            <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
-              <Rotulo>Cenário / 7 dias</Rotulo>
-              <p className="text-lg">Previsão em breve</p>
-              <p className="text-sm text-suave">
-                A faixa de preço estimada pelo modelo entra aqui, ao lado do histórico.
-              </p>
-              <div className="border-t border-borda pt-4">
-                <p className="mb-3 text-sm">O que observar</p>
-                <ul className="space-y-2 text-sm text-suave">
-                  {["Movimento recente de preço", "Oscilação dentro do período", "Liquidez antes de negociar"].map((dica) => (
-                    <li key={dica} className="flex gap-2">
-                      <span className="text-destaque" aria-hidden>↗</span>
-                      {dica}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </aside>
-          </div>
+            <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
+              <div className="min-w-0 space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {item && <IconeItem url={item.icon_url} nome={item.nome} tamanho={44} />}
+                    <div className="min-w-0">
+                      <p className="truncate text-lg">{item?.nome ?? " "}</p>
+                      <Rotulo>TF2 / {item?.tipo ?? "Item"}</Rotulo>
+                    </div>
+                  </div>
+                  {item && (
+                    <Link
+                      to={`/itens/${item.id}`}
+                      className="shrink-0 rounded-lg border border-borda px-3 py-1.5 text-sm transition-colors hover:border-suave"
+                    >
+                      Abrir no Terminal ↗
+                    </Link>
+                  )}
+                </div>
 
-          <p className="mx-4 mb-4 rounded-lg border border-borda px-4 py-3 text-xs text-suave sm:mx-6 sm:mb-6">
-            Dados reais do Mercado da Comunidade Steam
-            {item?.data_preco ? `, atualizados até ${formatarData(item.data_preco)}` : ""}. Preços em dólar (US$).
-          </p>
+                <div className="rounded-xl border border-borda bg-fundo/40 p-4">
+                  <div className="mb-4 flex items-baseline gap-3">
+                    <span className="font-mono text-2xl">
+                      {item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}
+                    </span>
+                    <Variacao valor={item?.variacao_7d} sufixo="7d" />
+                    <span className="ml-auto font-mono text-[11px] text-apagado">90 dias</span>
+                  </div>
+                  {pontos ? <GraficoHistorico pontos={pontos} altura={260} /> : <div className="h-[260px]"><Carregando /></div>}
+                </div>
+              </div>
+
+              <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
+                <Rotulo>Cenário / 7 dias</Rotulo>
+                <p className="text-lg">Previsão em breve</p>
+                <p className="text-sm text-suave">
+                  A faixa de preço estimada pelo modelo entra aqui, ao lado do histórico.
+                </p>
+                <div className="border-t border-borda pt-4">
+                  <p className="mb-3 text-sm">O que observar</p>
+                  <ul className="space-y-2 text-sm text-suave">
+                    {["Movimento recente de preço", "Oscilação dentro do período", "Liquidez antes de negociar"].map((dica) => (
+                      <li key={dica} className="flex gap-2">
+                        <span className="text-destaque" aria-hidden>↗</span>
+                        {dica}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </aside>
+            </div>
+
+            <p className="mx-4 mb-4 rounded-lg border border-borda px-4 py-3 text-xs text-suave sm:mx-6 sm:mb-6">
+              Dados reais do Mercado da Comunidade Steam
+              {item?.data_preco ? `, atualizados até ${formatarData(item.data_preco)}` : ""}. Preços em dólar (US$).
+            </p>
+          </div>
         </div>
 
         <div className="grid gap-4 font-rotulo text-[13px] font-semibold tracking-[0.06em] text-apagado sm:grid-cols-3">

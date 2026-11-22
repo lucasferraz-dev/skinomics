@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { useItens } from "../../api/itens";
 import { useOportunidades } from "../../api/oportunidades";
 import { Rotulo, Variacao } from "../../componentes/Basicos";
+import { Chaveiro } from "../../componentes/chaveiro/Chaveiro";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
@@ -105,7 +106,8 @@ function VitrineHero() {
   const { item, pontos } = useItemVitrine(30);
 
   return (
-    <div>
+    <div className="relative">
+      <Chaveiro appid={item?.appid} className="absolute top-3 right-12" />
       <div className="relative aspect-[5/4] overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
         <span className="absolute top-5 left-5">
           <Rotulo destaque>TF2 / Economia em movimento</Rotulo>
