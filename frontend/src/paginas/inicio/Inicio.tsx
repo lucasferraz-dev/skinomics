@@ -223,13 +223,32 @@ function Destaques() {
   );
 }
 
-// Os indicadores são adesivos: cor própria, borda creme de recorte, sombra de colado e cada um
-// levemente torto, como colado à mão.
+// Os indicadores são adesivos nas cores do site, alternando verde-limão e preto: borda de recorte,
+// sombra de colado e cada um levemente torto, como colado à mão.
+const TINTAS = {
+  verde: {
+    "--fundo": "var(--color-destaque)",
+    "--numero": "#0b0d0c",
+    "--rotulo": "rgba(11, 13, 12, 0.75)",
+    "--detalhe": "rgba(11, 13, 12, 0.65)",
+    "--icone-fundo": "#0b0d0c",
+    "--icone-traco": "var(--color-destaque)",
+  },
+  preto: {
+    "--fundo": "#10140f",
+    "--numero": "var(--color-destaque)",
+    "--rotulo": "var(--color-suave)",
+    "--detalhe": "var(--color-apagado)",
+    "--icone-fundo": "var(--color-destaque)",
+    "--icone-traco": "#0b0d0c",
+  },
+} as const;
+
 const ADESIVOS = [
-  { cor: "#c6f36b", giro: -2.2 },
-  { cor: "#ffb36b", giro: 1.6 },
-  { cor: "#c9b3ff", giro: -1.2 },
-  { cor: "#9fdcff", giro: 2.1 },
+  { tinta: "verde", giro: -2.2 },
+  { tinta: "preto", giro: 1.6 },
+  { tinta: "verde", giro: -1.2 },
+  { tinta: "preto", giro: 2.1 },
 ] as const;
 
 function CardIndicador({ rotulo, valor, detalhe, icone, para, adesivo }: Indicador & { adesivo: (typeof ADESIVOS)[number] }) {
@@ -238,33 +257,33 @@ function CardIndicador({ rotulo, valor, detalhe, icone, para, adesivo }: Indicad
       {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.45)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
+        className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.3)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
       />
       <div className="relative flex items-start justify-between gap-3">
-        <span className="grid size-10 place-items-center rounded-full bg-[#0b0d0c] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.08)]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={adesivo.cor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <span className="grid size-10 place-items-center rounded-full bg-[var(--icone-fundo)]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d={ICONES[icone]} />
           </svg>
         </span>
         {para && (
-          <span className="font-mono text-base text-[#0b0d0c]/60 transition-colors group-hover:text-[#0b0d0c]" aria-hidden>
+          <span className="font-mono text-base text-[var(--rotulo)] transition-colors group-hover:text-[var(--numero)]" aria-hidden>
             ↗
           </span>
         )}
       </div>
-      <div className="relative space-y-1 text-[#0b0d0c]">
-        <span className="block font-rotulo text-[12px] font-bold tracking-[0.06em] text-[#0b0d0c]/75">{rotulo}</span>
-        <p className="titulo text-2xl leading-none sm:text-[2rem]">{valor}</p>
-        <p className="font-mono text-[11px] text-[#0b0d0c]/65">{detalhe}</p>
+      <div className="relative space-y-1">
+        <span className="block font-rotulo text-[12px] font-bold tracking-[0.06em] text-[var(--rotulo)]">{rotulo}</span>
+        <p className="titulo text-2xl leading-none text-[var(--numero)] sm:text-[2rem]">{valor}</p>
+        <p className="font-mono text-[11px] text-[var(--detalhe)]">{detalhe}</p>
       </div>
     </>
   );
-  // Borda creme (o recorte do adesivo) + sombra de colado; endireita e levanta ao passar o mouse.
+  // Borda de recorte no branco dos textos do site + sombra de colado; endireita e levanta ao passar o mouse.
   const classe =
-    "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-[20px] p-4 sm:p-5 " +
-    "shadow-[0_0_0_4px_#f3efe4,0_14px_26px_-6px_rgba(0,0,0,0.75)] " +
+    "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-[20px] bg-[var(--fundo)] p-4 sm:p-5 " +
+    "shadow-[0_0_0_4px_var(--color-texto),0_14px_26px_-6px_rgba(0,0,0,0.85)] " +
     "[rotate:var(--giro)] transition-[rotate,translate] duration-300 hover:[rotate:0deg] hover:-translate-y-1";
-  const estilo = { background: adesivo.cor, "--giro": `${adesivo.giro}deg` } as React.CSSProperties;
+  const estilo = { ...TINTAS[adesivo.tinta], "--giro": `${adesivo.giro}deg` } as unknown as React.CSSProperties;
 
   return para ? (
     <Link to={para} data-poleiro className={classe} style={estilo}>
