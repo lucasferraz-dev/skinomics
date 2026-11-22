@@ -10,10 +10,10 @@ export const APOIO_X = 55;
 const TIBIA = 12;
 const TARSO = 15;
 const QUADRIS: [Vetor, Vetor] = [
-  { x: 61, y: 71 },
-  { x: 56, y: 71 },
+  { x: 65, y: 69 },
+  { x: 60, y: 69 },
 ];
-const PES_PARADO: [number, number] = [61, 55];
+const PES_PARADO: [number, number] = [62, 55];
 
 export type Pe = Vetor & { fechado: number }; // fechado: 0 = dedos abertos no chão, 1 = encolhidos
 export type Pose = {
@@ -24,7 +24,7 @@ export type Pose = {
   cabecaGiro: number; // graus, em torno do pescoço
   pes: [Pe, Pe]; // [perto, longe]
   asa: "fechada" | "aberta";
-  asaAngulo: number; // graus da asa aberta (0 = para cima, 90 = para trás)
+  asaAngulo: number; // graus da asa aberta: 0 = para cima, 90 = para trás, 120 = para trás e para baixo
   asaLonge: number;
   asaFechadaGiro: number;
   cauda: number;
@@ -100,8 +100,9 @@ export function posePulo(t: number): Pose {
     ],
     asa: "aberta",
     // Uma batida só: sobe a asa na saída e empurra para baixo no meio do pulo.
-    asaAngulo: 70 + 45 * Math.sin(t * Math.PI * 2),
-    asaLonge: 80 + 35 * Math.sin(t * Math.PI * 2 - 0.4),
+    // Asas erguidas, com uma batida para trás no meio do pulo.
+    asaAngulo: 18 + 42 * Math.sin(t * Math.PI),
+    asaLonge: 24 + 36 * Math.sin(t * Math.PI - 0.3),
     cauda: -8,
   };
 }
@@ -120,8 +121,9 @@ export function poseVoando(tempo: number, inclinacao: number): Pose {
       { x: 48, y: CHAO - 11, fechado: 1 },
     ],
     asa: "aberta",
-    asaAngulo: 35 + 60 * (batida * 0.5 + 0.5),
-    asaLonge: 40 + 50 * (Math.sin(tempo / 55 - 0.5) * 0.5 + 0.5),
+    // Batida: de quase vertical (para cima) até para trás e para baixo.
+    asaAngulo: 12 + 108 * (batida * 0.5 + 0.5),
+    asaLonge: 18 + 92 * (Math.sin(tempo / 55 - 0.5) * 0.5 + 0.5),
     cauda: -6,
   };
 }
@@ -138,8 +140,8 @@ export function poseFreando(tempo: number): Pose {
       { x: 62, y: CHAO - 2, fechado: 0.3 },
     ],
     asa: "aberta",
-    asaAngulo: 20 + tremor,
-    asaLonge: 28 + tremor,
+    asaAngulo: 18 + tremor,
+    asaLonge: 24 + tremor,
     cauda: 10,
   };
 }
@@ -206,6 +208,6 @@ export function transformarCorpo(pose: Pose): string {
   return `translate(0 ${f(pose.corpoY)}) rotate(${f(pose.inclinacao)} ${q.x} ${q.y})`;
 }
 
-export const PESCOCO = { x: 84, y: 46 };
-export const OMBRO = { x: 73, y: 48 };
-export const BASE_CAUDA = { x: 37, y: 64 };
+export const PESCOCO = { x: 88, y: 38 };
+export const OMBRO = { x: 80, y: 41 };
+export const BASE_CAUDA = { x: 40, y: 64 };

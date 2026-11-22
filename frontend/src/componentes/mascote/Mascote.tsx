@@ -5,12 +5,8 @@ import { formatarVariacao } from "../../lib/formato";
 import {
   AMPLITUDE_PASSO,
   APOIO_X,
-  BASE_CAUDA,
   CHAO,
   misturar,
-  OMBRO,
-  perna,
-  PESCOCO,
   type Pose,
   poseAgachada,
   poseAndando,
@@ -18,8 +14,8 @@ import {
   poseParada,
   posePulo,
   poseVoando,
-  transformarCorpo,
 } from "./corvo";
+import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
 
 // O corvo do Skinomics. Pousa no topo dos cards e da primeira linha dos títulos (`data-poleiro`),
@@ -27,7 +23,7 @@ import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./pol
 // acima ou abaixo (ou quando o atual sai da tela). Parado, pisca, vira a cabeça, bica e mexe a cauda.
 // Clicado, mostra um dado real da base. Precisa de um pai com `position: relative`.
 
-const ESCALA = 0.78;
+const ESCALA = 0.95;
 const LARGURA = 120 * ESCALA;
 const ALTURA = 100 * ESCALA;
 const VELOCIDADE = 30; // px/s andando
@@ -97,15 +93,7 @@ function boletim(itens: ItemResumo[]): string[] {
 export function Mascote() {
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
-  const espelho = useRef<SVGGElement>(null);
-  const corpo = useRef<SVGGElement>(null);
-  const cabeca = useRef<SVGGElement>(null);
-  const cauda = useRef<SVGGElement>(null);
-  const asaFechada = useRef<SVGGElement>(null);
-  const asaPerto = useRef<SVGGElement>(null);
-  const asaLonge = useRef<SVGGElement>(null);
-  const olho = useRef<SVGGElement>(null);
-  const pernas = useRef<(SVGPathElement | null)[]>([]);
+  const partes = usePartes();
   const falando = useRef(false);
   const { data } = useItens({ por_pagina: 100 });
   const linhas = useMemo(() => boletim(data?.itens ?? []), [data]);
@@ -247,31 +235,10 @@ export function Mascote() {
       mudar("agachando", agora);
     };
 
-    const desenhar = () => {
+    const desenhar = (piscada: number) => {
       el.style.transform = `translate(${x - APOIO_X * ESCALA}px, ${y - CHAO * ESCALA}px)`;
       el.style.opacity = atual || trajeto ? "1" : "0";
-      espelho.current?.setAttribute("transform", direcao < 0 ? `translate(${APOIO_X * 2} 0) scale(-1 1)` : "");
-      corpo.current?.setAttribute("transform", transformarCorpo(pose));
-      cabeca.current?.setAttribute(
-        "transform",
-        `translate(${pose.cabecaX.toFixed(2)} ${pose.cabecaY.toFixed(2)}) rotate(${pose.cabecaGiro.toFixed(2)} ${PESCOCO.x} ${PESCOCO.y})`,
-      );
-      cauda.current?.setAttribute("transform", `rotate(${pose.cauda.toFixed(2)} ${BASE_CAUDA.x} ${BASE_CAUDA.y})`);
-      asaFechada.current?.setAttribute("transform", `rotate(${pose.asaFechadaGiro.toFixed(2)} ${OMBRO.x} ${OMBRO.y})`);
-      asaFechada.current?.setAttribute("opacity", pose.asa === "fechada" ? "1" : "0");
-      for (const [ref, angulo] of [
-        [asaPerto, pose.asaAngulo],
-        [asaLonge, pose.asaLonge],
-      ] as const) {
-        ref.current?.setAttribute("transform", `translate(${OMBRO.x} ${OMBRO.y}) rotate(${angulo.toFixed(2)})`);
-        ref.current?.setAttribute("opacity", pose.asa === "aberta" ? "1" : "0");
-      }
-      ([0, 1] as const).forEach((lado) => {
-        const p = perna(pose, lado);
-        pernas.current[lado * 3]?.setAttribute("d", p.tibia);
-        pernas.current[lado * 3 + 1]?.setAttribute("d", p.tarso);
-        pernas.current[lado * 3 + 2]?.setAttribute("d", p.dedos);
-      });
+      aplicarPose(partes, pose, direcao, piscada);
     };
 
     const passo = (agora: number) => {
@@ -379,12 +346,7 @@ export function Mascote() {
       // Piscada: a pálpebra desce e sobe em ~140 ms.
       if (agora > piscarEm + 140) piscarEm = agora + sortear(2200, 5500);
       const piscando = agora > piscarEm ? Math.sin(((agora - piscarEm) / 140) * Math.PI) : 0;
-      olho.current?.setAttribute(
-        "transform",
-        `translate(0 ${OLHO.y}) scale(1 ${(1 - Math.max(0, piscando)).toFixed(2)}) translate(0 ${-OLHO.y})`,
-      );
-
-      desenhar();
+      desenhar(Math.max(0, piscando));
       quadro = requestAnimationFrame(passo);
     };
 
@@ -429,127 +391,7 @@ export function Mascote() {
           {fala}
         </p>
       )}
-      <svg viewBox="0 0 120 100" width={LARGURA} height={ALTURA} className="overflow-visible" role="img" aria-label="Corvo do Skinomics">
-        {/* Arte em linha: contorno verde-limão sobre preto, com espirais ornamentais e penas em lâmina. */}
-        <g
-          ref={espelho}
-          fill="#000"
-          stroke="var(--color-destaque)"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {/* Pernas: tíbia, tarso e dedos com garras. Atrás do corpo; a de longe, mais apagada. */}
-          {([1, 0] as const).map((lado) => (
-            <g key={lado} fill="none" strokeOpacity={lado === 1 ? 0.45 : 1}>
-              <path ref={(e) => void (pernas.current[lado * 3] = e)} />
-              <path ref={(e) => void (pernas.current[lado * 3 + 1] = e)} />
-              <path ref={(e) => void (pernas.current[lado * 3 + 2] = e)} strokeWidth="0.9" />
-            </g>
-          ))}
-
-          <g ref={corpo}>
-            {/* Asa do fundo (aberta no pulo e no voo) */}
-            <g ref={asaLonge} opacity="0" strokeOpacity="0.45">
-              <AsaAberta />
-            </g>
-
-            {/* Cauda: três penas em lâmina, cada uma com a nervura */}
-            <g ref={cauda}>
-              {[
-                "M40 66C30 69 18 74 8 79 7 77.5 7.5 76 9 75 19 70 29 66 39 62Z",
-                "M40 64C30 66 18 68 6 71 5.5 69.5 6 68 7.5 67.4 19 64.8 30 62.6 39.6 60.8Z",
-                "M40 68C31 72 21 78 12 84 10.8 82.8 11 81.2 12.4 80.2 21 74.6 30 69.8 39 65.6Z",
-              ].map((d) => (
-                <path key={d} d={d} />
-              ))}
-              <path d="M37 64.4 9 76.6M37 62.6 8 69.2M37 66.4 12.5 82" fill="none" strokeOpacity="0.45" strokeWidth="0.6" />
-            </g>
-
-            {/* Corpo */}
-            <path d="M30 64C36 53 48 45 63 43 73 42 80 44 84 49 87.4 55.6 84 66 75 72 65 78 49 77 39 71 35 68.6 32 66.6 30 64Z" />
-            {/* Ornamentos do peito: espiral e a linha que desce do pescoço */}
-            <path d="M80.5 55C84 61 80.6 69.6 73.6 69 68.6 68.6 68.4 62.4 72.4 61.6 75.4 61 76.4 64.6 74.4 65.4" fill="none" strokeWidth="0.9" />
-            <path d="M81 49C77 56 70 66 59 74.5M64 76.5C70 73 75 69 77.5 66" fill="none" strokeWidth="0.7" strokeOpacity="0.6" />
-
-            {/* Asa dobrada: espiral no ombro, coberteiras em escama e primárias longas */}
-            <g ref={asaFechada}>
-              <path d="M75 47C65 45 51 50 41 58L21 70 27 70.4 23 72.6 31 71.6 28 74.2C41 71 55 67 65 64 74 61 79 54 75 47Z" />
-              <path
-                d="M75.5 49C70 45.6 63.6 49.6 65.4 54.8 66.6 58.2 71.4 57.8 71.4 54.8 71.4 52.8 69 52.6 68.4 54.2"
-                fill="none"
-                strokeWidth="0.9"
-              />
-              <path d="M63 58.6c-2.6 2.6-6 3-8.8 1.6-2.4 2.8-5.8 3-8.6 1.6" fill="none" strokeWidth="0.7" />
-              <path d="M58 63.4 28 72.6M53 63 25.5 71.4M48.4 62.2 23.5 70.2" fill="none" strokeWidth="0.6" strokeOpacity="0.7" />
-            </g>
-
-            {/* Cabeça (gira em torno do pescoço), um pouco maior que o natural */}
-            <g ref={cabeca}>
-              <g>
-                <path d="M78.5 47C77.5 39 81.5 31.5 89.5 29.2 95.5 27.6 101 28 104.6 30.2L104.2 39.4C100.6 43.4 96 46.2 90 47.8 84.6 49.2 80.4 49 78.5 47Z" />
-                {/* Espiral da bochecha */}
-                <path d="M84.6 43C83.6 38.4 88.4 36.6 90 39.2 91 41 89 42.4 88 41" fill="none" strokeWidth="0.8" />
-                {/* Bico contornado, com a linha da boca e a narina */}
-                <path d="M104 29.8C111 30 117.4 32.4 122.4 36.8 116.6 37.6 110 38.6 104.2 39.4Z" />
-                <path d="M104.4 35C110 35.6 116 36.2 121.6 36.8" fill="none" strokeWidth="0.7" />
-                <path d="M106.6 32.2c1.2 -.4 2.4 -.3 3.4.3" fill="none" strokeWidth="0.7" />
-                {/* Olho de bravo: fenda inclinada sob uma sobrancelha que desce para o bico; pisca fechando a fenda */}
-                <g ref={olho}>
-                  <path d={`M91.4 ${OLHO.y - 0.4}Q95.4 ${OLHO.y - 2.4} 99.6 ${OLHO.y + 0.6}Q95.2 ${OLHO.y + 1.6} 91.4 ${OLHO.y - 0.4}Z`} fill="var(--color-destaque)" strokeWidth="0.5" />
-                  <circle cx="96.4" cy={OLHO.y - 0.2} r="0.85" fill="#000" stroke="none" />
-                </g>
-                <path d="M89.2 30.4C93.2 30.4 97.4 31.6 101.2 34.2" fill="none" strokeWidth="1.7" />
-              </g>
-            </g>
-
-            {/* Asa da frente (aberta no pulo e no voo) */}
-            <g ref={asaPerto} opacity="0">
-              <AsaAberta />
-            </g>
-          </g>
-        </g>
-
-        {/* Área de clique (o resto do mascote não bloqueia a página) */}
-        <rect x="22" y="22" width="88" height="76" fill="transparent" className="pointer-events-auto cursor-pointer" onClick={grasnar} />
-      </svg>
+      <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={grasnar} />
     </div>
-  );
-}
-
-const OLHO = { y: 33.6 };
-
-// Primárias da asa aberta: lâminas que saem do "punho" e se abrem em leque para trás.
-const PRIMARIAS = Array.from({ length: 6 }, (_, i) => {
-  const base = { x: -5 - i * 5, y: -15 + i * 2.8 };
-  const angulo = ((-96 - i * 12) * Math.PI) / 180;
-  const comprimento = 27 - i * 1.6;
-  const ponta = { x: base.x + Math.cos(angulo) * comprimento, y: base.y + Math.sin(angulo) * comprimento };
-  const normal = { x: -Math.sin(angulo) * 2.3, y: Math.cos(angulo) * 2.3 };
-  const meio = { x: (base.x + ponta.x) / 2, y: (base.y + ponta.y) / 2 };
-  const n = (v: number) => v.toFixed(2);
-  return {
-    lamina:
-      `M${n(base.x + normal.x)} ${n(base.y + normal.y)}` +
-      `Q${n(meio.x + normal.x * 1.25)} ${n(meio.y + normal.y * 1.25)} ${n(ponta.x)} ${n(ponta.y)}` +
-      `Q${n(meio.x - normal.x * 1.25)} ${n(meio.y - normal.y * 1.25)} ${n(base.x - normal.x)} ${n(base.y - normal.y)}Z`,
-    nervura: `M${n(base.x)} ${n(base.y)}L${n(base.x + (ponta.x - base.x) * 0.8)} ${n(base.y + (ponta.y - base.y) * 0.8)}`,
-  };
-});
-
-/** Asa aberta, desenhada a partir do ombro (0, 0) apontando para cima: coberteiras, espiral e primárias. */
-function AsaAberta() {
-  return (
-    <>
-      {[...PRIMARIAS].reverse().map(({ lamina, nervura }) => (
-        <g key={lamina}>
-          <path d={lamina} />
-          <path d={nervura} fill="none" strokeWidth="0.5" strokeOpacity="0.6" />
-        </g>
-      ))}
-      <path d="M0 0C-3 -8-6 -13-8 -18-16 -20-26 -18-33 -12-24 -6-13 -1 0 0Z" />
-      <path d="M-4 -6C-9 -9-14 -6-12 -2.6-10.6 -.4-7.4 -1.2-8.2 -3.4" fill="none" strokeWidth="0.9" />
-      <path d="M-14 -13c-3 2-7 2-9.6 .4M-20 -9.6c-2.6 1.6-5.6 1.6-8 .2" fill="none" strokeWidth="0.6" />
-    </>
   );
 }
