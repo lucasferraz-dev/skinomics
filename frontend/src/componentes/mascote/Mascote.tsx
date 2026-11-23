@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { type ItemResumo, useItens } from "../../api/itens";
@@ -85,11 +86,11 @@ function boletim(itens: ItemResumo[]): string[] {
   const alta = ordem[0];
   const queda = ordem[ordem.length - 1];
   const linhas: string[] = [];
-  if (alta && alta.variacao_7d! > 0) linhas.push(`Maior alta em 7 dias: ${alta.nome}, ${formatarVariacao(alta.variacao_7d!)}.`);
-  if (queda && queda.variacao_7d! < 0) linhas.push(`Maior queda em 7 dias: ${queda.nome}, ${formatarVariacao(queda.variacao_7d!)}.`);
+  if (alta && alta.variacao_7d! > 0) linhas.push(t(`Maior alta em 7 dias: ${alta.nome}, ${formatarVariacao(alta.variacao_7d!)}.`, `Biggest 7-day rise: ${alta.nome}, ${formatarVariacao(alta.variacao_7d!)}.`));
+  if (queda && queda.variacao_7d! < 0) linhas.push(t(`Maior queda em 7 dias: ${queda.nome}, ${formatarVariacao(queda.variacao_7d!)}.`, `Biggest 7-day drop: ${queda.nome}, ${formatarVariacao(queda.variacao_7d!)}.`));
   const maisNegociado = [...negociados].sort((a, b) => (b.volume_7d ?? 0) - (a.volume_7d ?? 0))[0];
-  if (maisNegociado) linhas.push(`Mais negociado da semana: ${maisNegociado.nome}.`);
-  if (itens.length) linhas.push(`${itens.length} itens sob observação.`);
+  if (maisNegociado) linhas.push(t(`Mais negociado da semana: ${maisNegociado.nome}.`, `Most traded this week: ${maisNegociado.nome}.`));
+  if (itens.length) linhas.push(t(`${itens.length} itens sob observação.`, `${itens.length} items being watched.`));
   return linhas;
 }
 

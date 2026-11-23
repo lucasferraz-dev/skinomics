@@ -1,34 +1,46 @@
+import { localeAtual } from "./idioma";
+
+/** Formatador criado no idioma atual (e reaproveitado enquanto ele não muda). */
+function porIdioma<F>(criar: (locale: string) => F): () => F {
+  const cache = new Map<string, F>();
+  return () => {
+    const locale = localeAtual();
+    if (!cache.has(locale)) cache.set(locale, criar(locale));
+    return cache.get(locale)!;
+  };
+}
+
 // Datas da API chegam como "AAAA-MM-DD" (dia, sem hora). Tudo aqui trata o dia em UTC
 // para o fuso do navegador não empurrar a data para o dia anterior.
 
-const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" });
-const moedaFina = new Intl.NumberFormat("pt-BR", {
+const moeda = porIdioma((locale) => new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }));
+const moedaFina = porIdioma((locale) => new Intl.NumberFormat(locale, {
   style: "currency",
   currency: "USD",
   minimumFractionDigits: 3,
-});
-const percentual = new Intl.NumberFormat("pt-BR", {
+}));
+const percentual = porIdioma((locale) => new Intl.NumberFormat(locale, {
   style: "percent",
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
   signDisplay: "exceptZero",
-});
-const inteiro = new Intl.NumberFormat("pt-BR");
-const diaMes = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", timeZone: "UTC" });
-const dataCompleta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" });
+}));
+const inteiro = porIdioma((locale) => new Intl.NumberFormat(locale));
+const diaMes = porIdioma((locale) => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", timeZone: "UTC" }));
+const dataCompleta = porIdioma((locale) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }));
 
 /** Item barato varia na terceira casa (US$ 0,255); acima de um dólar, duas casas bastam. */
 export function formatarPreco(valor: number): string {
-  return (valor < 1 ? moedaFina : moeda).format(valor);
+  return (valor < 1 ? moedaFina : moeda)().format(valor);
 }
 
 /** 0.042 → "+4,2%" */
 export function formatarVariacao(fracao: number): string {
-  return percentual.format(fracao);
+  return percentual().format(fracao);
 }
 
 export function formatarInteiro(valor: number): string {
-  return inteiro.format(valor);
+  return inteiro().format(valor);
 }
 
 function paraData(iso: string): Date {
@@ -38,19 +50,19 @@ function paraData(iso: string): Date {
 
 /** "2026-10-01" → "01 OUT" (eixo do gráfico) */
 export function formatarDiaMes(iso: string): string {
-  return diaMes.format(paraData(iso)).replace(" de ", " ").replace(".", "").toUpperCase();
+  return diaMes().format(paraData(iso)).replace(" de ", " ").replace(".", "").toUpperCase();
 }
 
 /** "2026-10-01" → "1 de out. de 2026" */
 export function formatarData(iso: string): string {
-  return dataCompleta.format(paraData(iso));
+  return dataCompleta().format(paraData(iso));
 }
 
-const instante = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+const instante = porIdioma((locale) => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }));
 
 /** Data e hora completas da API (ex.: quando entrou na lista), no fuso de quem está vendo. */
 export function formatarInstante(iso: string): string {
-  return instante.format(new Date(iso));
+  return instante().format(new Date(iso));
 }
 
 export function diasAntes(iso: string, dias: number): string {
@@ -59,9 +71,9 @@ export function diasAntes(iso: string, dias: number): string {
   return data.toISOString().slice(0, 10);
 }
 
-const dataNumerica = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" });
+const dataNumerica = porIdioma((locale) => new Intl.DateTimeFormat(locale, { dateStyle: "short", timeZone: "UTC" }));
 
 /** "2026-11-21" → "21/11/2026" (cabe numa linha em cards estreitos) */
 export function formatarDataNumerica(iso: string): string {
-  return dataNumerica.format(paraData(iso));
+  return dataNumerica().format(paraData(iso));
 }

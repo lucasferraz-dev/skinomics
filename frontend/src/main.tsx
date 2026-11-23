@@ -1,3 +1,4 @@
+import { useIdioma } from "./lib/idioma";
 // Archivo com o eixo de largura (wdth), usado pelos títulos largos.
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/cinzel";
@@ -38,10 +39,15 @@ const rotas = createBrowserRouter([
   },
 ]);
 
+// Trocar o idioma remonta as páginas: todos os textos e formatos são lidos de novo.
+function ComIdioma() {
+  return <RouterProvider key={useIdioma()} router={rotas} />;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={clienteDeConsultas}>
-      <RouterProvider router={rotas} />
+      <ComIdioma />
     </QueryClientProvider>
   </StrictMode>,
 );

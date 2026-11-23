@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
@@ -228,8 +229,8 @@ export function Adesivo({
       {/* A ponta: pegue e puxe para a esquerda ou para cima */}
       <button
         type="button"
-        aria-label="Puxe para descolar o adesivo"
-        title="Puxe para descolar"
+        aria-label={t("Puxe para descolar o adesivo", "Drag to peel the sticker")}
+        title={t("Puxe para descolar", "Drag to peel")}
         onPointerDown={pegar}
         onPointerMove={arrastar}
         onPointerUp={soltar}

@@ -58,6 +58,7 @@ html[data-tv-ocioso] * {
   .cheia-canto { animation: cheia-canto 2.8s ease-in-out infinite; }
   .menu-linha { transform-origin: left center; animation: menu-linha 3.4s ease-in-out infinite; }
   .conta-cabeca { animation: conta-cabeca 4.2s ease-in-out infinite; }
+  .globo-meridiano { animation: globo 3.8s ease-in-out infinite; }
 }
 @keyframes tv-play {
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -86,4 +87,8 @@ html[data-tv-ocioso] * {
   78% { transform: translateY(-1.4px); }
   86% { transform: translateY(0.4px); }
   92% { transform: translateY(-0.6px); }
+}
+@keyframes globo {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(-1); }
 }

@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useId, useRef } from "react";
 
 import { APOIO_X, BASE_CAUDA, OMBRO, perna, PESCOCO, type Pose, transformarCorpo } from "./corvo";
@@ -181,7 +182,7 @@ function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
 export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes; largura: number; altura: number; aoClicar?: () => void }) {
   const id = useId().replace(/:/g, "");
   return (
-    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" aria-label="Corvo do Skinomics">
+    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-corvo aria-label={t("Corvo do Skinomics", "Skinomics crow")}>
       <defs>
         <clipPath id={`${id}-corpo`}>
           <path d={CORPO} />

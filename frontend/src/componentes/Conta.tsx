@@ -1,3 +1,4 @@
+import { t } from "../lib/idioma";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
@@ -5,7 +6,7 @@ import { type UsuarioAtual, useSair, useUsuario } from "../api/auth";
 import { IconeConta } from "./IconesAnimados";
 
 export function nomeDoUsuario(usuario: UsuarioAtual) {
-  return usuario.nome ?? "Conta Steam";
+  return usuario.nome ?? t("Conta Steam", "Steam account");
 }
 
 export function AvatarSteam({ usuario, tamanho = 28, redondo = false }: { usuario: UsuarioAtual; tamanho?: number; redondo?: boolean }) {
@@ -28,15 +29,15 @@ export function MenuConta({ redondo = false }: { redondo?: boolean }) {
   const { data: usuario, isPending } = useUsuario();
 
   if (isPending) {
-    return <span className={`block animate-pulse bg-painel-alto ${redondo ? "size-10 rounded-full" : "size-7 rounded-md"}`} aria-hidden />;
+    return <span className={`block animate-pulse bg-painel-alto ${redondo ? "size-8 rounded-full" : "size-7 rounded-md"}`} aria-hidden />;
   }
   if (!usuario && redondo) {
     return (
       <Link
         to="/entrar"
-        aria-label="Entrar com a Steam"
-        title="Entrar"
-        className="grid size-10 place-items-center rounded-full border border-borda bg-painel/60 text-suave transition-colors duration-300 hover:border-destaque/60 hover:text-texto"
+        aria-label={t("Entrar com a Steam", "Sign in with Steam")}
+        title={t("Entrar", "Sign in")}
+        className="grid size-8 place-items-center rounded-full border border-borda bg-painel/60 text-destaque transition-colors duration-300 hover:border-destaque/60"
       >
         <IconeConta />
       </Link>
@@ -48,7 +49,7 @@ export function MenuConta({ redondo = false }: { redondo?: boolean }) {
         to="/entrar"
         className="rounded-lg border border-borda px-3 py-1.5 text-sm transition-colors hover:border-suave"
       >
-        Entrar
+        {t("Entrar", "Sign in")}
       </Link>
     );
   }
@@ -85,10 +86,10 @@ function MenuUsuario({ usuario, redondo }: { usuario: UsuarioAtual; redondo: boo
         aria-haspopup="menu"
         title={redondo ? nomeDoUsuario(usuario) : undefined}
         className={redondo
-          ? "grid size-10 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
+          ? "grid size-8 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
           : "flex items-center gap-2.5 rounded-lg py-1 pr-2 pl-1 transition-colors hover:bg-painel-alto"}
       >
-        <AvatarSteam usuario={usuario} tamanho={redondo ? 30 : 28} redondo={redondo} />
+        <AvatarSteam usuario={usuario} tamanho={redondo ? 24 : 28} redondo={redondo} />
         {!redondo && <span className="hidden max-w-40 truncate text-sm sm:block">{nomeDoUsuario(usuario)}</span>}
         {!redondo && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-apagado" aria-hidden>
           <path d="m6 9 6 6 6-6" />
@@ -109,7 +110,7 @@ function MenuUsuario({ usuario, redondo }: { usuario: UsuarioAtual; redondo: boo
               rel="noreferrer"
               className={`${opcao} text-suave hover:text-texto`}
             >
-              Perfil na Steam <span aria-hidden>↗</span>
+              {t("Perfil na Steam", "Steam profile")} <span aria-hidden>↗</span>
             </a>
             <button
               role="menuitem"
@@ -118,7 +119,7 @@ function MenuUsuario({ usuario, redondo }: { usuario: UsuarioAtual; redondo: boo
               disabled={sair.isPending}
               className={`${opcao} text-queda disabled:opacity-50`}
             >
-              {sair.isPending ? "Saindo…" : "Sair"}
+              {sair.isPending ? t("Saindo…", "Signing out…") : t("Sair", "Sign out")}
             </button>
           </div>
         </div>

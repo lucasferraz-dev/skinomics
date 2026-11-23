@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
@@ -9,6 +10,7 @@ import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
 import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
+import { BotaoIdioma } from "../../componentes/BotaoIdioma";
 import { IconeFaq } from "../../componentes/IconesAnimados";
 import { BotaoModoTv, classeBotaoRedondo } from "../../componentes/modoTv/ModoTv";
 import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
@@ -52,12 +54,13 @@ function Navegacao() {
         <Logo />
         <div className="flex items-center gap-2">
           <BotaoComoUsar />
-          <a href="#faq" data-tour="faq" aria-label="Perguntas frequentes" title="Perguntas frequentes" className={classeBotaoRedondo}>
+          <a href="#faq" data-tour="faq" aria-label={t("Perguntas frequentes", "Frequently asked questions")} title={t("Perguntas frequentes", "Frequently asked questions")} className={classeBotaoRedondo}>
             <IconeFaq />
           </a>
           <BotaoModoTv />
           <BotaoTelaCheia />
           <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
+          <BotaoIdioma />
           <span data-tour="conta"><MenuConta redondo /></span>
         </div>
       </div>
@@ -67,23 +70,25 @@ function Navegacao() {
 
 function Hero() {
   return (
-    <section data-tv="Início">
+    <section data-tv={t("Início", "Home")}>
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
-          <Rotulo destaque>Preços e previsões de itens do Mercado da Steam</Rotulo>
+          <Rotulo destaque>{t("Preços e previsões de itens do Mercado da Steam", "Steam Market item prices and forecasts")}</Rotulo>
           <h1 data-poleiro="texto" className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
-            O preço de hoje.
+            {t("O preço de hoje.", "Today's price.")}
             <br />
-            O de daqui a
+            {t("O de daqui a", "The price in")}
             <br />
-            <span className="text-destaque">30 dias.</span>
+            <span className="text-destaque">{t("30 dias.", "30 days.")}</span>
           </h1>
           <p className="max-w-md text-lg text-suave">
-            Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a
-            faixa onde o preço deve ficar.
+            {t(
+              "Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a faixa onde o preço deve ficar.",
+              "Daily Steam Market history and price forecasts for 7, 15 and 30 days, each with the range where the price should land.",
+            )}
           </p>
           <div className="flex flex-wrap gap-3">
-            <BotaoPrimario para="/itens">Explorar a plataforma</BotaoPrimario>
+            <BotaoPrimario para="/itens">{t("Explorar a plataforma", "Explore the platform")}</BotaoPrimario>
             <BotaoSecundario
               href="#plataforma"
               icone={
@@ -92,14 +97,14 @@ function Hero() {
                 </span>
               }
             >
-              Ver demonstração
+              {t("Ver demonstração", "See demo")}
             </BotaoSecundario>
           </div>
           <p className="flex items-center gap-2 text-xs text-apagado">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" />
             </svg>
-            Previsões são estimativas, não recomendação de investimento.
+            {t("Previsões são estimativas, não recomendação de investimento.", "Forecasts are estimates, not investment advice.")}
           </p>
         </div>
         <VitrineHero />
@@ -155,7 +160,7 @@ function VitrineHero() {
                 </svg>
               }
             >
-              Outro item
+              {t("Outro item", "Another item")}
             </BotaoSecundario>
           </div>
 
@@ -188,7 +193,7 @@ function VitrineHero() {
       <div aria-hidden className="h-24 sm:hidden" />
       {/* No celular os chaveiros pendem justamente sobre esta legenda; ela só aparece do sm em diante. */}
       <p className="mt-4 hidden sm:block">
-        <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>
+        <Rotulo>{t("Cotação real do Mercado da Steam, em US$", "Live Steam Market quote, in US$")}</Rotulo>
       </p>
     </div>
   );
@@ -225,38 +230,38 @@ function Destaques() {
 
   const indicadores: Indicador[] = [
     {
-      rotulo: "Itens monitorados",
+      rotulo: t("Itens monitorados", "Items tracked"),
       valor: itens?.total ?? "—",
-      detalhe: "no Mercado da Steam",
+      detalhe: t("no Mercado da Steam", "on the Steam Market"),
       icone: "itens",
-      verso: { rotulo: "Vendas somadas em 7 dias", valor: todos.length ? formatarInteiro(vendas) : "—" },
+      verso: { rotulo: t("Vendas somadas em 7 dias", "Total sales in 7 days"), valor: todos.length ? formatarInteiro(vendas) : "—" },
     },
     {
-      rotulo: "Última cotação",
+      rotulo: t("Última cotação", "Last quote"),
       valor: dataCotacao ? formatarDataNumerica(dataCotacao) : "—",
-      detalhe: "Atualizada a cada coleta",
+      detalhe: t("Atualizada a cada coleta", "Updated every collection"),
       icone: "calendario",
-      verso: { rotulo: "Subiram na semana", valor: todos.length ? `${subiram} de ${todos.length} itens` : "—" },
+      verso: { rotulo: t("Subiram na semana", "Rose this week"), valor: todos.length ? t(`${subiram} de ${todos.length} itens`, `${subiram} of ${todos.length} items`) : "—" },
     },
     {
-      rotulo: "Oportunidades em 7 dias",
+      rotulo: t("Oportunidades em 7 dias", "7-day opportunities"),
       valor: oportunidades?.total ?? "—",
-      detalhe: "com margem prevista positiva",
+      detalhe: t("com margem prevista positiva", "with a positive forecast margin"),
       icone: "oportunidade",
       para: "/oportunidades",
       verso: {
-        rotulo: "Melhor margem prevista",
+        rotulo: t("Melhor margem prevista", "Best forecast margin"),
         valor: melhor ? formatarVariacao(melhor.margem_estimada) : "—",
         extra: melhor?.nome,
       },
     },
     {
-      rotulo: "Horizontes",
-      valor: "7, 15 e 30",
-      detalhe: "dias, com faixa de 80%",
+      rotulo: t("Horizontes", "Horizons"),
+      valor: t("7, 15 e 30", "7, 15 and 30"),
+      detalhe: t("dias, com faixa de 80%", "days, with an 80% range"),
       icone: "horizonte",
       verso: {
-        rotulo: "Previsões com base em",
+        rotulo: t("Previsões com base em", "Forecasts based on"),
         valor: oportunidades?.data_base ? formatarDataNumerica(oportunidades.data_base) : "—",
       },
     },
@@ -339,7 +344,7 @@ function Rodape() {
     <footer className="border-t border-borda">
       <Container className="flex flex-wrap items-center justify-between gap-4 py-8 text-xs text-apagado">
         <Logo />
-        <p>Não afiliado à Valve nem à Steam.</p>
+        <p>{t("Não afiliado à Valve nem à Steam.", "Not affiliated with Valve or Steam.")}</p>
       </Container>
     </footer>
   );

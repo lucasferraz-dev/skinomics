@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useEffect, useState } from "react";
 
 import { IconeTelaCheia } from "../IconesAnimados";
@@ -27,8 +28,8 @@ export function BotaoTelaCheia() {
       type="button"
       data-tour="tela-cheia"
       onClick={alternar}
-      aria-label={cheia ? "Sair da tela cheia" : "Tela cheia"}
-      title={cheia ? "Sair da tela cheia" : "Tela cheia"}
+      aria-label={cheia ? t("Sair da tela cheia", "Exit fullscreen") : t("Tela cheia", "Fullscreen")}
+      title={cheia ? t("Sair da tela cheia", "Exit fullscreen") : t("Tela cheia", "Fullscreen")}
       className={`hidden sm:grid ${classeBotaoRedondo}`}
     >
       <IconeTelaCheia cheia={cheia} />

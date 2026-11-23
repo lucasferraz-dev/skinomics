@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useSyncExternalStore } from "react";
 
 import { type ItemResumo, useHistorico, useItens } from "../../api/itens";
@@ -10,10 +11,18 @@ import { diasAntes } from "../../lib/formato";
 export type Motivo = "alta" | "queda" | "volume" | "aleatorio";
 
 const ROTULOS: Record<Motivo, string> = {
-  alta: "Maior alta em 7 dias",
-  queda: "Maior queda em 7 dias",
-  volume: "Mais negociado da semana",
-  aleatorio: "Item aleatório",
+  get alta() {
+    return t("Maior alta em 7 dias", "Biggest 7-day rise");
+  },
+  get queda() {
+    return t("Maior queda em 7 dias", "Biggest 7-day drop");
+  },
+  get volume() {
+    return t("Mais negociado da semana", "Most traded this week");
+  },
+  get aleatorio() {
+    return t("Item aleatório", "Random item");
+  },
 };
 
 // Abaixo disso a variação vem de pouquíssimas vendas e não diz muito.

@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -20,7 +21,7 @@ type Fase = "indo" | "topo" | "descendo" | "fim";
 type Estacao = { el: HTMLElement; nome: string };
 
 export const classeBotaoRedondo =
-  "grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 text-suave transition-colors duration-300 hover:border-destaque/60 hover:text-texto";
+  "grid size-8 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 text-destaque transition-colors duration-300 hover:border-destaque/60";
 
 export const icone = (d: string, tamanho = 18) => (
   <svg width={tamanho} height={tamanho} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -84,8 +85,8 @@ export function BotaoModoTv() {
         type="button"
         data-tour="modo-tv"
         onClick={ligar}
-        aria-label="Modo TV"
-        title="Modo TV"
+        aria-label={t("Modo TV", "TV mode")}
+        title={t("Modo TV", "TV mode")}
         className={`hidden sm:grid ${classeBotaoRedondo}`}
       >
         <IconeTv />
@@ -236,7 +237,7 @@ function ModoTv({ aoSair }: { aoSair: () => void }) {
   return createPortal(
     <div
       role="toolbar"
-      aria-label="Controles do modo TV"
+      aria-label={t("Controles do modo TV", "TV mode controls")}
       className={`fixed bottom-6 left-1/2 z-[90] -translate-x-1/2 transition-[opacity,translate] duration-500 starting:translate-y-4 starting:opacity-0 ${
         ocioso ? "pointer-events-none translate-y-2 opacity-0" : ""
       }`}
@@ -249,17 +250,17 @@ function ModoTv({ aoSair }: { aoSair: () => void }) {
             {indice + 1}/{estacoes.length}
           </span>
         </span>
-        <Controle rotulo="Anterior" aoClicar={() => irPara(indice - 1)}>
+        <Controle rotulo={t("Anterior", "Previous")} aoClicar={() => irPara(indice - 1)}>
           {icone("M15 6l-6 6 6 6", 16)}
         </Controle>
-        <Controle rotulo={pausado ? "Continuar" : "Pausar"} aoClicar={() => setPausado(!pausado)} destaque>
+        <Controle rotulo={pausado ? t("Continuar", "Resume") : t("Pausar", "Pause")} aoClicar={() => setPausado(!pausado)} destaque>
           {pausado ? icone("M8 5v14l11-7z", 16) : icone("M8 5v14M16 5v14", 16)}
         </Controle>
-        <Controle rotulo="Próximo" aoClicar={() => irPara(indice + 1)}>
+        <Controle rotulo={t("Próximo", "Next")} aoClicar={() => irPara(indice + 1)}>
           {icone("M9 6l6 6-6 6", 16)}
         </Controle>
         <span className="mx-1 h-5 w-px bg-borda" aria-hidden />
-        <Controle rotulo="Sair do modo TV" aoClicar={aoSair}>
+        <Controle rotulo={t("Sair do modo TV", "Exit TV mode")} aoClicar={aoSair}>
           {icone("M6 6l12 12M18 6 6 18", 15)}
         </Controle>
         {/* Quanto falta para a próxima seção */}

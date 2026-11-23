@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
@@ -34,7 +35,7 @@ function rolarAte(seletor: string) {
   window.scrollTo({ top: Math.max(0, destino), behavior: "smooth" });
 }
 
-/** Botão redondo "Como usar": uma bolinha com um ponto de interrogação que de tempos em tempos pula e gira. */
+/** Botão redondo t("Como usar", "How to use"): uma bolinha com um ponto de interrogação que de tempos em tempos pula e gira. */
 export function BotaoComoUsar() {
   const { pathname } = useLocation();
   const passos = TUTORIAIS[pathname];
@@ -60,11 +61,11 @@ export function BotaoComoUsar() {
         type="button"
         data-tour="como-usar"
         onClick={() => setAberto(true)}
-        aria-label="Como usar esta página"
-        title="Como usar"
-        className="group/ajuda grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
+        aria-label={t("Como usar esta página", "How to use this page")}
+        title={t("Como usar", "How to use")}
+        className="group/ajuda grid size-8 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
       >
-        <span className="grid size-[21px] place-items-center rounded-full border border-destaque/45 bg-destaque-fundo font-mono text-[11px] leading-none font-semibold text-destaque transition-colors duration-300 group-hover/ajuda:border-destaque group-hover/ajuda:bg-destaque group-hover/ajuda:text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
+        <span className="grid size-[14px] place-items-center rounded-full border border-destaque/45 bg-destaque-fundo font-mono text-[9px] leading-none font-semibold text-destaque transition-colors duration-300 group-hover/ajuda:border-destaque group-hover/ajuda:bg-destaque group-hover/ajuda:text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
           ?
         </span>
       </button>
@@ -180,7 +181,7 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
   const bloqueio = "fixed bg-transparent";
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label="Como usar" className="fixed inset-0 z-[100] transition-opacity duration-300 starting:opacity-0">
+    <div role="dialog" aria-modal="true" aria-label={t("Como usar", "How to use")} className="fixed inset-0 z-[100] transition-opacity duration-300 starting:opacity-0">
       <div className={bloqueio} style={{ left: 0, top: 0, width: vw, height: Math.max(0, c.y) }} />
       <div className={bloqueio} style={{ left: 0, top: c.y + c.h, width: vw, bottom: 0 }} />
       <div className={bloqueio} style={{ left: 0, top: c.y, width: Math.max(0, c.x), height: c.h }} />
@@ -204,7 +205,7 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
         <div className="flex items-center justify-between gap-3">
           <p className="font-mono text-xs">
             <span className="text-destaque">
-              Etapa {indice + 1}
+              {t("Etapa", "Step")} {indice + 1}
             </span>
             <span className="text-apagado">/{passos.length}</span>
           </p>
@@ -214,7 +215,7 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
               onClick={aoFechar}
               className="-my-1 -mr-2 cursor-pointer rounded-md px-2 py-1 text-xs text-suave underline-offset-4 transition-colors hover:text-texto hover:underline"
             >
-              Pular tutorial
+              {t("Pular tutorial", "Skip tutorial")}
             </button>
           )}
         </div>
@@ -238,7 +239,7 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
                 onClick={voltar}
                 className="cursor-pointer rounded-lg border border-borda px-3 py-1.5 text-sm text-suave transition-colors hover:border-suave hover:text-texto"
               >
-                Voltar
+                {t("Voltar", "Back")}
               </button>
             )}
             <button
@@ -246,7 +247,7 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
               onClick={avancar}
               className="cursor-pointer rounded-lg bg-destaque px-3 py-1.5 text-sm font-semibold text-fundo transition hover:brightness-110 active:scale-95"
             >
-              {ultimo ? "Concluir" : "Próximo"}
+              {ultimo ? t("Concluir", "Finish") : t("Próximo", "Next")}
             </button>
           </div>
         </div>

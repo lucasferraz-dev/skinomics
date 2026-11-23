@@ -8,7 +8,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 function Svg({ children }: { children: ReactNode }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="icone-animado overflow-visible" aria-hidden>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="icone-animado overflow-visible" aria-hidden>
       {children}
     </svg>
   );
@@ -69,6 +69,17 @@ export function IconeMenu() {
       <path d="M5 7h14" />
       <path className="menu-linha" d="M5 12h14" />
       <path className="menu-linha" d="M5 17h14" style={{ animationDelay: "0.25s" }} />
+    </Svg>
+  );
+}
+
+/** Globo girando (o meridiano vai e volta, como se o planeta rodasse). */
+export function IconeGlobo() {
+  return (
+    <Svg>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <ellipse className="globo-meridiano" cx="12" cy="12" rx="4" ry="9" />
     </Svg>
   );
 }
