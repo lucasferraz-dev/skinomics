@@ -26,7 +26,7 @@ import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./pol
 // acima ou abaixo (ou quando o atual sai da tela). Parado, pisca, vira a cabeça, bica e mexe a cauda.
 // Clicado, mostra um dado real da base. Precisa de um pai com `position: relative`.
 
-const ESCALA = 0.6;
+const ESCALA = 0.55;
 const DURACAO_GRASNADO = 900; // ms
 const LARGURA = 120 * ESCALA;
 const ALTURA = 100 * ESCALA;
@@ -102,6 +102,11 @@ export function Mascote() {
   const grasnandoDesde = useRef(-Infinity);
   const { data } = useItens({ por_pagina: 100 });
   const idioma = useIdioma();
+  // Trocou o idioma: as letras mudaram de lugar, então os poleiros são relidos já no próximo quadro.
+  const releitura = useRef(false);
+  useEffect(() => {
+    releitura.current = true;
+  }, [idioma]);
   const linhas = useMemo(() => boletim(data?.itens ?? []), [data, idioma]);
   const ultimaLinha = useRef(-1);
   // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
@@ -147,6 +152,7 @@ export function Mascote() {
     let proximaFalaEm = performance.now() + sortear(12000, 20000);
     let anterior = performance.now();
     let quadro = 0;
+    let chegou = false;
 
     const mudar = (novo: Modo, agora: number) => {
       modo = novo;
@@ -159,14 +165,17 @@ export function Mascote() {
       ({ poleiros, obstaculos } = coletarCena(pai.getBoundingClientRect()));
       atualizadoEm = agora;
       if (atual) {
-        // O layout muda (imagens carregando, redimensionamento): acompanha o poleiro onde está.
+        // O layout muda (imagens carregando, redimensionamento): no card, acompanha o poleiro. Se o
+        // poleiro sumiu, ou a letra onde ele estava mudou (ex.: troca de idioma), ele se assusta e voa.
         const mesmo = poleiros.find((p) => p.chave === atual!.chave);
-        if (mesmo) {
+        const letraMudou =
+          mesmo && atual.letra && (Math.abs(mesmo.y - atual.y) > 3 || x < mesmo.x0 - 3 || x > mesmo.x1 + 3);
+        if (mesmo && !letraMudou) {
           atual = mesmo;
           y = mesmo.y;
           x = limitar(x, mesmo.x0, mesmo.x1);
         } else {
-          atual = null;
+          espantar(agora);
         }
       }
     };
@@ -209,6 +218,35 @@ export function Mascote() {
       virarPara(t.pontos[3].x - t.pontos[0].x);
       mudar(t.tipo === "pulo" ? "pulando" : "voando", agora);
     };
+    /** Tiraram o poleiro dele: levanta voo na hora para outro lugar à vista, de preferência perto. */
+    const espantar = (agora: number) => {
+      atual = null;
+      proximoTrajeto = null;
+      const ref = pai.getBoundingClientRect();
+      const destinos = poleiros
+        .filter((p) => visivel(p, ref) && !(Math.abs(p.y - y) < 4 && x >= p.x0 && x <= p.x1))
+        .map((p) => ({ p, d: Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 4)
+        .map(({ p }) => p);
+      // Rota livre até um dos mais próximos; sem nenhuma, vai mesmo assim ao mais próximo.
+      const livreAte = destinos.map((p) => planejar(p, agora, "voo")).find((r) => r !== null);
+      const reserva = destinos[0] ?? poleiros[0];
+      const rota = livreAte ?? (reserva ? planejar(reserva, agora, "voo", false) : null);
+      if (rota) iniciarTrajeto(rota, agora);
+    };
+
+    // Alguém começou a descolar o adesivo onde ele está pousado: sai voando.
+    const aoMexerNoPoleiro = (evento: Event) => {
+      const alvo = (evento as CustomEvent<HTMLElement | null>).detail;
+      if (!alvo || !atual) return;
+      const r = alvo.getBoundingClientRect();
+      const ref = pai.getBoundingClientRect();
+      const emCima = x >= r.left - ref.left - 4 && x <= r.right - ref.left + 4 && Math.abs(y - (r.top - ref.top)) < 8;
+      if (emCima) espantar(performance.now());
+    };
+    window.addEventListener("skinomics:poleiro-mexido", aoMexerNoPoleiro);
+
     const decidir = (agora: number) => {
       if (!atual) return;
       // Nos cards ele anda; nas letras só se empoleira.
@@ -256,12 +294,15 @@ export function Mascote() {
       const dt = Math.min((agora - anterior) / 1000, 0.05);
       anterior = agora;
       const ref = pai.getBoundingClientRect();
-      if (agora - atualizadoEm > 1200) atualizarPoleiros(agora);
+      if (agora - atualizadoEm > 1200 || releitura.current) {
+        releitura.current = false;
+        atualizarPoleiros(agora);
+      }
       const desde = agora - modoDesde;
 
       // Chegada: entra voando pela borda esquerda da tela e pousa numa letra visível. Se nenhuma letra
       // aparecer em 1,5 s (fontes ainda carregando, página aberta já rolada), vale qualquer poleiro à vista.
-      if (!atual && !trajeto && !proximoTrajeto) {
+      if (!chegou && !atual && !trajeto && !proximoTrajeto) {
         const vistos = poleiros.filter((p) => visivel(p, ref));
         const destino = vistos.find((p) => p.letra) ?? (agora - comecouEm > 1500 ? (vistos[0] ?? poleiros[0]) : undefined);
         if (destino) {
@@ -281,8 +322,11 @@ export function Mascote() {
           };
           x = inicio.x;
           y = inicio.y;
+          chegou = true;
           iniciarTrajeto(chegada, agora);
         }
+      } else if (chegou && !atual && !trajeto && !proximoTrajeto) {
+        espantar(agora);
       }
 
       let alvo: Pose = poseParada();
@@ -378,6 +422,7 @@ export function Mascote() {
     quadro = requestAnimationFrame(passo);
     return () => {
       cancelAnimationFrame(quadro);
+      window.removeEventListener("skinomics:poleiro-mexido", aoMexerNoPoleiro);
       window.removeEventListener("resize", aoRedimensionar);
     };
   }, []);

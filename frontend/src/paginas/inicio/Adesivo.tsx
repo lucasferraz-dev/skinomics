@@ -200,6 +200,8 @@ export function Adesivo({
     cancelAnimationFrame(animacao.current);
     ocupado.current = true;
     setPuxando(true);
+    // Avisa o corvo: se ele estiver pousado aqui, sai voando.
+    window.dispatchEvent(new CustomEvent("skinomics:poleiro-mexido", { detail: raiz.current }));
     puxado.current = pontoLocal(evento);
     desenhar();
   }
