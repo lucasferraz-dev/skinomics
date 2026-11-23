@@ -74,21 +74,21 @@ const INICIO: Passo[] = [
   {
     alvo: "svg[data-corvo]",
     get titulo() {
-      return t("O corvo", "The crow");
+      return t("Muninn, o corvo", "Muninn, the raven");
     },
     get texto() {
-      return t("O mascote do Skinomics. Anda pelos cards, voa entre as seções e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.", "Skinomics' mascot. It walks on the cards, flies between sections and now and then says something about the market. Click it to hear.");
+      return t("Muninn, um dos corvos de Odin: o nome quer dizer memória. Anda pelos cards, voa entre as seções, lembra das suas visitas e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.", "Muninn, one of Odin's ravens: the name means memory. He walks the cards, flies between sections, remembers your visits and now and then says something about the market. Click him to hear.");
     },
   },
   {
     alvo: "svg[data-coruja]",
     get titulo() {
-      return t("A coruja", "The owl");
+      return t("Glaux, a coruja", "Glaux, the owl");
     },
     get texto() {
       return t(
-        "A analista. Fala pouco, quase sempre sobre previsão, e vira a cabeça para acompanhar o cursor. O corvo vive implicando com ela.",
-        "The analyst. Talks little, mostly about forecasts, and turns her head to follow your cursor. The crow keeps pestering her.",
+        "Glaux, a coruja de Atena, deusa da sabedoria. A analista: fala pouco, quase sempre sobre previsão, e vira a cabeça para acompanhar o cursor. Muninn vive implicando com ela.",
+        "Glaux, the owl of Athena, goddess of wisdom. The analyst: talks little, mostly about forecasts, and turns her head to follow your cursor. Muninn keeps pestering her.",
       );
     },
   },
@@ -196,11 +196,11 @@ const FALAS: [string, { corvo: [string, string]; coruja: [string, string] }][] =
     coruja: ["Modelo que esconde o erro não merece confiança.", "A model that hides its error doesn't deserve trust."],
   }],
   ["data-corvo", {
-    corvo: ["Huginn era o pensamento de Odin. Eu sou as cotações.", "Huginn was Odin's thought. I am the quotes."],
-    coruja: ["Fala demais. Mas não esquece nada.", "Talks too much. But forgets nothing."],
+    corvo: ["Meu irmão Huginn é o pensamento de Odin. Eu sou a memória: lembro de cada preço.", "My brother Huginn is Odin's thought. I am his memory: I remember every price."],
+    coruja: ["Muninn fala demais. Mas não esquece nada.", "Muninn talks too much. But he forgets nothing."],
   }],
   ["data-coruja", {
-    corvo: ["Ela acha que é a analista daqui.", "She thinks she's the analyst around here."],
+    corvo: ["Glaux veio de Atenas achando que é a analista daqui.", "Glaux came from Athens thinking she's the analyst around here."],
     coruja: ["Corujas giram a cabeça até 270 graus. Nenhum preço me escapa.", "Owls turn their heads up to 270 degrees. No price escapes me."],
   }],
   ["'faq'", {

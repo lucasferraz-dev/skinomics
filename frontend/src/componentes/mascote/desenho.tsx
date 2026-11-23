@@ -193,7 +193,7 @@ export function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }
 export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes; largura: number; altura: number; aoClicar?: () => void }) {
   const id = useId().replace(/:/g, "");
   return (
-    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-corvo aria-label={t("Corvo do Skinomics", "Skinomics crow")}>
+    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-corvo aria-label={t("Muninn, o corvo do Skinomics", "Muninn, the Skinomics raven")}>
       <defs>
         <clipPath id={`${id}-corpo`}>
           <path d={CORPO} />

@@ -54,7 +54,7 @@ function divisas(x0: number, y0: number, x1: number, y1: number, passo: number) 
 export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Partes; largura: number; altura: number; aoClicar?: () => void }) {
   const id = useId().replace(/:/g, "");
   return (
-    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-coruja aria-label={t("Coruja do Skinomics", "Skinomics owl")}>
+    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-coruja aria-label={t("Glaux, a coruja do Skinomics", "Glaux, the Skinomics owl")}>
       <defs>
         <clipPath id={`${id}-corpo`}>
           <path d={CORPO} />

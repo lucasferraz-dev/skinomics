@@ -11,6 +11,7 @@ const DICAS: [string, string][] = [
   ["Eventos como o Halloween mexem no preço de itens temáticos.", "Events like Halloween move the prices of themed items."],
   ["Caixa que sai de circulação tende a ficar mais rara.", "A crate that leaves circulation tends to get rarer."],
   ["Corvos reconhecem rostos. Eu reconheço preços.", "Crows recognize faces. I recognize prices."],
+  ["Muninn quer dizer memória. Por isso eu não esqueço um preço.", "Muninn means memory. That's why I never forget a price."],
   ["Corvos guardam coisas brilhantes. Eu guardo cotações.", "Crows hoard shiny things. I hoard quotes."],
   ["Ninguém acerta o mercado sempre. Nem eu, e olha que eu sou um corvo.", "Nobody times the market every time. Not even me, and I'm a crow."],
   ["Entre com a Steam e salve itens na Minha lista.", "Sign in with Steam and save items to My list."],
@@ -45,7 +46,7 @@ function registrarVisita(): (() => string) | null {
     };
     localStorage.setItem(CHAVE_VISITAS, JSON.stringify(agora));
     if (!antes) {
-      return () => t("Oi! Sou o corvo do Skinomics. Clica em mim que eu conto umas coisas.", "Hi! I'm the Skinomics crow. Click me and I'll tell you things.");
+      return () => t("Oi! Sou o Muninn, corvo de Odin. Clica em mim que eu conto umas coisas.", "Hi! I'm Muninn, Odin's raven. Click me and I'll tell you things.");
     }
     const dias = Math.round((Date.parse(hoje) - Date.parse(antes.ultima)) / 86_400_000);
     if (agora.total % 10 === 0) return () => t(`Visita número ${agora.total}! Já é de casa.`, `Visit number ${agora.total}! You're a regular.`);
@@ -86,7 +87,8 @@ export const falaDaCoruja = () =>
     ["Previsão de 30 dias erra mais que a de 7. É normal.", "A 30-day forecast misses more than a 7-day one. That's normal."],
     ["Paciência. Item raro anda devagar.", "Patience. Rare items move slowly."],
     ["Eu enxergo melhor à noite. Os preços, de dia.", "I see better at night. Prices, during the day."],
-    ["O corvo fala demais.", "The crow talks too much."],
+    ["Muninn fala demais.", "Muninn talks too much."],
+    ["Sou Glaux, a coruja de Atena. Eu analiso; não palpito.", "I'm Glaux, Athena's owl. I analyze; I don't guess."],
   ]);
 
 /** O que cada um diz quando é espantado. */
@@ -116,11 +118,13 @@ export const provocacao = (quem: Especie) =>
     ? sortearPar([
         ["Este poleiro pertence a Odin.", "This perch belongs to Odin."],
         ["Eu vi esse preço antes de você, coruja.", "I saw that price before you did, owl."],
-        ["Teu modelo erra. Meu instinto, não.", "Your model misses. My instinct doesn't."],
+        ["Teu modelo erra, Glaux. Meu instinto, não.", "Your model misses, Glaux. My instinct doesn't."],
+        ["Atenas fica longe, Glaux.", "Athens is far away, Glaux."],
         ["Os corvos de Odin não dividem galho.", "Odin's ravens don't share a branch."],
       ])
     : sortearPar([
-        ["Instinto não é método, corvo.", "Instinct isn't method, crow."],
+        ["Instinto não é método, Muninn.", "Instinct isn't method, Muninn."],
+        ["Atena me deu a sabedoria. Odin te deu o quê?", "Athena gave me wisdom. What did Odin give you?"],
         ["Daqui eu vejo a faixa inteira. Saia.", "From here I see the whole range. Leave."],
         ["A noite é minha. Este card também.", "The night is mine. So is this card."],
         ["Palpite é ruído. Eu leio o sinal.", "Hunches are noise. I read the signal."],
@@ -130,7 +134,7 @@ export const provocacao = (quem: Especie) =>
 export const resposta = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
-        ["Que seja. Eu vejo de longe também.", "So be it. I see from afar too."],
+        ["Que seja, Muninn. Eu vejo de longe também.", "So be it, Muninn. I see from afar too."],
         ["Volto quando o ruído passar.", "I'll return when the noise fades."],
       ])
     : sortearPar([
@@ -143,7 +147,7 @@ export const resistencia = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
         ["Não. Daqui eu vejo tudo.", "No. I see everything from here."],
-        ["Pouse em outro lugar, corvo.", "Perch elsewhere, crow."],
+        ["Pouse em outro lugar, Muninn.", "Perch elsewhere, Muninn."],
       ])
     : sortearPar([
         ["Cheguei antes de o mercado abrir.", "I was here before the market opened."],
