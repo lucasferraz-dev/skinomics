@@ -32,7 +32,7 @@ import {
 import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
 import { poseCorujaParada, poseCorujaVoando } from "./coruja";
 import { aplicarCoruja, CorujaSvg, usePartesCoruja } from "./desenhoCoruja";
-import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
+import { avisar, EVENTO_POLEIRO_MEXIDO, EVENTO_PUXAR_CHAVEIRO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
 import { DISTANCIA, MESMA_ALTURA, type Presenca, presencas } from "./rivais";
 
@@ -132,7 +132,10 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
   // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
   const falarRef = useRef<() => void>(() => {});
   const reclamarRef = useRef<() => void>(() => {});
-  const dizerRef = useRef<(texto: string) => void>(() => {});
+  const dizerRef = useRef<(texto: string, fixa?: boolean) => void>(() => {});
+  const calarRef = useRef<() => void>(() => {});
+  // Fala do tutorial: fica no balão até mudar de passo ou fechar, em vez de sumir sozinha.
+  const falaFixa = useRef(false);
   // Saudação desta visita ("Voltou! Faz 3 dias."), dita logo que ele pousa pela primeira vez.
   const saudacaoRef = useRef(especie === "corvo" ? saudacaoDaVisita() : null);
   // No tutorial os dois ficam acima do fundo escurecido, como guias.
@@ -205,6 +208,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     // Conduzido pelo modo TV ou pelo tutorial: não passeia sozinho nem se assusta com o cursor.
     let emTv = false;
     let emTutorial = false;
+    let passoAtual = 0;
     const conduzido = () => emTv || emTutorial;
     // Implicância (nos dois sentidos): de tempos em tempos um pousa do lado do outro e provoca.
     let implicando = false;
@@ -435,7 +439,13 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     const aoMudarPassoTutorial = (evento: Event) => {
       const passo = (evento as CustomEvent<PassoTutorial | null>).detail;
       emTutorial = passo !== null;
-      if (!passo) return;
+      passoAtual += 1;
+      if (!passo) {
+        calarRef.current();
+        // Acabou o tutorial: um tempo de silêncio antes de voltar a falar sozinho.
+        proximaFalaEm = performance.now() + sortear(8000, 15000);
+        return;
+      }
       const alvo = passo.alvo;
       if (alvo && !alvo.closest("header") && !alvo.closest("[data-corvo], [data-coruja]")) {
         pousarNaBorda(alvo, performance.now());
@@ -445,7 +455,25 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         vemPraPerto({ x: -ref.left + window.innerWidth * (especie === "corvo" ? 0.7 : 0.3), y: -ref.top + 200 }, performance.now());
       }
       const fala = especie === "corvo" ? passo.corvo : passo.coruja;
-      if (fala) window.setTimeout(() => dizerRef.current(fala), especie === "corvo" ? 0 : 1400);
+      // A coruja fala logo depois do corvo (só para os balões não nascerem juntos); as falas ficam até
+      // mudar de passo.
+      const este = passoAtual;
+      if (fala) window.setTimeout(() => este === passoAtual && dizerRef.current(fala, true), especie === "corvo" ? 0 : 250);
+      // Nos chaveiros, o Muninn faz o que manda: bica e puxa o chaveiro mais perto, que bate no vizinho.
+      if (especie === "corvo" && alvo?.matches("svg[data-chaveiro]")) {
+        window.setTimeout(() => {
+          if (este !== passoAtual) return;
+          const ref = pai.getBoundingClientRect();
+          const bico = { x: ref.left + x + direcao * 20, y: ref.top + y };
+          const chaveiros = [...document.querySelectorAll("svg[data-chaveiro]")];
+          const perto = chaveiros
+            .map((svg) => ({ svg, r: svg.querySelector("g.cursor-grab")?.getBoundingClientRect() ?? svg.getBoundingClientRect() }))
+            .sort((a, b) => Math.hypot(a.r.x - bico.x, a.r.y - bico.y) - Math.hypot(b.r.x - bico.x, b.r.y - bico.y))[0];
+          if (!perto) return;
+          bicadaAte = performance.now() + 420;
+          avisar(EVENTO_PUXAR_CHAVEIRO, perto.svg);
+        }, 2300);
+      }
     };
     const aoMoverMouse = (evento: PointerEvent) => {
       if (evento.pointerType !== "mouse") return;
@@ -844,6 +872,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
   useEffect(() => {
     if (!fala) return;
     falando.current = true;
+    if (falaFixa.current) return;
     const t = setTimeout(() => {
       setFala(null);
       falando.current = false;
@@ -877,11 +906,17 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     setFala(linhas[indice]!);
   }
 
-  function dizer(texto: string) {
+  function dizer(texto: string, fixa = false) {
     grasnandoDesde.current = performance.now();
+    falaFixa.current = fixa;
     setFala(texto);
   }
   dizerRef.current = dizer;
+  calarRef.current = () => {
+    falaFixa.current = false;
+    falando.current = false;
+    setFala(null);
+  };
   falarRef.current = falar;
 
   // Espantado (tiraram o poleiro dele): grasna e reclama com um balão curto, sem tocar som.
