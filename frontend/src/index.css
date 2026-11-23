@@ -29,3 +29,12 @@ body {
   font-stretch: 112%;
   letter-spacing: -0.03em;
 }
+
+/* Bolinha do "Como usar": parada a maior parte do tempo, depois dá um pulinho e gira uma volta no ar. */
+@keyframes interrogacao {
+  0%, 72% { transform: translateY(0) rotate(0deg); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  80% { transform: translateY(-6px) rotate(0deg); animation-timing-function: ease-in-out; }
+  92% { transform: translateY(-6px) rotate(360deg); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+  97% { transform: translateY(0) rotate(360deg) scale(1.08, .9); }
+  100% { transform: translateY(0) rotate(360deg); }
+}

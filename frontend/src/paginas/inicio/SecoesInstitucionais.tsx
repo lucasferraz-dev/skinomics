@@ -105,7 +105,7 @@ export function Transparencia() {
           titulo="De onde vêm os números."
           texto="A origem dos dados, a qualidade do modelo e o que a plataforma não faz."
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div data-tour="transparencia" className="grid gap-4 md:grid-cols-3">
           {COMPROMISSOS.map(({ titulo, texto }) => (
             <div key={titulo} data-poleiro className="space-y-3 rounded-2xl border border-borda bg-painel p-6">
               <h3 className="text-lg">{titulo}</h3>

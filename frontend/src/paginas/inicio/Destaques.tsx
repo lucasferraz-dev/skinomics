@@ -125,7 +125,7 @@ export function DestaquesDaSemana() {
           texto="Atualizado a cada coleta, com os preços do Mercado da Steam. Clique num terminal para abrir o item."
         />
         {/* No celular, um carrossel horizontal (empilhados passariam de 1600 px); a partir do sm, grade. */}
-        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+        <div data-tour="destaques" className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
           <TerminalItem
             rotulo="Maior alta em 7 dias"
             medalha="alta"

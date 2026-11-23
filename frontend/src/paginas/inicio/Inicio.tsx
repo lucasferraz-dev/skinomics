@@ -8,6 +8,7 @@ import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
+import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
@@ -50,7 +51,8 @@ const LINKS = [
 function Navegacao() {
   return (
     <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
-      <Container className="flex h-16 items-center justify-between">
+      {/* Ocupa a largura toda: logo na ponta esquerda, links no meio e botões redondos na ponta direita. */}
+      <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-10">
         <Logo />
         <nav className="hidden gap-8 text-sm text-suave lg:flex">
           {LINKS.map(([rotulo, ancora]) => (
@@ -59,12 +61,12 @@ function Navegacao() {
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
-          <AcessoAnalise hamburguer />
-          <MenuConta />
-          <span className="hidden sm:inline-flex"><BotaoPrimario para="/itens">Começar agora</BotaoPrimario></span>
+        <div className="flex items-center gap-2 justify-self-end">
+          <BotaoComoUsar />
+          <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
+          <span data-tour="conta"><MenuConta redondo /></span>
         </div>
-      </Container>
+      </div>
     </header>
   );
 }
@@ -118,8 +120,8 @@ function VitrineHero() {
 
   return (
     <div>
-      <div className="relative">
-        <div ref={card} data-poleiro className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
+      <div data-tour="vitrine-area" className="relative">
+        <div ref={card} data-poleiro data-tour="vitrine" className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
           {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
@@ -268,7 +270,7 @@ function Destaques() {
 
   return (
     // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
-    <section className="overflow-x-clip">
+    <section data-tour="adesivos" className="overflow-x-clip">
       <Container className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
         {indicadores.map((indicador, i) => (
           <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />

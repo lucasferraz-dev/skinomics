@@ -32,7 +32,7 @@ export function PreviaDaPlataforma() {
           selo="Dados reais"
         />
 
-        <div className="relative">
+        <div data-tour="previa" className="relative">
           <div ref={card} data-poleiro className="overflow-hidden rounded-2xl border border-borda bg-painel">
             <div className="flex h-12 items-center justify-between border-b border-borda px-4">
               <span className="flex items-center gap-2.5 text-sm font-semibold">
@@ -169,6 +169,7 @@ export function Radar() {
           texto="Preço, variação em 7 dias, tendência de 30 dias e quantas unidades foram vendidas no Mercado da Steam."
         />
 
+        <div data-tour="radar">
         <Painel>
           <div className="flex items-center justify-between border-b border-borda px-4 py-3">
             <span className="rounded-md border border-destaque/25 bg-destaque-fundo px-3 py-1.5 text-sm text-destaque">
@@ -201,6 +202,7 @@ export function Radar() {
             <Carregando />
           )}
         </Painel>
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-apagado">
           <p>Preços em US$ do Mercado da Comunidade Steam. Efeitos e qualidades alteram o valor de um item.</p>

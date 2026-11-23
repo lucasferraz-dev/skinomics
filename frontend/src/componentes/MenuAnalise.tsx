@@ -54,7 +54,7 @@ export function MenuAnalise() {
 }
 
 /** Mesmo menu nos cabeçalhos da página inicial e do login. */
-export function AcessoAnalise({ hamburguer = false }: { hamburguer?: boolean }) {
+export function AcessoAnalise({ hamburguer = false, redondo = false }: { hamburguer?: boolean; redondo?: boolean }) {
   const menu = useRef<HTMLDetailsElement>(null);
   return (
     <details ref={menu} className="relative shrink-0" onKeyDown={(evento) => {
@@ -63,8 +63,10 @@ export function AcessoAnalise({ hamburguer = false }: { hamburguer?: boolean }) 
         menu.current.querySelector("summary")?.focus();
       }
     }}>
-      <summary aria-label="Menu Área de análise" title="Área de análise" className={`cursor-pointer whitespace-nowrap rounded-lg border border-borda text-xs text-suave transition-colors hover:border-suave hover:text-texto sm:text-sm ${hamburguer ? "list-none p-2.5 [&::-webkit-details-marker]:hidden" : "px-3 py-2"}`}>
-        {hamburguer ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h16" /></svg> : "Área de análise"}
+      <summary aria-label="Menu Área de análise" title="Área de análise" className={redondo
+        ? "grid size-10 cursor-pointer list-none place-items-center rounded-full border border-borda bg-painel/60 text-suave transition-colors duration-300 hover:border-destaque/60 hover:text-texto [&::-webkit-details-marker]:hidden"
+        : `cursor-pointer whitespace-nowrap rounded-lg border border-borda text-xs text-suave transition-colors hover:border-suave hover:text-texto sm:text-sm ${hamburguer ? "list-none p-2.5 [&::-webkit-details-marker]:hidden" : "px-3 py-2"}`}>
+        {redondo ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden><path d="M5 7h14M5 12h14M5 17h14" /></svg> : hamburguer ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h16" /></svg> : "Área de análise"}
       </summary>
       <nav aria-label="Área de análise" className="absolute right-0 top-full z-30 mt-2 w-56 rounded-xl border border-borda bg-painel p-2 shadow-xl" onClick={() => {
         if (menu.current) menu.current.open = false;
