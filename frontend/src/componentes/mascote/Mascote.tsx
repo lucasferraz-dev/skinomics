@@ -115,6 +115,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
   const altura = 100 * escala;
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
+  const bolha = useRef<HTMLParagraphElement>(null);
   const partes = usePartes();
   const partesCoruja = usePartesCoruja();
   const falando = useRef(false);
@@ -402,10 +403,30 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       const r = alvo.getBoundingClientRect();
       const x0 = r.left - ref.left;
       const x1 = r.right - ref.left;
-      if (especie === "coruja" && x1 - x0 < 240) return;
-      const fimX = especie === "corvo" ? x1 - Math.min(52, (x1 - x0) / 2) : x0 + 52;
+      if (especie === "coruja" && x1 - x0 < 240) {
+        // Sem espaço para os dois na borda: ela vem para um poleiro à vista perto da parte explicada.
+        vemPraPerto({ x: (x0 + x1) / 2, y: r.top - ref.top }, agora);
+        return;
+      }
+      // Longe dos cantos da tela, para o bicho e o balão aparecerem inteiros.
+      const telaX0 = -ref.left + 90;
+      const telaX1 = -ref.left + window.innerWidth - 90;
+      const fimX = limitar(especie === "corvo" ? x1 - Math.min(52, (x1 - x0) / 2) : x0 + 52, Math.max(x0 + 6, telaX0), Math.min(x1 - 6, telaX1));
       const borda: Poleiro = { chave: `borda:${especie}`, x0: x0 + 6, x1: x1 - 6, y: r.top - ref.top, letra: false };
       const rota = planejar(borda, agora, "voo", true, fimX) ?? planejar(borda, agora, "voo", false, fimX);
+      if (!rota) return;
+      atual = null;
+      proximoTrajeto = null;
+      iniciarTrajeto(rota, agora);
+    };
+    /** Voa para o poleiro à vista mais perto de um ponto (se já não estiver num poleiro à vista ali). */
+    const vemPraPerto = (ponto: Ponto, agora: number) => {
+      const ref = pai.getBoundingClientRect();
+      const distancia = (p: Poleiro) => Math.hypot((p.x0 + p.x1) / 2 - ponto.x, p.y - ponto.y);
+      const vistos = poleiros.filter((p) => visivel(p, ref) && !p.chave.startsWith("borda:")).sort((a, b) => distancia(a) - distancia(b));
+      const destino = vistos.find((p) => p.chave !== atual?.chave);
+      if (!destino || (atual && visivel(atual, ref) && distancia(atual) < 260)) return;
+      const rota = planejar(destino, agora, "voo") ?? planejar(destino, agora, "voo", false);
       if (!rota) return;
       atual = null;
       proximoTrajeto = null;
@@ -416,8 +437,13 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       emTutorial = passo !== null;
       if (!passo) return;
       const alvo = passo.alvo;
-      // Header e os próprios mascotes: comenta de onde está.
-      if (alvo && !alvo.closest("header") && !alvo.closest("[data-corvo], [data-coruja]")) pousarNaBorda(alvo, performance.now());
+      if (alvo && !alvo.closest("header") && !alvo.closest("[data-corvo], [data-coruja]")) {
+        pousarNaBorda(alvo, performance.now());
+      } else if (!alvo?.closest("[data-corvo], [data-coruja]")) {
+        // Botões do header: comenta de um poleiro à vista, perto do topo da tela.
+        const ref = pai.getBoundingClientRect();
+        vemPraPerto({ x: -ref.left + window.innerWidth * (especie === "corvo" ? 0.7 : 0.3), y: -ref.top + 200 }, performance.now());
+      }
       const fala = especie === "corvo" ? passo.corvo : passo.coruja;
       if (fala) window.setTimeout(() => dizerRef.current(fala), especie === "corvo" ? 0 : 1400);
     };
@@ -785,6 +811,15 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       }
       cabecaTras += (cabecaTrasAlvo - cabecaTras) * Math.min(1, dt * 7);
       espelho += (direcao - espelho) * Math.min(1, dt * 10);
+      // O balão de fala nunca sai da tela: desliza para dentro e, sem espaço em cima, passa para baixo.
+      const b = bolha.current;
+      if (b) {
+        b.style.transform = "";
+        const r = b.getBoundingClientRect();
+        const dx = r.left < 8 ? 8 - r.left : r.right > window.innerWidth - 8 ? window.innerWidth - 8 - r.right : 0;
+        const dy = r.top < 8 ? r.height + altura + 6 : 0;
+        if (dx || dy) b.style.transform = `translate(${dx}px, ${dy}px)`;
+      }
       presenca.x = x;
       presenca.y = y;
       presenca.poleiro = atual;
@@ -866,6 +901,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     >
       {fala && (
         <p
+          ref={bolha}
           role="status"
           className="absolute bottom-full left-1/2 mb-1 w-max max-w-64 -translate-x-1/2 rounded-lg border border-borda bg-painel px-3 py-2 font-mono text-[11px] leading-snug text-texto shadow-[0_8px_24px_rgba(0,0,0,0.7)]"
         >

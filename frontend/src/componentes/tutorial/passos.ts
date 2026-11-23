@@ -163,73 +163,73 @@ export const TUTORIAIS: Record<string, Passo[]> = {
 };
 
 /**
- * O que o corvo e a coruja dizem em cada passo do tutorial: uma curiosidade, uma provocação ou uma
- * dica, nunca só o nome da parte. Casado pelo trecho do seletor do passo. Pares [português, inglês].
+ * O que cada um diz em cada passo do tutorial: Muninn ligado no 220, falando demais; Glaux seca, o
+ * mínimo necessário. Casado pelo trecho do seletor do passo. Pares [português, inglês].
  */
 const FALAS: [string, { corvo: [string, string]; coruja: [string, string] }][] = [
   ["'vitrine'", {
-    corvo: ["Corvos lembram onde esconderam milhares de coisas. Eu lembro de preços.", "Ravens remember where they hid thousands of things. I remember prices."],
-    coruja: ["Repare na medalha: ela diz por que este item está aqui.", "Mind the medal: it tells you why this item is here."],
+    corvo: ["Olha esse item! Olha! Fui eu que achei. Não fui, mas podia ter sido!", "Look at this item! Look! I found it. I didn't, but I could have!"],
+    coruja: ["A medalha explica por que ele está aqui. Leia.", "The medal explains why it's here. Read it."],
   }],
   ["data-chaveiro", {
-    corvo: ["Corvos brincam só por brincar. Pode puxar, eu não conto pra ninguém.", "Ravens play just for fun. Go ahead and pull, I won't tell."],
-    coruja: ["Cada pingente é um dado: jogo, tipo e evento.", "Each charm is data: game, type and event."],
+    corvo: ["Puxa! Puxa! Solta! Puxa de novo! Eu adoro isso!", "Pull it! Pull it! Let go! Again! I love this!"],
+    coruja: ["Jogo, tipo, evento. Só isso.", "Game, type, event. That's all."],
   }],
   ["'adesivos'", {
-    corvo: ["Puxa a ponta. Atrás sempre tem mais.", "Pull the corner. There's always more behind."],
-    coruja: ["Números de hoje. Amanhã, outros.", "Today's numbers. Tomorrow, new ones."],
+    corvo: ["Descola o adesivo! Tem coisa atrás! Eu já vi! Duas vezes!", "Peel the sticker! There's stuff behind! I've seen it! Twice!"],
+    coruja: ["Números de hoje. Amanhã serão outros.", "Today's numbers. Tomorrow, others."],
   }],
   ["'previa'", {
-    corvo: ["A linha tracejada é o futuro. Eu prefiro o passado: esse eu já vi.", "The dashed line is the future. I prefer the past: I've seen it."],
-    coruja: ["Leia a faixa, não só a linha. A faixa é a honestidade do modelo.", "Read the range, not just the line. The range is the model being honest."],
+    corvo: ["A linha tracejada é o futuro! Eu prefiro o passado: esse eu decorei!", "The dashed line is the future! I prefer the past: I memorized it!"],
+    coruja: ["Leia a faixa, não a linha.", "Read the range, not the line."],
   }],
   ["'radar'", {
-    corvo: ["Onde tem volume, tem movimento. É aqui que eu fico de olho.", "Where there's volume, there's movement. This is where I keep watch."],
-    coruja: ["Volume alto: dá para vender sem derrubar o preço.", "High volume: you can sell without sinking the price."],
+    corvo: ["Volume! Movimento! Barulho! Meu lugar favorito!", "Volume! Movement! Noise! My favorite spot!"],
+    coruja: ["Volume alto: dá para sair sem derrubar o preço.", "High volume: you can exit without sinking the price."],
   }],
   ["'destaques'", {
-    corvo: ["Quem mais subiu e quem mais caiu. Eu aposto nos dois.", "Biggest riser and biggest faller. I bet on both."],
-    coruja: ["Alta forte com pouco volume costuma voltar. Cuidado.", "A big rise on thin volume tends to fade. Careful."],
+    corvo: ["Quem subiu mais? Quem caiu mais? Eu aposto nos dois! Ao mesmo tempo!", "Who rose most? Who fell most? I bet on both! At once!"],
+    coruja: ["Alta com pouco volume costuma voltar.", "A rise on thin volume tends to fade."],
   }],
   ["'transparencia'", {
-    corvo: ["Odin mandava dois corvos ao mundo para saber tudo. Aqui basta ler.", "Odin sent two ravens into the world to know everything. Here, just read."],
-    coruja: ["Modelo que esconde o erro não merece confiança.", "A model that hides its error doesn't deserve trust."],
+    corvo: ["Odin tinha dois corvos pra saber tudo. Você tem eu. Sorte sua!", "Odin had two ravens to know everything. You have me. Lucky you!"],
+    coruja: ["Modelo que esconde o erro não serve.", "A model that hides its error is useless."],
   }],
   ["data-corvo", {
-    corvo: ["Meu irmão Huginn é o pensamento de Odin. Eu sou a memória: lembro de cada preço.", "My brother Huginn is Odin's thought. I am his memory: I remember every price."],
-    coruja: ["Muninn fala demais. Mas não esquece nada.", "Muninn talks too much. But he forgets nothing."],
+    corvo: ["Sou eu! Muninn! A memória de Odin! Pergunta qualquer preço! Qualquer um!", "It's me! Muninn! Odin's memory! Ask me any price! Any!"],
+    coruja: ["Infelizmente.", "Unfortunately."],
   }],
   ["data-coruja", {
-    corvo: ["Glaux veio de Atenas achando que é a analista daqui.", "Glaux came from Athens thinking she's the analyst around here."],
-    coruja: ["Corujas giram a cabeça até 270 graus. Nenhum preço me escapa.", "Owls turn their heads up to 270 degrees. No price escapes me."],
+    corvo: ["Essa aí? Lenta. Muito lenta. Pergunta pra ela, vai demorar.", "Her? Slow. Very slow. Ask her, it'll take a while."],
+    coruja: ["Glaux. Coruja de Atena. Eu analiso.", "Glaux. Athena's owl. I analyze."],
   }],
   ["'faq'", {
-    corvo: ["As dúvidas de sempre. Eu responderia melhor.", "The usual questions. I'd answer them better."],
-    coruja: ["Leia antes de perguntar.", "Read before you ask."],
+    corvo: ["Pergunta pra mim! Eu respondo mais rápido que esse FAQ!", "Ask me! I answer faster than this FAQ!"],
+    coruja: ["Leia antes de perguntar.", "Read before asking."],
   }],
   ["'modo-tv'", {
-    corvo: ["Deixa numa TV. Eu sobrevoo as seções com você.", "Leave it on a TV. I'll fly over the sections with you."],
-    coruja: ["Bom para vigiar o mercado de longe.", "Good for watching the market from afar."],
+    corvo: ["Modo TV! Eu voo junto! Toda seção! Todas!", "TV mode! I fly along! Every section! All of them!"],
+    coruja: ["Para quem observa de longe. Como eu.", "For those who watch from afar. Like me."],
   }],
   ["'tela-cheia'", {
-    corvo: ["Mais tela, mais céu.", "More screen, more sky."],
-    coruja: ["Menos distração. Mais análise.", "Less distraction. More analysis."],
+    corvo: ["Mais tela, mais céu, mais eu!", "More screen, more sky, more me!"],
+    coruja: ["Menos distração.", "Fewer distractions."],
   }],
   ["'menu-analise'", {
-    corvo: ["Atalhos. Corvos sempre acham o caminho mais curto.", "Shortcuts. Ravens always find the shortest way."],
-    coruja: ["O ranking de oportunidades mora aqui.", "The opportunities ranking lives here."],
+    corvo: ["Atalho! Corvo ama atalho! Clica, clica!", "Shortcuts! Ravens love shortcuts! Click, click!"],
+    coruja: ["O ranking de oportunidades está aqui.", "The opportunities ranking is here."],
   }],
   ["'idioma'", {
-    corvo: ["Eu grasno em qualquer língua.", "I caw in any language."],
-    coruja: ["Os números são os mesmos nas duas línguas.", "The numbers are the same in both languages."],
+    corvo: ["Eu grasno nas duas línguas! Ouve: CRÓC! Em inglês: CAW!", "I caw in both languages! Listen: CRÓC! In English: CAW!"],
+    coruja: ["Os números não mudam de língua.", "Numbers don't change language."],
   }],
   ["'conta'", {
-    corvo: ["Entre com a Steam e eu passo a lembrar dos seus itens também.", "Sign in with Steam and I'll remember your items too."],
-    coruja: ["A Minha lista mostra quanto cada item variou desde que você salvou.", "My list shows how much each item moved since you saved it."],
+    corvo: ["Entra com a Steam! Aí eu decoro os seus itens também! Todos!", "Sign in with Steam! Then I'll memorize your items too! All of them!"],
+    coruja: ["A Minha lista mostra quanto variou desde que você salvou.", "My list shows the change since you saved it."],
   }],
   ["'como-usar'", {
-    corvo: ["Esqueceu algo? Eu volto com você.", "Forgot something? I'll come back with you."],
-    coruja: ["Revisar também é estratégia.", "Reviewing is a strategy too."],
+    corvo: ["Acabou? Já? Clica de novo! De novo!", "Done? Already? Click again! Again!"],
+    coruja: ["Fim. Pode ir.", "The end. You may go."],
   }],
 ];
 
