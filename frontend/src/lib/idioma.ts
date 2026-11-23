@@ -2,8 +2,9 @@ import { useSyncExternalStore } from "react";
 
 /**
  * Idioma do site (português ou inglês). Os textos são escritos lado a lado no próprio componente,
- * `t("Olá", "Hello")`, e a troca de idioma remonta as páginas (ver `ComIdioma` em main.tsx), então
- * `t` pode ser uma função comum. Textos em constantes de módulo usam getters, para serem lidos na hora.
+ * `t("Olá", "Hello")`. A página que usa textos traduzidos chama `useIdioma()` no topo, e a troca
+ * de idioma a redesenha inteira (sem remontar), então `t` pode ser uma função comum. Textos em
+ * constantes de módulo usam getters, para serem lidos na hora.
  */
 export type Idioma = "pt" | "en";
 

@@ -1,4 +1,4 @@
-import { t } from "../../lib/idioma";
+import { t, useIdioma } from "../../lib/idioma";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { type ItemResumo, useItens } from "../../api/itens";
@@ -101,7 +101,8 @@ export function Mascote() {
   const falando = useRef(false);
   const grasnandoDesde = useRef(-Infinity);
   const { data } = useItens({ por_pagina: 100 });
-  const linhas = useMemo(() => boletim(data?.itens ?? []), [data]);
+  const idioma = useIdioma();
+  const linhas = useMemo(() => boletim(data?.itens ?? []), [data, idioma]);
   const ultimaLinha = useRef(-1);
   // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
   const falarRef = useRef<() => void>(() => {});
@@ -250,6 +251,7 @@ export function Mascote() {
       aplicarPose(partes, pose, direcao, piscada);
     };
 
+    const comecouEm = performance.now();
     const passo = (agora: number) => {
       const dt = Math.min((agora - anterior) / 1000, 0.05);
       anterior = agora;
@@ -257,15 +259,29 @@ export function Mascote() {
       if (agora - atualizadoEm > 1200) atualizarPoleiros(agora);
       const desde = agora - modoDesde;
 
-      // Primeiro pouso: o primeiro poleiro visível (normalmente o título principal) ou, se a página
-      // abriu já rolada, o primeiro da página.
+      // Chegada: entra voando pela borda esquerda da tela e pousa numa letra visível. Se nenhuma letra
+      // aparecer em 1,5 s (fontes ainda carregando, página aberta já rolada), vale qualquer poleiro à vista.
       if (!atual && !trajeto && !proximoTrajeto) {
-        const inicial = poleiros.find((p) => visivel(p, ref)) ?? poleiros[0];
-        if (inicial) {
-          atual = inicial;
-          x = sortear(inicial.x0, Math.min(inicial.x1, inicial.x0 + 220));
-          y = inicial.y;
-          ate = agora + sortear(1200, 2500);
+        const vistos = poleiros.filter((p) => visivel(p, ref));
+        const destino = vistos.find((p) => p.letra) ?? (agora - comecouEm > 1500 ? (vistos[0] ?? poleiros[0]) : undefined);
+        if (destino) {
+          const fim = { x: sortear(destino.x0, destino.x1), y: destino.y };
+          const inicio = { x: -ref.left - 90, y: Math.max(fim.y - 240, -ref.top + 60) };
+          const chegada: Trajeto = {
+            tipo: "voo",
+            pontos: [
+              inicio,
+              { x: inicio.x + (fim.x - inicio.x) * 0.45, y: inicio.y - 50 },
+              { x: fim.x - 90, y: fim.y - 120 },
+              fim,
+            ],
+            inicio: agora,
+            duracao: limitar(1300 + (fim.x - inicio.x) * 0.8, 1700, 2600),
+            destino,
+          };
+          x = inicio.x;
+          y = inicio.y;
+          iniciarTrajeto(chegada, agora);
         }
       }
 

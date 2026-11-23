@@ -1,4 +1,4 @@
-import { t } from "../../lib/idioma";
+import { t, useIdioma } from "../../lib/idioma";
 import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
@@ -27,6 +27,8 @@ import { BotaoPrimario, BotaoSecundario, Container } from "./ui";
 import { jogoDoItem } from "../../lib/jogos";
 
 export function Inicio() {
+  // Assina o idioma: ao trocar, a página inteira redesenha com os textos novos, sem remontar nada.
+  useIdioma();
   return (
     <div className="relative min-h-dvh">
       <Navegacao />
