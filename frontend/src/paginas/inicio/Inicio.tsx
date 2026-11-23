@@ -9,6 +9,8 @@ import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
 import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
+import { BotaoModoTv } from "../../componentes/modoTv/ModoTv";
+import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
@@ -63,6 +65,8 @@ function Navegacao() {
         </nav>
         <div className="flex items-center gap-2 justify-self-end">
           <BotaoComoUsar />
+          <BotaoModoTv />
+          <BotaoTelaCheia />
           <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
           <span data-tour="conta"><MenuConta redondo /></span>
         </div>
@@ -73,7 +77,7 @@ function Navegacao() {
 
 function Hero() {
   return (
-    <section>
+    <section data-tv="Início">
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
           <Rotulo destaque>Preços e previsões de itens do Mercado da Steam</Rotulo>

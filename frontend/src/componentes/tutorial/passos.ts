@@ -53,6 +53,17 @@ const INICIO: Passo[] = [
       "O mascote do Skinomics. Anda pelos cards, voa entre as seções e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.",
   },
   {
+    alvo: "[data-tour='modo-tv']",
+    titulo: "Modo TV",
+    texto:
+      "Passa sozinho pelas seções da página, descendo devagar nas mais longas. Bom para deixar numa tela. Dá para pausar, voltar, avançar e sair pela barra de baixo; o mouse some depois de 3 segundos parado.",
+  },
+  {
+    alvo: "[data-tour='tela-cheia']",
+    titulo: "Tela cheia",
+    texto: "Esconde a barra do navegador e usa a tela inteira. Combina com o modo TV. Esc sai.",
+  },
+  {
     alvo: "[data-tour='menu-analise']",
     titulo: "Área de análise",
     texto: "Atalho para explorar todos os itens, ver o ranking de oportunidades e a sua lista.",

@@ -117,7 +117,7 @@ export function DestaquesDaSemana() {
     item?.volume_7d != null ? `${formatarInteiro(item.volume_7d)} vendas em 7 dias` : "Sem vendas registradas";
 
   return (
-    <section className="py-14 sm:py-28">
+    <section data-tv="Destaques da semana" className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="Destaques da semana"

@@ -17,7 +17,7 @@ export function PreviaDaPlataforma() {
   const card = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="plataforma" className="scroll-mt-32 py-14 sm:py-28">
+    <section id="plataforma" data-tv="Prévia" className="scroll-mt-32 py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="Prévia"
@@ -155,7 +155,7 @@ export function Radar() {
   };
 
   return (
-    <section className="py-14 sm:py-28">
+    <section data-tv="Mais negociados" className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="No radar"

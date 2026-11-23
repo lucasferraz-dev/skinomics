@@ -39,3 +39,9 @@ body {
   90% { transform: perspective(80px) translateY(0) rotateY(360deg) scale(1.08, .9); }
   94%, 100% { transform: perspective(80px) translateY(0) rotateY(360deg); }
 }
+
+/* Modo TV com o mouse parado: o cursor some. */
+html[data-tv-ocioso],
+html[data-tv-ocioso] * {
+  cursor: none !important;
+}
