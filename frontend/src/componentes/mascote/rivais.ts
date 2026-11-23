@@ -14,6 +14,8 @@ export type Presenca = {
   enxotar: () => void;
   /** Provocou e o outro fincou o pé: desiste e vai embora. */
   recuar: () => void;
+  /** Onde está o balão de fala na tela (para o outro não escrever por cima). */
+  balao: DOMRect | null;
 };
 
 export const presencas = new Map<string, Presenca>();

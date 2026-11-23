@@ -216,7 +216,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let implicando = false;
     let provocarEm = 0;
     let proximaImplicancia = performance.now() + (especie === "corvo" ? sortear(20000, 35000) : sortear(45000, 70000));
-    const presenca: Presenca = { x: 0, y: 0, poleiro: null, alvo: null, enxotar: () => {}, recuar: () => {} };
+    const presenca: Presenca = { x: 0, y: 0, poleiro: null, alvo: null, enxotar: () => {}, recuar: () => {}, balao: null };
     presencas.set(especie, presenca);
     // Lugares visitados por último (um título inteiro conta como um lugar), para não voltar já para eles.
     let recentes: string[] = [];
@@ -385,9 +385,19 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       );
       // Só cards que aparecem com a seção no topo da tela (o modo TV rola até lá).
       const cards = dentro.filter((p) => !p.letra && p.y < caixa.y0 + window.innerHeight * 0.7);
-      const destino = preferirCards && cards.length ? cards[Math.floor(Math.random() * cards.length)] : (dentro[0] ?? perto[0]);
-      if (!destino || atual?.chave === destino.chave) return;
-      const rota = planejar(destino, agora, "voo") ?? planejar(destino, agora, "voo", false);
+      const sorteado = preferirCards && cards.length ? cards[Math.floor(Math.random() * cards.length)] : undefined;
+      // O preferido primeiro; se estiver ocupado (o outro mascote já está ali), os outros da seção e os
+      // mais próximos dela, até achar um lugar livre.
+      const candidatos = [...new Set([sorteado, ...(preferirCards ? cards : []), ...dentro, ...perto.slice(0, 8)])].filter(
+        (p): p is Poleiro => p !== undefined,
+      );
+      if (atual && candidatos[0]?.chave === atual.chave) return;
+      let rota: Trajeto | null = null;
+      for (const p of candidatos) {
+        if (p.chave === atual?.chave) continue;
+        rota = planejar(p, agora, "voo") ?? (lugarVago(p, (p.x0 + p.x1) / 2) !== null ? planejar(p, agora, "voo", false) : null);
+        if (rota) break;
+      }
       if (!rota) return;
       atual = null;
       proximoTrajeto = null;
@@ -856,9 +866,24 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       if (b) {
         b.style.transform = "";
         const r = b.getBoundingClientRect();
-        const dx = r.left < 8 ? 8 - r.left : r.right > window.innerWidth - 8 ? window.innerWidth - 8 - r.right : 0;
-        const dy = r.top < 8 ? r.height + altura + 6 : 0;
+        let dx = r.left < 8 ? 8 - r.left : r.right > window.innerWidth - 8 ? window.innerWidth - 8 - r.right : 0;
+        let dy = r.top < 8 ? r.height + altura + 6 : 0;
+        // Os dois perto um do outro: o balão da coruja desvia do balão do corvo (para baixo dela e,
+        // se ainda bater, para o lado), para as duas falas ficarem legíveis.
+        const doOutro = especie === "coruja" ? rival()?.balao : null;
+        if (doOutro) {
+          const bate = (ox: number, oy: number) =>
+            r.left + ox < doOutro.right + 6 && r.right + ox > doOutro.left - 6 && r.top + oy < doOutro.bottom + 6 && r.bottom + oy > doOutro.top - 6;
+          if (bate(dx, dy)) dy = r.height + altura + 6;
+          if (bate(dx, dy)) {
+            const paraEsquerda = r.left + r.width / 2 < doOutro.left + doOutro.width / 2;
+            dx = paraEsquerda ? doOutro.left - 8 - r.right : doOutro.right + 8 - r.left;
+          }
+        }
         if (dx || dy) b.style.transform = `translate(${dx}px, ${dy}px)`;
+        presenca.balao = new DOMRect(r.left + dx, r.top + dy, r.width, r.height);
+      } else {
+        presenca.balao = null;
       }
       presenca.x = x;
       presenca.y = y;

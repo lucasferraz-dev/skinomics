@@ -183,7 +183,7 @@ export function Faq() {
           <Rotulo destaque>FAQ</Rotulo>
           <h2 data-poleiro="texto" className="text-4xl titulo sm:text-5xl">{t("Perguntas frequentes", "Frequently asked questions")}</h2>
         </div>
-        <div className="divide-y divide-borda border-y border-borda">
+        <div data-poleiro className="divide-y divide-borda border-y border-borda">
           {PERGUNTAS.map(({ pergunta, resposta }) => (
             <details key={pergunta} className="group py-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg">
