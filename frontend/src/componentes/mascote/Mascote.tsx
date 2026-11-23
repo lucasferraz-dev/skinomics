@@ -20,18 +20,20 @@ import {
 } from "./corvo";
 import {
   dicaAleatoria,
+  derrota,
   falaDaCoruja,
   marcarSaudacaoDita,
   provocacao,
   queixa,
-  respostaDaCoruja,
+  resistencia,
+  resposta,
   saudacaoDaVisita,
 } from "./conversa";
 import { aplicarPose, CorvoSvg, ESQUELETO_CORVO, usePartes } from "./desenho";
 import { CorujaSvg, ESQUELETO_CORUJA } from "./desenhoCoruja";
 import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
-import { presencas } from "./rivais";
+import { DISTANCIA, MESMA_ALTURA, type Presenca, presencas } from "./rivais";
 
 // O corvo do Skinomics. Pousa no topo dos cards e da primeira linha dos títulos (`data-poleiro`),
 // anda por eles, pula para um card vizinho na mesma altura e voa quando o próximo poleiro fica
@@ -187,12 +189,38 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let emTv = false;
     let emTutorial = false;
     const conduzido = () => emTv || emTutorial;
-    // Implicância: de tempos em tempos o corvo vai pousar do lado da coruja e provocar.
+    // Implicância (nos dois sentidos): de tempos em tempos um pousa do lado do outro e provoca.
     let implicando = false;
     let provocarEm = 0;
-    let proximaImplicancia = performance.now() + sortear(20000, 35000);
-    const presenca = { x: 0, y: 0, poleiro: null as Poleiro | null, enxotar: () => {} };
+    let proximaImplicancia = performance.now() + (especie === "corvo" ? sortear(20000, 35000) : sortear(45000, 70000));
+    const presenca: Presenca = { x: 0, y: 0, poleiro: null, alvo: null, enxotar: () => {}, recuar: () => {} };
     presencas.set(especie, presenca);
+    const rival = () => presencas.get(especie === "corvo" ? "coruja" : "corvo");
+
+    /** Ponto livre no poleiro, longe do outro (onde ele está ou vai pousar); null se não couber. */
+    const lugarVago = (destino: Poleiro, desejado: number): number | null => {
+      const outro = rival();
+      const ocupados = [
+        outro?.poleiro && Math.abs(outro.y - destino.y) < MESMA_ALTURA ? outro.x : null,
+        outro?.alvo && Math.abs(outro.alvo.y - destino.y) < MESMA_ALTURA ? outro.alvo.x : null,
+      ].filter((v): v is number => v !== null);
+      let livreEm = desejado;
+      for (const ocupado of ocupados) {
+        if (Math.abs(livreEm - ocupado) >= DISTANCIA) continue;
+        const opcoes = [ocupado + DISTANCIA, ocupado - DISTANCIA].filter(
+          (v) => v >= destino.x0 && v <= destino.x1 && ocupados.every((o) => Math.abs(v - o) >= DISTANCIA),
+        );
+        if (!opcoes.length) return null;
+        livreEm = opcoes.sort((a, b) => Math.abs(a - desejado) - Math.abs(b - desejado))[0]!;
+      }
+      return livreEm;
+    };
+    /** Destino de caminhada que não encosta no outro, se ele estiver no mesmo poleiro. */
+    const semEncostar = (alvo: number) => {
+      const outro = rival();
+      if (!atual || !outro?.poleiro || Math.abs(outro.y - y) >= MESMA_ALTURA) return alvo;
+      return outro.x > x ? Math.min(alvo, outro.x - DISTANCIA) : Math.max(alvo, outro.x + DISTANCIA);
+    };
 
     const mudar = (novo: Modo, agora: number) => {
       modo = novo;
@@ -220,8 +248,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       }
     };
     /** Rota até o poleiro sem atravessar nenhum card; null se não houver. */
-    const planejar = (destino: Poleiro, agora: number, tipo: "pulo" | "voo", exigirLivre = true): Trajeto | null => {
-      const x1 = limitar(x + (Math.random() - 0.5) * 60, destino.x0, destino.x1);
+    const planejar = (destino: Poleiro, agora: number, tipo: "pulo" | "voo", exigirLivre = true, xFixo?: number): Trajeto | null => {
+      const x1 = xFixo ?? lugarVago(destino, limitar(x + (Math.random() - 0.5) * 60, destino.x0, destino.x1));
+      if (x1 === null) return null;
       const inicio = { x, y };
       const fim = { x: x1, y: destino.y };
       const dx = x1 - x;
@@ -254,6 +283,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     const iniciarTrajeto = (t: Trajeto, agora: number) => {
       t.inicio = agora;
       trajeto = t;
+      presenca.alvo = { chave: t.destino.chave, x: t.pontos[3].x, y: t.pontos[3].y };
       atual = null;
       virarPara(t.pontos[3].x - t.pontos[0].x);
       mudar(t.tipo === "pulo" ? "pulando" : "voando", agora);
@@ -277,13 +307,25 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       if (rota) iniciarTrajeto(rota, agora);
     };
 
-    // Enxotado pelo rival: responde e vai embora, sem a queixa de susto.
+    // Provocado: na maioria das vezes responde e sai na hora; às vezes finca o pé e quem provocou é que sai.
     presenca.enxotar = () =>
       window.setTimeout(() => {
         if (!atual) return;
-        dizerRef.current(respostaDaCoruja());
+        const outro = rival();
+        if (outro && Math.random() < 0.3) {
+          dizerRef.current(resistencia(especie));
+          outro.recuar();
+        } else {
+          dizerRef.current(resposta(especie));
+          espantar(performance.now(), false);
+        }
+      }, 450);
+    presenca.recuar = () =>
+      window.setTimeout(() => {
+        if (!atual) return;
+        dizerRef.current(derrota(especie));
         espantar(performance.now(), false);
-      }, 750);
+      }, 900);
 
     // Alguém começou a descolar o adesivo onde ele está pousado: sai voando.
     const aoMexerNoPoleiro = (evento: Event) => {
@@ -370,16 +412,14 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
 
     const decidir = (agora: number) => {
       if (!atual || conduzido()) return;
-      const coruja = especie === "corvo" ? presencas.get("coruja") : undefined;
-      if (coruja?.poleiro && agora > proximaImplicancia && Math.hypot(coruja.x - x, coruja.y - y) < 1200) {
-        proximaImplicancia = agora + sortear(40000, 70000);
-        const rota = planejar(coruja.poleiro, agora, "voo") ?? planejar(coruja.poleiro, agora, "voo", false);
-        if (rota) {
-          // Pousa do lado dela, não em cima.
-          const lado = coruja.x - 34 >= coruja.poleiro.x0 ? -34 : 34;
-          const fimX = limitar(coruja.x + lado, coruja.poleiro.x0, coruja.poleiro.x1);
-          rota.pontos[2] = { x: fimX, y: rota.pontos[2].y };
-          rota.pontos[3] = { x: fimX, y: coruja.poleiro.y };
+      const outro = rival();
+      if (outro?.poleiro && !outro.alvo && agora > proximaImplicancia && Math.hypot(outro.x - x, outro.y - y) < 1200) {
+        proximaImplicancia = agora + sortear(40000, 80000);
+        // Pousa do lado do outro, a uma distância de respeito (se couber no poleiro).
+        const p = outro.poleiro;
+        const fimX = [outro.x - DISTANCIA, outro.x + DISTANCIA].find((v) => v >= p.x0 && v <= p.x1);
+        const rota = fimX === undefined ? null : (planejar(p, agora, "voo", true, fimX) ?? planejar(p, agora, "voo", false, fimX));
+        if (rota && fimX !== undefined) {
           implicando = true;
           proximoTrajeto = rota;
           virarPara(fimX - x);
@@ -391,7 +431,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       if (!atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
         // Caminhadas curtas: alguns passos para um lado, não a extensão inteira do poleiro.
         const distancia = sortear(40, 140) * (Math.random() < 0.5 ? -1 : 1);
-        alvoX = limitar(x + distancia, atual.x0, atual.x1);
+        alvoX = semEncostar(limitar(x + distancia, atual.x0, atual.x1));
         virarPara(alvoX - x);
         mudar("andando", agora);
         return;
@@ -457,7 +497,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         );
         const destino = preferido ?? (agora - comecouEm > 1500 ? (vistos[0] ?? poleiros[0]) : undefined);
         if (destino) {
-          const fim = { x: sortear(destino.x0, destino.x1), y: destino.y };
+          const fim = { x: lugarVago(destino, sortear(destino.x0, destino.x1)) ?? sortear(destino.x0, destino.x1), y: destino.y };
           const inicio = { x: especie === "corvo" ? -ref.left - 90 : window.innerWidth - ref.left + 90, y: Math.max(fim.y - 240, -ref.top + 60) };
           const chegada: Trajeto = {
             tipo: "voo",
@@ -505,10 +545,11 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           atual = trajeto.destino;
           ({ x, y } = trajeto.pontos[3]);
           trajeto = null;
+          presenca.alvo = null;
           mudar("pousando", agora);
           if (implicando) {
             implicando = false;
-            provocarEm = agora + 450;
+            provocarEm = agora + 300;
           }
         }
       } else if (modo === "pousando") {
@@ -539,13 +580,32 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           // Acabou de pousar do lado da coruja: vira para ela, provoca e ela vai embora.
           if (provocarEm && agora > provocarEm) {
             provocarEm = 0;
-            const coruja = presencas.get("coruja");
-            if (coruja) {
-              virarPara(coruja.x - x);
-              dizerRef.current(provocacao());
-              coruja.enxotar();
+            const outro = rival();
+            if (outro) {
+              virarPara(outro.x - x);
+              dizerRef.current(provocacao(especie));
+              outro.enxotar();
             }
             ate = Math.max(ate, agora + 2500);
+          }
+          // Ficou encostado no outro no mesmo card: abre espaço andando; se não couber, voa.
+          const vizinho = rival();
+          if (
+            modo === "parado" &&
+            !provocarEm &&
+            vizinho?.poleiro &&
+            Math.abs(vizinho.y - y) < MESMA_ALTURA &&
+            !vizinho.alvo &&
+            Math.abs(vizinho.x - x) < DISTANCIA - 4
+          ) {
+            const destinoX = limitar(vizinho.x + (x >= vizinho.x ? 1 : -1) * DISTANCIA, atual.x0, atual.x1);
+            if (Math.abs(destinoX - vizinho.x) >= DISTANCIA - 4) {
+              alvoX = destinoX;
+              virarPara(alvoX - x);
+              mudar("andando", agora);
+            } else {
+              espantar(agora, false);
+            }
           }
           // Cursor por perto: olha para ele. Parado ali um tempo: vai até ele e dá uma bicadinha.
           const olhar = cursorPerto(ref);
@@ -556,7 +616,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
             if (olhar.parado && !curiosoFeito && !conduzido()) {
               curiosoFeito = true;
               if (Math.abs(olhar.dx) > 34 && olhar.noPoleiro && !atual.letra) {
-                alvoX = limitar(x + olhar.dx - Math.sign(olhar.dx) * 24, atual.x0, atual.x1);
+                alvoX = semEncostar(limitar(x + olhar.dx - Math.sign(olhar.dx) * 24, atual.x0, atual.x1));
                 bicarAoChegar = true;
                 mudar("andando", agora);
               } else {

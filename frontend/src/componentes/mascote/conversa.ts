@@ -105,19 +105,58 @@ export const queixa = (especie: "corvo" | "coruja") =>
         ["Calma!", "Easy!"],
       ]);
 
-/** A implicância: o corvo pousa do lado da coruja e provoca; ela responde e vai embora. */
-export const provocacao = () =>
-  sortearPar([
-    ["Cróc! Esse card é meu.", "Caw! This card is mine."],
-    ["Sai, coruja!", "Shoo, owl!"],
-    ["Cróc cróc cróc!", "Caw caw caw!"],
-    ["Previsão? Eu tenho é palpite.", "Forecasts? I've got hunches."],
-  ]);
+type Especie = "corvo" | "coruja";
 
-export const respostaDaCoruja = () =>
-  sortearPar([
-    ["Huu... de novo?", "Hoo... again?"],
-    ["Que corvo chato.", "What an annoying crow."],
-    ["Tá bom, tá bom.", "Fine, fine."],
-    ["Vou analisar em outro lugar.", "I'll analyze somewhere else."],
-  ]);
+/** A implicância vai nos dois sentidos: quem chega provoca; o outro sai ou finca o pé. */
+export const provocacao = (quem: Especie) =>
+  quem === "corvo"
+    ? sortearPar([
+        ["Cróc! Esse card é meu.", "Caw! This card is mine."],
+        ["Sai, coruja!", "Shoo, owl!"],
+        ["Cróc cróc cróc!", "Caw caw caw!"],
+        ["Previsão? Eu tenho é palpite.", "Forecasts? I've got hunches."],
+      ])
+    : sortearPar([
+        ["Huu. A vista é melhor daqui.", "Hoo. The view is better from here."],
+        ["Seus palpites erram, corvo.", "Your hunches miss, crow."],
+        ["Sai. Estou analisando.", "Move. I'm analyzing."],
+        ["Huu-huu. Meu card agora.", "Hoo-hoo. My card now."],
+      ]);
+
+/** Provocado, aceita e vai embora. */
+export const resposta = (quem: Especie) =>
+  quem === "coruja"
+    ? sortearPar([
+        ["Huu... de novo?", "Hoo... again?"],
+        ["Que corvo chato.", "What an annoying crow."],
+        ["Vou analisar em outro lugar.", "I'll analyze somewhere else."],
+      ])
+    : sortearPar([
+        ["Cróc... tá bom.", "Caw... fine."],
+        ["Coruja metida.", "Stuck-up owl."],
+        ["Vou, mas eu volto!", "I'm going, but I'll be back!"],
+      ]);
+
+/** Provocado, finca o pé. */
+export const resistencia = (quem: Especie) =>
+  quem === "coruja"
+    ? sortearPar([
+        ["Não saio. Daqui eu vejo tudo.", "Not moving. I see everything from here."],
+        ["Huu. Tenta de novo.", "Hoo. Try again."],
+      ])
+    : sortearPar([
+        ["Cróc! Não saio!", "Caw! Not moving!"],
+        ["Cheguei primeiro!", "I was here first!"],
+      ]);
+
+/** Quem provocou e não levou: desiste e vai embora. */
+export const derrota = (quem: Especie) =>
+  quem === "corvo"
+    ? sortearPar([
+        ["Cróc... depois a gente vê.", "Caw... we'll see later."],
+        ["Tá, tá. Fico com outro.", "Fine. I'll take another."],
+      ])
+    : sortearPar([
+        ["Huu. Não vale meu tempo.", "Hoo. Not worth my time."],
+        ["Analiso de outro lugar.", "I'll analyze from elsewhere."],
+      ]);
