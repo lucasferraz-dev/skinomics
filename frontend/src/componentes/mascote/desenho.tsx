@@ -156,12 +156,24 @@ export const ESQUELETO_CORVO: Esqueleto = {
 };
 
 /** Aplica uma pose às partes do desenho (sem passar pelo React). `piscada` vai de 0 (aberto) a 1. */
-export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada = 0, esqueleto = ESQUELETO_CORVO) {
+/**
+ * `espelho` vai de -1 (olhando para a esquerda) a 1 (direita), passando pelos valores do meio na virada;
+ * `viradaCabeca` vai de 0 (cabeça para frente) a 1 (virada para trás, por cima do ombro).
+ */
+export function aplicarPose(partes: Partes, pose: Pose, espelho: number, piscada = 0, esqueleto = ESQUELETO_CORVO, viradaCabeca = 0) {
   const { pescoco, ombro, baseCauda, olhoY, bico } = esqueleto;
   const t = (ref: React.RefObject<Element | null>, valor: string) => ref.current?.setAttribute("transform", valor);
-  t(partes.espelho, direcao < 0 ? `translate(${APOIO_X * 2} 0) scale(-1 1)` : "");
+  // Virar o corpo: espelha em torno do apoio dos pés, passando suave pelo perfil fino.
+  const e = Math.abs(espelho) < 0.08 ? 0.08 * (Math.sign(espelho) || 1) : espelho;
+  t(partes.espelho, `translate(${APOIO_X} 0) scale(${n(e)} 1) translate(${-APOIO_X} 0)`);
   t(partes.corpo, transformarCorpo(pose));
-  t(partes.cabeca, `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) rotate(${n(pose.cabecaGiro)} ${pescoco.x} ${pescoco.y})`);
+  // Olhar para trás: espelha só a cabeça em torno do pescoço (o bico passa por cima do ombro).
+  const giro = Math.cos(viradaCabeca * Math.PI);
+  const h = Math.abs(giro) < 0.08 ? 0.08 * (Math.sign(giro) || 1) : giro;
+  t(
+    partes.cabeca,
+    `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) translate(${pescoco.x} ${pescoco.y}) scale(${n(h)} 1) rotate(${n(pose.cabecaGiro)}) translate(${-pescoco.x} ${-pescoco.y})`,
+  );
   t(partes.cauda, `rotate(${n(pose.cauda)} ${baseCauda.x} ${baseCauda.y})`);
   t(partes.asaFechada, `rotate(${n(pose.asaFechadaGiro)} ${ombro.x} ${ombro.y})`);
   partes.asaFechada.current?.setAttribute("opacity", pose.asa === "fechada" ? "1" : "0");

@@ -41,10 +41,9 @@ import { DISTANCIA, MESMA_ALTURA, type Presenca, presencas } from "./rivais";
 // acima ou abaixo (ou quando o atual sai da tela). Parado, pisca, vira a cabeça, bica e mexe a cauda.
 // Clicado, mostra um dado real da base. Precisa de um pai com `position: relative`.
 
-const ESCALA = 0.55;
+// Tamanho na tela: o corvo um pouco maior; a coruja já tem a cabeça grande.
+const ESCALAS = { corvo: 0.58, coruja: 0.55 } as const;
 const DURACAO_GRASNADO = 900; // ms
-const LARGURA = 120 * ESCALA;
-const ALTURA = 100 * ESCALA;
 const VELOCIDADE = 30; // px/s andando
 const VOLUME_MINIMO = 50;
 // Pula se o próximo poleiro está ao lado (quase na mesma altura); senão, voa.
@@ -111,6 +110,9 @@ function boletim(itens: ItemResumo[]): string[] {
 
 /** O corvo (padrão) ou a coruja: mesmo esqueleto e mesmos movimentos, desenho e falas próprios. */
 export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" }) {
+  const escala = ESCALAS[especie];
+  const largura = 120 * escala;
+  const altura = 100 * escala;
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
   const partes = usePartes();
@@ -161,6 +163,11 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let x = 0;
     let y = 0;
     let direcao = 1;
+    // Virada suave do corpo (de -1 a 1) e da cabeça para trás (0 a 1), só no corvo.
+    let espelho = 1;
+    let cabecaTras = 0;
+    let cabecaTrasAlvo = 0;
+    let atrasDesde = 0;
     let modo: Modo = "parado";
     let modoDesde = performance.now();
     let ate = 0;
@@ -432,7 +439,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       const cx = mouse.cx - ref.left;
       const cy = mouse.cy - ref.top;
       const dx = cx - x;
-      const dy = cy - (y - ALTURA * 0.6);
+      const dy = cy - (y - altura * 0.6);
       if (Math.hypot(dx, dy) > 300) return null;
       return {
         dx,
@@ -512,7 +519,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     };
 
     const desenhar = (piscada: number) => {
-      el.style.transform = `translate(${x - APOIO_X * ESCALA}px, ${y - CHAO * ESCALA}px)`;
+      el.style.transform = `translate(${x - APOIO_X * escala}px, ${y - CHAO * escala}px)`;
       el.style.opacity = atual || trajeto ? "1" : "0";
       if (especie === "coruja") {
         aplicarCoruja(partesCoruja, {
@@ -528,7 +535,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           piscada,
         });
       } else {
-        aplicarPose(partes, pose, direcao, piscada);
+        aplicarPose(partes, pose, espelho, piscada, undefined, cabecaTras);
       }
     };
 
@@ -545,7 +552,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
 
       // Cursor chegando rápido perto do corvo: se assusta e voa (e reclama). A coruja nem pisca.
       if (especie === "corvo" && mouse && atual && !conduzido() && agora > sossegoAte && agora - mouse.movidoEm < 80 && mouse.vel > 1600) {
-        const perto = Math.hypot(mouse.cx - ref.left - x, mouse.cy - ref.top - (y - ALTURA * 0.6)) < 110;
+        const perto = Math.hypot(mouse.cx - ref.left - x, mouse.cy - ref.top - (y - altura * 0.6)) < 110;
         if (perto) {
           espantar(agora);
           sossegoAte = agora + 6000;
@@ -678,7 +685,20 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           // Cursor por perto: olha para ele. Parado ali um tempo: vai até ele e dá uma bicadinha.
           const olhar = cursorPerto(ref);
           if (olhar) {
-            if (Math.abs(olhar.dx) > 12) virarPara(olhar.dx);
+            // Corvo: com o cursor atrás, vira só a cabeça por cima do ombro; se o cursor ficar lá, vira o corpo.
+            if (especie === "corvo" && Math.abs(olhar.dx) > 12 && Math.sign(olhar.dx) !== direcao) {
+              if (!atrasDesde) atrasDesde = agora;
+              cabecaTrasAlvo = 1;
+              if (agora - atrasDesde > 2200) {
+                virarPara(olhar.dx);
+                cabecaTrasAlvo = 0;
+                atrasDesde = 0;
+              }
+            } else {
+              if (Math.abs(olhar.dx) > 12) virarPara(olhar.dx);
+              cabecaTrasAlvo = 0;
+              atrasDesde = 0;
+            }
             giroAlvo = limitar(olhar.angulo * 0.6, -24, 34);
             proximoGiro = agora + 500;
             if (olhar.parado && !curiosoFeito && !conduzido() && especie === "corvo") {
@@ -691,6 +711,10 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
                 bicadaAte = agora + 320;
               }
             }
+          }
+          if (!olhar) {
+            cabecaTrasAlvo = 0;
+            atrasDesde = 0;
           }
           if (agora > proximoGiro) {
             giroAlvo = sortear(-14, 10);
@@ -755,6 +779,12 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         }
         virada += (alvoVirada - virada) * Math.min(1, dt * 2.6);
       }
+      if (modo !== "parado") {
+        cabecaTrasAlvo = 0;
+        atrasDesde = 0;
+      }
+      cabecaTras += (cabecaTrasAlvo - cabecaTras) * Math.min(1, dt * 7);
+      espelho += (direcao - espelho) * Math.min(1, dt * 10);
       presenca.x = x;
       presenca.y = y;
       presenca.poleiro = atual;
@@ -832,7 +862,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     <div
       ref={raiz}
       className={`pointer-events-none absolute top-0 left-0 ${guiando ? "z-[110]" : "z-30"} opacity-0 transition-opacity duration-300 select-none`}
-      style={{ width: LARGURA, height: ALTURA }}
+      style={{ width: largura, height: altura }}
     >
       {fala && (
         <p
@@ -843,9 +873,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         </p>
       )}
       {especie === "corvo" ? (
-        <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+        <CorvoSvg partes={partes} largura={largura} altura={altura} aoClicar={aoClicar} />
       ) : (
-        <CorujaSvg partes={partesCoruja} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+        <CorujaSvg partes={partesCoruja} largura={largura} altura={altura} aoClicar={aoClicar} />
       )}
     </div>
   );
