@@ -107,56 +107,57 @@ export const queixa = (especie: "corvo" | "coruja") =>
 
 type Especie = "corvo" | "coruja";
 
-/** A implicância vai nos dois sentidos: quem chega provoca; o outro sai ou finca o pé. */
+/**
+ * A rixa vai nos dois sentidos e é seca, sem bobeira: o corvo de Odin, que confia no instinto e na
+ * memória, contra a coruja, que confia no método. Quem chega provoca; o outro cede ou finca o pé.
+ */
 export const provocacao = (quem: Especie) =>
   quem === "corvo"
     ? sortearPar([
-        ["Cróc! Esse card é meu.", "Caw! This card is mine."],
-        ["Sai, coruja!", "Shoo, owl!"],
-        ["Cróc cróc cróc!", "Caw caw caw!"],
-        ["Previsão? Eu tenho é palpite.", "Forecasts? I've got hunches."],
+        ["Este poleiro pertence a Odin.", "This perch belongs to Odin."],
+        ["Eu vi esse preço antes de você, coruja.", "I saw that price before you did, owl."],
+        ["Teu modelo erra. Meu instinto, não.", "Your model misses. My instinct doesn't."],
+        ["Os corvos de Odin não dividem galho.", "Odin's ravens don't share a branch."],
       ])
     : sortearPar([
-        ["Huu. A vista é melhor daqui.", "Hoo. The view is better from here."],
-        ["Seus palpites erram, corvo.", "Your hunches miss, crow."],
-        ["Sai. Estou analisando.", "Move. I'm analyzing."],
-        ["Huu-huu. Meu card agora.", "Hoo-hoo. My card now."],
+        ["Instinto não é método, corvo.", "Instinct isn't method, crow."],
+        ["Daqui eu vejo a faixa inteira. Saia.", "From here I see the whole range. Leave."],
+        ["A noite é minha. Este card também.", "The night is mine. So is this card."],
+        ["Palpite é ruído. Eu leio o sinal.", "Hunches are noise. I read the signal."],
       ]);
 
-/** Provocado, aceita e vai embora. */
+/** Provocado, cede e vai embora. */
 export const resposta = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
-        ["Huu... de novo?", "Hoo... again?"],
-        ["Que corvo chato.", "What an annoying crow."],
-        ["Vou analisar em outro lugar.", "I'll analyze somewhere else."],
+        ["Que seja. Eu vejo de longe também.", "So be it. I see from afar too."],
+        ["Volto quando o ruído passar.", "I'll return when the noise fades."],
       ])
     : sortearPar([
-        ["Cróc... tá bom.", "Caw... fine."],
-        ["Coruja metida.", "Stuck-up owl."],
-        ["Vou, mas eu volto!", "I'm going, but I'll be back!"],
+        ["Odin vai saber disso.", "Odin will hear of this."],
+        ["Vou. Mas eu não esqueço rostos.", "I'll go. But I never forget a face."],
       ]);
 
 /** Provocado, finca o pé. */
 export const resistencia = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
-        ["Não saio. Daqui eu vejo tudo.", "Not moving. I see everything from here."],
-        ["Huu. Tenta de novo.", "Hoo. Try again."],
+        ["Não. Daqui eu vejo tudo.", "No. I see everything from here."],
+        ["Pouse em outro lugar, corvo.", "Perch elsewhere, crow."],
       ])
     : sortearPar([
-        ["Cróc! Não saio!", "Caw! Not moving!"],
-        ["Cheguei primeiro!", "I was here first!"],
+        ["Cheguei antes de o mercado abrir.", "I was here before the market opened."],
+        ["Nem Odin me tira daqui.", "Not even Odin moves me."],
       ]);
 
-/** Quem provocou e não levou: desiste e vai embora. */
+/** Quem provocou e não levou: recua. */
 export const derrota = (quem: Especie) =>
   quem === "corvo"
     ? sortearPar([
-        ["Cróc... depois a gente vê.", "Caw... we'll see later."],
-        ["Tá, tá. Fico com outro.", "Fine. I'll take another."],
+        ["Hoje não. Amanhã o galho é meu.", "Not today. Tomorrow the branch is mine."],
+        ["Guarde o lugar. Eu volto.", "Keep the spot warm. I'll be back."],
       ])
     : sortearPar([
-        ["Huu. Não vale meu tempo.", "Hoo. Not worth my time."],
-        ["Analiso de outro lugar.", "I'll analyze from elsewhere."],
+        ["Não vale meu tempo.", "Not worth my time."],
+        ["Paciência também é estratégia.", "Patience is a strategy too."],
       ]);

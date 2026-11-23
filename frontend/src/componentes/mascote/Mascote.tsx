@@ -130,10 +130,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
   const dizerRef = useRef<(texto: string) => void>(() => {});
   // Saudação desta visita ("Voltou! Faz 3 dias."), dita logo que ele pousa pela primeira vez.
   const saudacaoRef = useRef(especie === "corvo" ? saudacaoDaVisita() : null);
-  // No tutorial ele fica acima do fundo escurecido, como guia.
+  // No tutorial os dois ficam acima do fundo escurecido, como guias.
   const [guiando, setGuiando] = useState(false);
   useEffect(() => {
-    if (especie !== "corvo") return;
     const aoMudarPasso = (evento: Event) => setGuiando((evento as CustomEvent<PassoTutorial | null>).detail !== null);
     window.addEventListener(EVENTO_TUTORIAL, aoMudarPasso);
     return () => window.removeEventListener(EVENTO_TUTORIAL, aoMudarPasso);
@@ -195,6 +194,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let proximaImplicancia = performance.now() + (especie === "corvo" ? sortear(20000, 35000) : sortear(45000, 70000));
     const presenca: Presenca = { x: 0, y: 0, poleiro: null, alvo: null, enxotar: () => {}, recuar: () => {} };
     presencas.set(especie, presenca);
+    // Lugares visitados por último (um título inteiro conta como um lugar), para não voltar já para eles.
+    let recentes: string[] = [];
+    const lugarDe = (p: Poleiro) => p.chave.split(":")[0]!;
     const rival = () => presencas.get(especie === "corvo" ? "coruja" : "corvo");
 
     /** Ponto livre no poleiro, longe do outro (onde ele está ou vai pousar); null se não couber. */
@@ -232,7 +234,8 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     const atualizarPoleiros = (agora: number) => {
       ({ poleiros, obstaculos } = coletarCena(pai.getBoundingClientRect()));
       atualizadoEm = agora;
-      if (atual) {
+      // Na borda de um card do tutorial (poleiro criado na hora), fica onde está.
+      if (atual && !atual.chave.startsWith("borda:")) {
         // O layout muda (imagens carregando, redimensionamento): no card, acompanha o poleiro. Se o
         // poleiro sumiu, ou a letra onde ele estava mudou (ex.: troca de idioma), ele se assusta e voa.
         const mesmo = poleiros.find((p) => p.chave === atual!.chave);
@@ -369,16 +372,31 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       }
     };
     // Tutorial: voa até a parte explicada e diz o nome dela.
+    // Tutorial: os dois pousam na borda de cima da parte explicada (o corvo à direita, a coruja à
+    // esquerda, se couber) e cada um comenta; a coruja fala logo depois, para os balões não se atropelarem.
+    const pousarNaBorda = (alvo: Element, agora: number) => {
+      const ref = pai.getBoundingClientRect();
+      const r = alvo.getBoundingClientRect();
+      const x0 = r.left - ref.left;
+      const x1 = r.right - ref.left;
+      if (especie === "coruja" && x1 - x0 < 240) return;
+      const fimX = especie === "corvo" ? x1 - Math.min(52, (x1 - x0) / 2) : x0 + 52;
+      const borda: Poleiro = { chave: `borda:${especie}`, x0: x0 + 6, x1: x1 - 6, y: r.top - ref.top, letra: false };
+      const rota = planejar(borda, agora, "voo", true, fimX) ?? planejar(borda, agora, "voo", false, fimX);
+      if (!rota) return;
+      atual = null;
+      proximoTrajeto = null;
+      iniciarTrajeto(rota, agora);
+    };
     const aoMudarPassoTutorial = (evento: Event) => {
       const passo = (evento as CustomEvent<PassoTutorial | null>).detail;
       emTutorial = passo !== null;
       if (!passo) return;
-      if (passo.alvo && el.contains(passo.alvo)) {
-        dizerRef.current(t("Sou eu!", "That's me!"));
-        return;
-      }
-      if (passo.alvo) irParaElemento(passo.alvo, performance.now());
-      dizerRef.current(passo.titulo);
+      const alvo = passo.alvo;
+      // Header e os próprios mascotes: comenta de onde está.
+      if (alvo && !alvo.closest("header") && !alvo.closest("[data-corvo], [data-coruja]")) pousarNaBorda(alvo, performance.now());
+      const fala = especie === "corvo" ? passo.corvo : passo.coruja;
+      if (fala) window.setTimeout(() => dizerRef.current(fala), especie === "corvo" ? 0 : 1400);
     };
     const aoMoverMouse = (evento: PointerEvent) => {
       if (evento.pointerType !== "mouse") return;
@@ -387,11 +405,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       mouse = { cx: evento.clientX, cy: evento.clientY, vel: mouse ? mouse.vel * 0.5 + v * 0.5 : 0, movidoEm: agora };
       curiosoFeito = false;
     };
-    // Só o corvo acompanha o modo TV e guia o tutorial.
-    if (especie === "corvo") {
-      window.addEventListener(EVENTO_TV, aoMudarSecao);
-      window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
-    }
+    // Os dois guiam o tutorial; só o corvo acompanha o modo TV.
+    window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
+    if (especie === "corvo") window.addEventListener(EVENTO_TV, aoMudarSecao);
     window.addEventListener("pointermove", aoMoverMouse, { passive: true });
 
     /** Cursor por perto da cabeça: para onde olhar, se está parado e se está sobre o poleiro dele. */
@@ -437,21 +453,33 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         return;
       }
       // Passeia pela página inteira, de poleiro em poleiro próximo, sem seguir a área visível.
-      const candidatos = poleiros
-        .filter((p) => p.chave !== atual!.chave)
-        .map((p) => ({ p, d: Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) }))
-        .filter(({ d }) => d < 750)
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 5);
-      // Só destinos com rota livre: pula para o lado, voa para cima ou para baixo.
-      const rotas = candidatos
+      // Um poleiro por lugar (um título vale um lugar, não uma letra cada), fora o atual e os últimos
+      // visitados, até ~1400 px. Sorteio com peso: perto é mais provável, mas às vezes a distância nem
+      // conta, para ele passear pela página em vez de rodar sempre no mesmo canto.
+      const porLugar = new Map<string, Poleiro[]>();
+      for (const p of poleiros) {
+        const lugar = lugarDe(p);
+        if (lugar === lugarDe(atual) || recentes.includes(lugar)) continue;
+        if (Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) > 1400) continue;
+        porLugar.set(lugar, [...(porLugar.get(lugar) ?? []), p]);
+      }
+      if (!porLugar.size) recentes = [];
+      const sorteados = [...porLugar.values()]
+        .map((opcoes) => {
+          const p = opcoes[Math.floor(Math.random() * opcoes.length)]!;
+          const peso = Math.random() < 0.25 ? 1 : 1 / (1 + Math.hypot((p.x0 + p.x1) / 2 - x, p.y - y) / 350);
+          return { p, ordem: Math.random() ** (1 / peso) };
+        })
+        .sort((a, b) => b.ordem - a.ordem)
+        .slice(0, 6);
+      // O primeiro sorteado com rota livre: pula para o lado, voa para cima ou para baixo.
+      const rota = sorteados
         .map(({ p }) => {
           const centro = (p.x0 + p.x1) / 2;
           const aoLado = Math.abs(p.y - y) <= PULO_MAX_DY && Math.abs(centro - x) <= PULO_MAX_DX;
           return planejar(p, agora, aoLado ? "pulo" : "voo");
         })
-        .filter((t): t is Trajeto => t !== null);
-      const rota = rotas[Math.floor(Math.random() * rotas.length)];
+        .find((t): t is Trajeto => t !== null);
       if (!rota) {
         ate = agora + sortear(1500, 3000);
         return;
@@ -546,6 +574,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           ({ x, y } = trajeto.pontos[3]);
           trajeto = null;
           presenca.alvo = null;
+          recentes = [lugarDe(atual), ...recentes.filter((l) => l !== lugarDe(atual!))].slice(0, 4);
           mudar("pousando", agora);
           if (implicando) {
             implicando = false;

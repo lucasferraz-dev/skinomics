@@ -6,7 +6,8 @@ export const EVENTO_POLEIRO_MEXIDO = "skinomics:poleiro-mexido"; // detalhe: o e
 export const EVENTO_TV = "skinomics:tv-secao"; // detalhe: a seção na tela, ou null ao sair
 export const EVENTO_TUTORIAL = "skinomics:tutorial-passo"; // detalhe: PassoTutorial, ou null ao fechar
 
-export type PassoTutorial = { alvo: Element | null; titulo: string };
+/** O passo atual e o que cada mascote diz nele. */
+export type PassoTutorial = { alvo: Element | null; titulo: string; corvo?: string; coruja?: string };
 
 export function avisar(evento: string, detalhe: unknown) {
   window.dispatchEvent(new CustomEvent(evento, { detail: detalhe }));

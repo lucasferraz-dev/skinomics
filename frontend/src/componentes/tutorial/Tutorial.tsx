@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
 
 import { avisar, EVENTO_TUTORIAL } from "../mascote/eventos";
-import { type Passo, TUTORIAIS } from "./passos";
+import { falasDoPasso, type Passo, TUTORIAIS } from "./passos";
 
 type Caixa = { x: number; y: number; w: number; h: number };
 
@@ -113,8 +113,8 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
   const mostrada = useRef<Caixa | null>(null);
   useEffect(() => {
     rolarAte(passo.alvo);
-    // O corvo vai junto até a parte explicada.
-    avisar(EVENTO_TUTORIAL, { alvo: document.querySelector(passo.alvo), titulo: passo.titulo });
+    // O corvo e a coruja vão junto até a parte explicada e comentam.
+    avisar(EVENTO_TUTORIAL, { alvo: document.querySelector(passo.alvo), titulo: passo.titulo, ...falasDoPasso(passo.alvo) });
   }, [passo]);
   useEffect(() => () => avisar(EVENTO_TUTORIAL, null), []);
 
