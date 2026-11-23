@@ -33,9 +33,9 @@ body {
 /* Bolinha do "Como usar": parada a maior parte do tempo, depois dá um pulinho e gira de lado no ar, como
    uma moeda (em volta do eixo vertical), voltando de frente. */
 @keyframes interrogacao {
-  0%, 72% { transform: perspective(80px) translateY(0) rotateY(0deg); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
-  80% { transform: perspective(80px) translateY(-6px) rotateY(0deg); animation-timing-function: ease-in-out; }
-  92% { transform: perspective(80px) translateY(-6px) rotateY(360deg); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
-  97% { transform: perspective(80px) translateY(0) rotateY(360deg) scale(1.08, .9); }
-  100% { transform: perspective(80px) translateY(0) rotateY(360deg); }
+  0%, 76% { transform: perspective(80px) translateY(0) rotateY(0deg); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  81% { transform: perspective(80px) translateY(-6px) rotateY(0deg); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  86% { transform: perspective(80px) translateY(-6px) rotateY(360deg); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+  90% { transform: perspective(80px) translateY(0) rotateY(360deg) scale(1.08, .9); }
+  94%, 100% { transform: perspective(80px) translateY(0) rotateY(360deg); }
 }

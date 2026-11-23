@@ -64,7 +64,7 @@ export function BotaoComoUsar() {
         title="Como usar"
         className="group/ajuda grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
       >
-        <span className="grid size-[26px] place-items-center rounded-full border border-destaque/45 bg-destaque-fundo font-mono text-[13px] leading-none font-semibold text-destaque transition-colors duration-300 group-hover/ajuda:border-destaque group-hover/ajuda:bg-destaque group-hover/ajuda:text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
+        <span className="grid size-[21px] place-items-center rounded-full border border-destaque/45 bg-destaque-fundo font-mono text-[11px] leading-none font-semibold text-destaque transition-colors duration-300 group-hover/ajuda:border-destaque group-hover/ajuda:bg-destaque group-hover/ajuda:text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
           ?
         </span>
       </button>
