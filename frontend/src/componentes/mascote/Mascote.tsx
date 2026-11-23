@@ -446,7 +446,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       if (!atual || conduzido()) return;
       const outro = rival();
       if (outro?.poleiro && !outro.alvo && agora > proximaImplicancia && Math.hypot(outro.x - x, outro.y - y) < 1200) {
-        proximaImplicancia = agora + sortear(40000, 80000);
+        proximaImplicancia = agora + (especie === "coruja" ? sortear(90000, 150000) : sortear(40000, 80000));
         // Pousa do lado do outro, a uma distância de respeito (se couber no poleiro).
         const p = outro.poleiro;
         const fimX = [outro.x - DISTANCIA, outro.x + DISTANCIA].find((v) => v >= p.x0 && v <= p.x1);
@@ -459,9 +459,10 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           return;
         }
       }
-      // A coruja fica imóvel bem mais tempo antes de mudar de lugar.
-      if (especie === "coruja" && Math.random() < 0.45) {
-        ate = agora + sortear(3000, 7000);
+      // A coruja quase nunca sai do lugar por conta própria (em média, uma vez a cada minuto e meio);
+      // quem costuma tirá-la de lá é o Muninn.
+      if (especie === "coruja" && Math.random() < 0.88) {
+        ate = agora + sortear(9000, 16000);
         return;
       }
       // Nos cards ele anda; nas letras só se empoleira. A coruja não anda: quando muda de lugar, voa.
@@ -542,8 +543,8 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       }
       const desde = agora - modoDesde;
 
-      // Cursor chegando rápido perto dele: se assusta e voa (e reclama).
-      if (mouse && atual && !conduzido() && agora > sossegoAte && agora - mouse.movidoEm < 80 && mouse.vel > 1600) {
+      // Cursor chegando rápido perto do corvo: se assusta e voa (e reclama). A coruja nem pisca.
+      if (especie === "corvo" && mouse && atual && !conduzido() && agora > sossegoAte && agora - mouse.movidoEm < 80 && mouse.vel > 1600) {
         const perto = Math.hypot(mouse.cx - ref.left - x, mouse.cy - ref.top - (y - ALTURA * 0.6)) < 110;
         if (perto) {
           espantar(agora);
