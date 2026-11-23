@@ -92,3 +92,23 @@ html[data-tv-ocioso] * {
   0%, 100% { transform: scaleX(1); }
   50% { transform: scaleX(-1); }
 }
+
+/* Aura dos olhos do Muninn e da Glaux: o halo pulsa e os fiapos de luz tremulam, como chama. */
+.aura-olho,
+.rastro-olho {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aura-olho { animation: aura-olho 2.6s ease-in-out infinite; }
+  .rastro-olho { animation: rastro-olho 1.7s ease-in-out infinite; }
+  .rastro-olho:nth-of-type(2n) { animation-delay: -0.8s; animation-duration: 2.1s; }
+}
+@keyframes aura-olho {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.22); }
+}
+@keyframes rastro-olho {
+  0%, 100% { opacity: 0.3; transform: translateX(0) scaleY(1); }
+  50% { opacity: 0.85; transform: translateX(-0.6px) scaleY(1.35); }
+}

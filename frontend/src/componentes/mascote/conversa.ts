@@ -16,6 +16,9 @@ const DICAS: [string, string][] = [
   ["Ninguém acerta o mercado sempre. Nem eu, e olha que eu sou um corvo.", "Nobody times the market every time. Not even me, and I'm a crow."],
   ["Entre com a Steam e salve itens na Minha lista.", "Sign in with Steam and save items to My list."],
   ["Clique num terminal dos destaques para ver o item inteiro.", "Click a highlights terminal to see the whole item."],
+  ["Sabia que eu lembro de TODO preço? Todo! Pergunta! Não, sério, pergunta!", "Did you know I remember EVERY price? Every one! Ask me! No, really, ask!"],
+  ["A coruja acha que é sábia. Eu acho que ela é lenta. Lenta!", "The owl thinks she's wise. I think she's slow. Slow!"],
+  ["Clica de novo! De novo! Eu tenho mais coisa pra falar!", "Click again! Again! I've got more to say!"],
 ];
 
 export function dicaAleatoria(): string {
@@ -78,90 +81,87 @@ const sortearPar = (pares: [string, string][]) => {
   return t(pt, en);
 };
 
-/** A coruja é a analista: fala pouco e sobre previsão. */
+/** Glaux: fria, seca, quase sem palavras. Fala o mínimo e sobre o que importa. */
 export const falaDaCoruja = () =>
   sortearPar([
-    ["Huu-huu.", "Hoo-hoo."],
-    ["Uma previsão boa diz o quanto pode errar.", "A good forecast tells you how wrong it can be."],
-    ["Eu olho a faixa de 80%, não só o número.", "I look at the 80% range, not just the number."],
-    ["Previsão de 30 dias erra mais que a de 7. É normal.", "A 30-day forecast misses more than a 7-day one. That's normal."],
-    ["Paciência. Item raro anda devagar.", "Patience. Rare items move slowly."],
-    ["Eu enxergo melhor à noite. Os preços, de dia.", "I see better at night. Prices, during the day."],
-    ["Muninn fala demais.", "Muninn talks too much."],
-    ["Sou Glaux, a coruja de Atena. Eu analiso; não palpito.", "I'm Glaux, Athena's owl. I analyze; I don't guess."],
+    ["Hm.", "Hm."],
+    ["Estou analisando. Não interrompa.", "I'm analyzing. Don't interrupt."],
+    ["A faixa de 80% diz mais que o número. Leia.", "The 80% range says more than the number. Read it."],
+    ["Previsão de 30 dias erra mais que a de 7. Óbvio.", "A 30-day forecast misses more than a 7-day one. Obviously."],
+    ["Volume baixo, preço mentiroso.", "Low volume, lying price."],
+    ["Ele fala. Eu observo.", "He talks. I watch."],
+    ["Já disse o que tinha para dizer.", "I've said what I had to say."],
   ]);
 
-/** O que cada um diz quando é espantado. */
+/** O que cada um diz quando é tirado do lugar: ele escandaliza, ela mal reage. */
 export const queixa = (especie: "corvo" | "coruja") =>
   especie === "corvo"
     ? sortearPar([
-        ["Cróc!", "Caw!"],
-        ["Crá, crá!", "Caw, caw!"],
-        ["Ei!", "Hey!"],
-        ["Meu poleiro!", "My perch!"],
-        ["Cróc?!", "Caw?!"],
+        ["Ei! Ei! EI!", "Hey! Hey! HEY!"],
+        ["Meu poleiro! Volta aqui!", "My perch! Come back!"],
+        ["Cróc! Que isso?!", "Caw! What was that?!"],
+        ["Quem mexeu? Quem foi?!", "Who did that? Who?!"],
       ])
     : sortearPar([
-        ["Huu?!", "Hoo?!"],
-        ["Que susto.", "What a fright."],
-        ["Calma!", "Easy!"],
+        ["Tch.", "Tsk."],
+        ["Que seja.", "Whatever."],
+        ["...", "..."],
       ]);
 
 type Especie = "corvo" | "coruja";
 
 /**
- * A rixa vai nos dois sentidos e é seca, sem bobeira: o corvo de Odin, que confia no instinto e na
- * memória, contra a coruja, que confia no método. Quem chega provoca; o outro cede ou finca o pé.
+ * A rixa: Muninn é ligado no 220, chato, repete, provoca e não larga o osso; Glaux não perde tempo
+ * nem com ele. Quem chega provoca; o outro cede ou finca o pé.
  */
 export const provocacao = (quem: Especie) =>
   quem === "corvo"
     ? sortearPar([
-        ["Este poleiro pertence a Odin.", "This perch belongs to Odin."],
-        ["Eu vi esse preço antes de você, coruja.", "I saw that price before you did, owl."],
-        ["Teu modelo erra, Glaux. Meu instinto, não.", "Your model misses, Glaux. My instinct doesn't."],
-        ["Atenas fica longe, Glaux.", "Athens is far away, Glaux."],
-        ["Os corvos de Odin não dividem galho.", "Odin's ravens don't share a branch."],
+        ["Glaux! Glaux! Glaux! Sai daí!", "Glaux! Glaux! Glaux! Move!"],
+        ["Adivinha quem viu o preço primeiro? EU!", "Guess who saw the price first? ME!"],
+        ["Teu modelo é lento! Eu já tô três cotações na frente!", "Your model is slow! I'm three quotes ahead already!"],
+        ["Odin mandou dizer que esse card é meu. Mentira, mas sai mesmo assim!", "Odin says this card is mine. Not really, but move anyway!"],
       ])
     : sortearPar([
-        ["Instinto não é método, Muninn.", "Instinct isn't method, Muninn."],
-        ["Atena me deu a sabedoria. Odin te deu o quê?", "Athena gave me wisdom. What did Odin give you?"],
-        ["Daqui eu vejo a faixa inteira. Saia.", "From here I see the whole range. Leave."],
-        ["A noite é minha. Este card também.", "The night is mine. So is this card."],
-        ["Palpite é ruído. Eu leio o sinal.", "Hunches are noise. I read the signal."],
+        ["Saia.", "Leave."],
+        ["Você está no meu campo de visão, Muninn.", "You're in my line of sight, Muninn."],
+        ["Silêncio. Estou contando volume.", "Quiet. I'm counting volume."],
       ]);
 
 /** Provocado, cede e vai embora. */
 export const resposta = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
-        ["Que seja, Muninn. Eu vejo de longe também.", "So be it, Muninn. I see from afar too."],
-        ["Volto quando o ruído passar.", "I'll return when the noise fades."],
+        ["Tá bom, Muninn. Fica com o card.", "Fine, Muninn. Keep the card."],
+        ["Tanto faz. Pega esse lugar e me deixa em paz.", "Doesn't matter. Take the spot and leave me alone."],
+        ["Que seja. Faz o que quiser com ele.", "Whatever. Do what you want with it."],
       ])
     : sortearPar([
-        ["Odin vai saber disso.", "Odin will hear of this."],
-        ["Vou. Mas eu não esqueço rostos.", "I'll go. But I never forget a face."],
+        ["Tá, tá, tá! Mas eu volto já já!", "Fine, fine, fine! But I'll be right back!"],
+        ["Coruja chata! Chata, chata, chata!", "Boring owl! Boring, boring, boring!"],
+        ["Vou! Mas vou contar pro Odin!", "I'm going! But I'm telling Odin!"],
       ]);
 
 /** Provocado, finca o pé. */
 export const resistencia = (quem: Especie) =>
   quem === "coruja"
     ? sortearPar([
-        ["Não. Daqui eu vejo tudo.", "No. I see everything from here."],
-        ["Pouse em outro lugar, Muninn.", "Perch elsewhere, Muninn."],
+        ["Não.", "No."],
+        ["Tente de novo daqui a cem anos.", "Try again in a hundred years."],
       ])
     : sortearPar([
-        ["Cheguei antes de o mercado abrir.", "I was here before the market opened."],
-        ["Nem Odin me tira daqui.", "Not even Odin moves me."],
+        ["Não saio! Não saio! Não saio!", "Not moving! Not moving! Not moving!"],
+        ["Pode encarar o quanto quiser, eu fico!", "Stare all you want, I'm staying!"],
       ]);
 
 /** Quem provocou e não levou: recua. */
 export const derrota = (quem: Especie) =>
   quem === "corvo"
     ? sortearPar([
-        ["Hoje não. Amanhã o galho é meu.", "Not today. Tomorrow the branch is mine."],
-        ["Guarde o lugar. Eu volto.", "Keep the spot warm. I'll be back."],
+        ["Tá bom, mas isso não acabou!", "Fine, but this isn't over!"],
+        ["Eu ia sair mesmo! Juro!", "I was leaving anyway! I swear!"],
       ])
     : sortearPar([
         ["Não vale meu tempo.", "Not worth my time."],
-        ["Paciência também é estratégia.", "Patience is a strategy too."],
+        ["Pode ficar. Eu não ligo.", "Keep it. I don't care."],
       ]);

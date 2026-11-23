@@ -221,7 +221,7 @@ const FALAS: [string, { corvo: [string, string]; coruja: [string, string] }][] =
   }],
   ["'idioma'", {
     corvo: ["Eu grasno em qualquer língua.", "I caw in any language."],
-    coruja: ["Huu em português, hoo em inglês.", "Huu in Portuguese, hoo in English."],
+    coruja: ["Os números são os mesmos nas duas línguas.", "The numbers are the same in both languages."],
   }],
   ["'conta'", {
     corvo: ["Entre com a Steam e eu passo a lembrar dos seus itens também.", "Sign in with Steam and I'll remember your items too."],

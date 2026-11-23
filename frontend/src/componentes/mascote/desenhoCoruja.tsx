@@ -187,6 +187,14 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
         <clipPath id={`${id}-cabeca`}>
           <path d={CABECA} />
         </clipPath>
+        <radialGradient id={`${id}-aura`}>
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${id}-rastro`} gradientUnits="userSpaceOnUse" x1="45" y1="25" x2="34" y2="15">
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="1" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </linearGradient>
         <filter id={`${id}-brilho`} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="1.1" result="halo" />
           <feMerge>
@@ -266,6 +274,14 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
                 <Espelhado>
                   <path d={LOBULO} strokeWidth="0.7" strokeOpacity="0.8" />
                   <path d="M45.6 23.6l1.6 1M44.6 27.4l2 .2M45.6 31.2l1.8-1M49 33.6l.8-1.8M53.6 33.6l-.6-1.8M57 30.4l-1.6-.6" fill="none" strokeWidth="0.4" strokeOpacity="0.5" />
+                </Espelhado>
+                {/* Aura: halo pulsando em cada olho e fiapos de luz subindo pelo canto de fora */}
+                <Espelhado>
+                  <circle className="aura-olho" cx="51.4" cy="25.6" r="8.6" fill={`url(#${id}-aura)`} stroke="none" />
+                  <g fill="none" stroke={`url(#${id}-rastro)`} strokeWidth="0.75" strokeLinecap="round">
+                    <path className="rastro-olho" d="M45.2 25C42 23.4 39.4 20.6 36.4 17.4" />
+                    <path className="rastro-olho" d="M45.6 26.8C42.6 26.4 39.6 24.6 36.6 22.6" />
+                  </g>
                 </Espelhado>
                 {/* Olhos que brilham, sem pupila, com um núcleo mais claro */}
                 <g ref={partes.olhos} filter={`url(#${id}-brilho)`}>

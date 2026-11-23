@@ -204,6 +204,22 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
         <clipPath id={`${id}-cabeca`}>
           <path d={CABECA} />
         </clipPath>
+        <radialGradient id={`${id}-aura`}>
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${id}-rastro`} gradientUnits="userSpaceOnUse" x1="93" y1="0" x2="76" y2="0">
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="1" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </linearGradient>
+        <filter id={`${id}-brilho`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="0.9" result="halo" />
+          <feMerge>
+            <feMergeNode in="halo" />
+            <feMergeNode in="halo" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <g
         ref={partes.espelho}
@@ -259,7 +275,13 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
             <path d={BICO_CIMA} />
             <path d="M99.6 26.6C101.8 26.6 104 27.6 106.4 29.4M99.4 28.4c2 .2 3.8 1 5.6 2.4" fill="none" strokeWidth="0.55" />
             {/* Olho de bravo: fenda inclinada sob a sobrancelha; pisca fechando a fenda */}
-            <g ref={partes.olho}>
+            {/* Aura: halo pulsando e fiapos de luz escapando do olho para trás (não é um corvo comum) */}
+            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="7.2" fill={`url(#${id}-aura)`} stroke="none" />
+            <g fill="none" stroke={`url(#${id}-rastro)`} strokeWidth="0.9" strokeLinecap="round">
+              <path className="rastro-olho" d={`M92.4 ${OLHO_Y - 0.8}C88.4 ${OLHO_Y - 2.6} 84 ${OLHO_Y - 2} 78.6 ${OLHO_Y - 4.6}`} />
+              <path className="rastro-olho" d={`M92.6 ${OLHO_Y + 0.6}C88.6 ${OLHO_Y + 0.4} 84.4 ${OLHO_Y + 1.8} 80 ${OLHO_Y + 0.6}`} />
+            </g>
+            <g ref={partes.olho} filter={`url(#${id}-brilho)`}>
               <path d={`M91.6 ${OLHO_Y - 0.2}Q95.2 ${OLHO_Y - 2.2} 98.8 ${OLHO_Y + 0.6}Q95 ${OLHO_Y + 1.5} 91.6 ${OLHO_Y - 0.2}Z`} fill="var(--color-destaque)" strokeWidth="0.4" />
               <circle cx="95.8" cy={OLHO_Y} r="0.75" fill="#000" stroke="none" />
             </g>
