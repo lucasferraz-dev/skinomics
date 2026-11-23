@@ -39,7 +39,20 @@ export function BotaoComoUsar() {
   const { pathname } = useLocation();
   const passos = TUTORIAIS[pathname];
   const [aberto, setAberto] = useState(false);
+
+  // Na primeira visita a uma página com tutorial, ele abre sozinho (depois de a página carregar os dados).
+  useEffect(() => {
+    if (!passos || jaViu(pathname)) return;
+    const espera = window.setTimeout(() => setAberto(true), 1500);
+    return () => window.clearTimeout(espera);
+  }, [passos, pathname]);
+
   if (!passos) return null;
+
+  const fechar = () => {
+    marcarVisto(pathname);
+    setAberto(false);
+  };
 
   return (
     <>
@@ -51,13 +64,32 @@ export function BotaoComoUsar() {
         title="Como usar"
         className="group/ajuda grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-borda bg-painel/60 transition-colors duration-300 hover:border-destaque/60"
       >
-        <span className="grid size-6 place-items-center rounded-full bg-destaque text-[15px] leading-none font-extrabold text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
+        <span className="grid size-[26px] place-items-center rounded-full border border-destaque/45 bg-destaque-fundo font-mono text-[13px] leading-none font-semibold text-destaque transition-colors duration-300 group-hover/ajuda:border-destaque group-hover/ajuda:bg-destaque group-hover/ajuda:text-fundo motion-safe:animate-[interrogacao_5s_ease-in-out_infinite] group-hover/ajuda:[animation-duration:1.4s]">
           ?
         </span>
       </button>
-      {aberto && <Tutorial passos={passos} aoFechar={() => setAberto(false)} />}
+      {aberto && <Tutorial passos={passos} aoFechar={fechar} />}
     </>
   );
+}
+
+const CHAVE_VISTO = "skinomics:tutorial-visto:";
+
+function jaViu(pagina: string) {
+  try {
+    return localStorage.getItem(CHAVE_VISTO + pagina) === "1";
+  } catch {
+    // Sem acesso ao armazenamento (aba anônima bloqueada etc.), não insiste em abrir a cada visita.
+    return true;
+  }
+}
+
+function marcarVisto(pagina: string) {
+  try {
+    localStorage.setItem(CHAVE_VISTO + pagina, "1");
+  } catch {
+    /* sem armazenamento: só não lembra */
+  }
 }
 
 /**
@@ -168,34 +200,39 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
         className="fixed space-y-3 rounded-2xl border border-destaque/30 bg-painel p-5 shadow-[0_16px_48px_rgba(0,0,0,0.8)] transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0"
         style={{ left: balaoX, top: balaoY, width: larguraBalao }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold">{passo.titulo}</h2>
-          <button
-            type="button"
-            onClick={aoFechar}
-            aria-label="Fechar o tutorial"
-            className="-mt-1 -mr-1 grid size-7 cursor-pointer place-items-center rounded-full text-apagado transition-colors hover:bg-painel-alto hover:text-texto"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
+        {/* Em que etapa está, quantas faltam e a saída, sempre à vista. */}
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-mono text-xs">
+            <span className="text-destaque">
+              Etapa {indice + 1} de {passos.length}
+            </span>
+            <span className="ml-2 text-apagado">
+              {ultimo ? "última" : `${passos.length - indice - 1 === 1 ? "falta 1" : `faltam ${passos.length - indice - 1}`}`}
+            </span>
+          </p>
+          {!ultimo && (
+            <button
+              type="button"
+              onClick={aoFechar}
+              className="-my-1 -mr-2 cursor-pointer rounded-md px-2 py-1 text-xs text-suave underline-offset-4 transition-colors hover:text-texto hover:underline"
+            >
+              Pular tutorial
+            </button>
+          )}
         </div>
+        <div className="flex gap-1" aria-hidden>
+          {passos.map((p, i) => (
+            <span
+              key={p.alvo}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                i < indice ? "bg-destaque/45" : i === indice ? "bg-destaque" : "bg-borda"
+              }`}
+            />
+          ))}
+        </div>
+        <h2 className="pt-1 text-lg font-bold">{passo.titulo}</h2>
         <p className="text-sm leading-relaxed text-suave">{passo.texto}</p>
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <div className="flex gap-1.5" aria-label={`Passo ${indice + 1} de ${passos.length}`}>
-            {passos.map((p, i) => (
-              <button
-                key={p.alvo}
-                type="button"
-                onClick={() => setIndice(i)}
-                aria-label={`Ir para: ${p.titulo}`}
-                className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
-                  i === indice ? "w-5 bg-destaque" : "w-1.5 bg-borda hover:bg-suave"
-                }`}
-              />
-            ))}
-          </div>
+        <div className="flex items-center justify-end gap-3 pt-1">
           <div className="flex gap-2">
             {indice > 0 && (
               <button
