@@ -204,11 +204,9 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
         <div className="flex items-center justify-between gap-3">
           <p className="font-mono text-xs">
             <span className="text-destaque">
-              Etapa {indice + 1} de {passos.length}
+              Etapa {indice + 1}
             </span>
-            <span className="ml-2 text-apagado">
-              {ultimo ? "última" : `${passos.length - indice - 1 === 1 ? "falta 1" : `faltam ${passos.length - indice - 1}`}`}
-            </span>
+            <span className="text-apagado">/{passos.length}</span>
           </p>
           {!ultimo && (
             <button
