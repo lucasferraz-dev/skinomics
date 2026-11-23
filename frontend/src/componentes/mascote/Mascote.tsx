@@ -111,6 +111,7 @@ export function Mascote() {
   const ultimaLinha = useRef(-1);
   // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
   const falarRef = useRef<() => void>(() => {});
+  const reclamarRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     try {
@@ -220,6 +221,7 @@ export function Mascote() {
     };
     /** Tiraram o poleiro dele: levanta voo na hora para outro lugar à vista, de preferência perto. */
     const espantar = (agora: number) => {
+      if (atual) reclamarRef.current();
       atual = null;
       proximoTrajeto = null;
       const ref = pai.getBoundingClientRect();
@@ -447,6 +449,20 @@ export function Mascote() {
     setFala(linhas[indice]!);
   }
   falarRef.current = falar;
+
+  // Espantado (tiraram o poleiro dele): grasna e reclama com um balão curto, sem tocar som.
+  function reclamar() {
+    grasnandoDesde.current = performance.now();
+    const queixas = [
+      t("Cróc!", "Caw!"),
+      t("Crá, crá!", "Caw, caw!"),
+      t("Ei!", "Hey!"),
+      t("Meu poleiro!", "My perch!"),
+      t("Cróc?!", "Caw?!"),
+    ];
+    setFala(queixas[Math.floor(Math.random() * queixas.length)]!);
+  }
+  reclamarRef.current = reclamar;
 
   const aoClicar = falar;
 
