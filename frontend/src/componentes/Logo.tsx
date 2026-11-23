@@ -8,11 +8,11 @@ export function MarcaLogo({ tamanho = 22 }: { tamanho?: number }) {
   );
 }
 
-/** Marca + nome, levando para a página inicial. */
-export function Logo({ texto = "skinomics" }: { texto?: string }) {
+/** Marca + nome, levando para a página inicial. `grande` é a versão do header da landing. */
+export function Logo({ texto = "skinomics", grande = false }: { texto?: string; grande?: boolean }) {
   return (
-    <Link to="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-      <MarcaLogo />
+    <Link to="/" className={`flex items-center font-semibold tracking-tight ${grande ? "gap-3 text-2xl" : "gap-2.5"}`}>
+      <MarcaLogo tamanho={grande ? 34 : 22} />
       {texto}
     </Link>
   );

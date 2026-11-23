@@ -54,7 +54,7 @@ function Navegacao() {
     <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
       {/* Ocupa a largura toda: logo na ponta esquerda e botões redondos na ponta direita. */}
       <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-        <Logo />
+        <Logo grande />
         <div className="flex items-center gap-2">
           <BotaoComoUsar />
           <a href="#faq" data-tour="faq" aria-label={t("Perguntas frequentes", "Frequently asked questions")} title={t("Perguntas frequentes", "Frequently asked questions")} className={classeBotaoRedondo}>
