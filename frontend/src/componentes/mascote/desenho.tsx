@@ -7,11 +7,11 @@ import { APOIO_X, BASE_CAUDA, OMBRO, perna, PESCOCO, type Pose, transformarCorpo
 // escamas, penas em lâmina com nervura e espirais. Coordenadas do viewBox 120 × 100, olhando para a
 // direita, chão em y = 96. As partes animadas ficam em grupos separados (ver `aplicarPose`).
 
-type Ponto = { x: number; y: number };
-const n = (v: number) => v.toFixed(2);
+export type Ponto = { x: number; y: number };
+export const n = (v: number) => v.toFixed(2);
 
 /** Pena em lâmina: base larga, ponta afilada levemente arredondada. */
-function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: number) {
+export function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: number) {
   const a = (anguloGraus * Math.PI) / 180;
   const d = { x: Math.cos(a), y: Math.sin(a) };
   const nrm = { x: -d.y * largura, y: d.x * largura };
@@ -29,7 +29,7 @@ function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: 
 }
 
 /** Fileiras de "escamas" (pequenos arcos) que imitam a plumagem; recortadas pela forma da região. */
-function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) {
+export function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) {
   let d = "";
   let linha = 0;
   for (let y = y0; y <= y1; y += passo * 0.75, linha++) {
@@ -41,7 +41,7 @@ function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) 
 }
 
 /** Espiral ornamental: começa por fora e fecha para dentro. */
-function espiral(cx: number, cy: number, raio: number, voltas: number, giro = 0) {
+export function espiral(cx: number, cy: number, raio: number, voltas: number, giro = 0) {
   let d = "";
   const passos = Math.round(voltas * 24);
   for (let i = 0; i <= passos; i++) {
@@ -121,27 +121,38 @@ export function usePartes(): Partes {
 }
 
 const OLHO_Y = 30.2;
-const ARTICULACAO_BICO = { x: 104.2, y: 34.8 };
+
+/** Pontos onde as partes giram; cada bicho tem os seus (as pernas e o corpo usam os quadris comuns). */
+export type Esqueleto = { pescoco: Ponto; ombro: Ponto; baseCauda: Ponto; olhoY: number; bico: Ponto };
+
+export const ESQUELETO_CORVO: Esqueleto = {
+  pescoco: PESCOCO,
+  ombro: OMBRO,
+  baseCauda: BASE_CAUDA,
+  olhoY: OLHO_Y,
+  bico: { x: 104.2, y: 34.8 },
+};
 
 /** Aplica uma pose às partes do desenho (sem passar pelo React). `piscada` vai de 0 (aberto) a 1. */
-export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada = 0) {
+export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada = 0, esqueleto = ESQUELETO_CORVO) {
+  const { pescoco, ombro, baseCauda, olhoY, bico } = esqueleto;
   const t = (ref: React.RefObject<Element | null>, valor: string) => ref.current?.setAttribute("transform", valor);
   t(partes.espelho, direcao < 0 ? `translate(${APOIO_X * 2} 0) scale(-1 1)` : "");
   t(partes.corpo, transformarCorpo(pose));
-  t(partes.cabeca, `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) rotate(${n(pose.cabecaGiro)} ${PESCOCO.x} ${PESCOCO.y})`);
-  t(partes.cauda, `rotate(${n(pose.cauda)} ${BASE_CAUDA.x} ${BASE_CAUDA.y})`);
-  t(partes.asaFechada, `rotate(${n(pose.asaFechadaGiro)} ${OMBRO.x} ${OMBRO.y})`);
+  t(partes.cabeca, `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) rotate(${n(pose.cabecaGiro)} ${pescoco.x} ${pescoco.y})`);
+  t(partes.cauda, `rotate(${n(pose.cauda)} ${baseCauda.x} ${baseCauda.y})`);
+  t(partes.asaFechada, `rotate(${n(pose.asaFechadaGiro)} ${ombro.x} ${ombro.y})`);
   partes.asaFechada.current?.setAttribute("opacity", pose.asa === "fechada" ? "1" : "0");
   for (const [ref, angulo] of [
     [partes.asaPerto, pose.asaAngulo],
     [partes.asaLonge, pose.asaLonge],
   ] as const) {
     // A asa aberta é desenhada apontando para cima; girar no sentido anti-horário a leva para trás.
-    t(ref, `translate(${OMBRO.x} ${OMBRO.y}) rotate(${n(-angulo)})`);
+    t(ref, `translate(${ombro.x} ${ombro.y}) rotate(${n(-angulo)})`);
     ref.current?.setAttribute("opacity", pose.asa === "aberta" ? "1" : "0");
   }
-  t(partes.olho, `translate(0 ${OLHO_Y}) scale(1 ${n(1 - piscada)}) translate(0 ${-OLHO_Y})`);
-  t(partes.bico, `rotate(${n(pose.bico)} ${ARTICULACAO_BICO.x} ${ARTICULACAO_BICO.y})`);
+  t(partes.olho, `translate(0 ${olhoY}) scale(1 ${n(1 - piscada)}) translate(0 ${-olhoY})`);
+  t(partes.bico, `rotate(${n(pose.bico)} ${bico.x} ${bico.y})`);
   ([0, 1] as const).forEach((lado) => {
     const p = perna(pose, lado);
     partes.pernas.current[lado * 4]?.setAttribute("d", p.tarso);
@@ -151,7 +162,7 @@ export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada
   });
 }
 
-function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura: string }[]; opacidade?: number }) {
+export function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura: string }[]; opacidade?: number }) {
   return (
     <>
       {penas.map(({ contorno, nervura }) => (
@@ -164,7 +175,7 @@ function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura
   );
 }
 
-function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
+export function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
   return (
     <g strokeOpacity={fundo ? 0.4 : 1}>
       <Penas penas={[...SECUNDARIAS_ABERTAS].reverse()} />

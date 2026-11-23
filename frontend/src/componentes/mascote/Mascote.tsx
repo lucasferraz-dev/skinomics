@@ -18,10 +18,20 @@ import {
   grasnar as poseGrasnando,
   pesJuntos,
 } from "./corvo";
-import { dicaAleatoria, marcarSaudacaoDita, saudacaoDaVisita } from "./conversa";
-import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
+import {
+  dicaAleatoria,
+  falaDaCoruja,
+  marcarSaudacaoDita,
+  provocacao,
+  queixa,
+  respostaDaCoruja,
+  saudacaoDaVisita,
+} from "./conversa";
+import { aplicarPose, CorvoSvg, ESQUELETO_CORVO, usePartes } from "./desenho";
+import { CorujaSvg, ESQUELETO_CORUJA } from "./desenhoCoruja";
 import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
+import { presencas } from "./rivais";
 
 // O corvo do Skinomics. Pousa no topo dos cards e da primeira linha dos títulos (`data-poleiro`),
 // anda por eles, pula para um card vizinho na mesma altura e voa quando o próximo poleiro fica
@@ -96,7 +106,8 @@ function boletim(itens: ItemResumo[]): string[] {
   return linhas;
 }
 
-export function Mascote() {
+/** O corvo (padrão) ou a coruja: mesmo esqueleto e mesmos movimentos, desenho e falas próprios. */
+export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" }) {
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
   const partes = usePartes();
@@ -116,10 +127,11 @@ export function Mascote() {
   const reclamarRef = useRef<() => void>(() => {});
   const dizerRef = useRef<(texto: string) => void>(() => {});
   // Saudação desta visita ("Voltou! Faz 3 dias."), dita logo que ele pousa pela primeira vez.
-  const saudacaoRef = useRef(saudacaoDaVisita());
+  const saudacaoRef = useRef(especie === "corvo" ? saudacaoDaVisita() : null);
   // No tutorial ele fica acima do fundo escurecido, como guia.
   const [guiando, setGuiando] = useState(false);
   useEffect(() => {
+    if (especie !== "corvo") return;
     const aoMudarPasso = (evento: Event) => setGuiando((evento as CustomEvent<PassoTutorial | null>).detail !== null);
     window.addEventListener(EVENTO_TUTORIAL, aoMudarPasso);
     return () => window.removeEventListener(EVENTO_TUTORIAL, aoMudarPasso);
@@ -175,6 +187,12 @@ export function Mascote() {
     let emTv = false;
     let emTutorial = false;
     const conduzido = () => emTv || emTutorial;
+    // Implicância: de tempos em tempos o corvo vai pousar do lado da coruja e provocar.
+    let implicando = false;
+    let provocarEm = 0;
+    let proximaImplicancia = performance.now() + sortear(20000, 35000);
+    const presenca = { x: 0, y: 0, poleiro: null as Poleiro | null, enxotar: () => {} };
+    presencas.set(especie, presenca);
 
     const mudar = (novo: Modo, agora: number) => {
       modo = novo;
@@ -241,8 +259,8 @@ export function Mascote() {
       mudar(t.tipo === "pulo" ? "pulando" : "voando", agora);
     };
     /** Tiraram o poleiro dele: levanta voo na hora para outro lugar à vista, de preferência perto. */
-    const espantar = (agora: number) => {
-      if (atual) reclamarRef.current();
+    const espantar = (agora: number, queixar = true) => {
+      if (atual && queixar) reclamarRef.current();
       atual = null;
       proximoTrajeto = null;
       const ref = pai.getBoundingClientRect();
@@ -258,6 +276,14 @@ export function Mascote() {
       const rota = livreAte ?? (reserva ? planejar(reserva, agora, "voo", false) : null);
       if (rota) iniciarTrajeto(rota, agora);
     };
+
+    // Enxotado pelo rival: responde e vai embora, sem a queixa de susto.
+    presenca.enxotar = () =>
+      window.setTimeout(() => {
+        if (!atual) return;
+        dizerRef.current(respostaDaCoruja());
+        espantar(performance.now(), false);
+      }, 750);
 
     // Alguém começou a descolar o adesivo onde ele está pousado: sai voando.
     const aoMexerNoPoleiro = (evento: Event) => {
@@ -319,8 +345,11 @@ export function Mascote() {
       mouse = { cx: evento.clientX, cy: evento.clientY, vel: mouse ? mouse.vel * 0.5 + v * 0.5 : 0, movidoEm: agora };
       curiosoFeito = false;
     };
-    window.addEventListener(EVENTO_TV, aoMudarSecao);
-    window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
+    // Só o corvo acompanha o modo TV e guia o tutorial.
+    if (especie === "corvo") {
+      window.addEventListener(EVENTO_TV, aoMudarSecao);
+      window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
+    }
     window.addEventListener("pointermove", aoMoverMouse, { passive: true });
 
     /** Cursor por perto da cabeça: para onde olhar, se está parado e se está sobre o poleiro dele. */
@@ -341,6 +370,23 @@ export function Mascote() {
 
     const decidir = (agora: number) => {
       if (!atual || conduzido()) return;
+      const coruja = especie === "corvo" ? presencas.get("coruja") : undefined;
+      if (coruja?.poleiro && agora > proximaImplicancia && Math.hypot(coruja.x - x, coruja.y - y) < 1200) {
+        proximaImplicancia = agora + sortear(40000, 70000);
+        const rota = planejar(coruja.poleiro, agora, "voo") ?? planejar(coruja.poleiro, agora, "voo", false);
+        if (rota) {
+          // Pousa do lado dela, não em cima.
+          const lado = coruja.x - 34 >= coruja.poleiro.x0 ? -34 : 34;
+          const fimX = limitar(coruja.x + lado, coruja.poleiro.x0, coruja.poleiro.x1);
+          rota.pontos[2] = { x: fimX, y: rota.pontos[2].y };
+          rota.pontos[3] = { x: fimX, y: coruja.poleiro.y };
+          implicando = true;
+          proximoTrajeto = rota;
+          virarPara(fimX - x);
+          mudar("agachando", agora);
+          return;
+        }
+      }
       // Nos cards ele anda; nas letras só se empoleira.
       if (!atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
         // Caminhadas curtas: alguns passos para um lado, não a extensão inteira do poleiro.
@@ -378,7 +424,7 @@ export function Mascote() {
     const desenhar = (piscada: number) => {
       el.style.transform = `translate(${x - APOIO_X * ESCALA}px, ${y - CHAO * ESCALA}px)`;
       el.style.opacity = atual || trajeto ? "1" : "0";
-      aplicarPose(partes, pose, direcao, piscada);
+      aplicarPose(partes, pose, direcao, piscada, especie === "corvo" ? ESQUELETO_CORVO : ESQUELETO_CORUJA);
     };
 
     const comecouEm = performance.now();
@@ -403,12 +449,16 @@ export function Mascote() {
 
       // Chegada: entra voando pela borda esquerda da tela e pousa numa letra visível. Se nenhuma letra
       // aparecer em 1,5 s (fontes ainda carregando, página aberta já rolada), vale qualquer poleiro à vista.
-      if (!chegou && !atual && !trajeto && !proximoTrajeto) {
+      // A coruja chega alguns segundos depois do corvo, pela direita, e prefere pousar num card.
+      if (!chegou && !atual && !trajeto && !proximoTrajeto && agora - comecouEm > (especie === "corvo" ? 0 : 4500)) {
         const vistos = poleiros.filter((p) => visivel(p, ref));
-        const destino = vistos.find((p) => p.letra) ?? (agora - comecouEm > 1500 ? (vistos[0] ?? poleiros[0]) : undefined);
+        const preferido = vistos.find((p) =>
+          especie === "corvo" ? p.letra : !p.letra && p.chave !== presencas.get("corvo")?.poleiro?.chave,
+        );
+        const destino = preferido ?? (agora - comecouEm > 1500 ? (vistos[0] ?? poleiros[0]) : undefined);
         if (destino) {
           const fim = { x: sortear(destino.x0, destino.x1), y: destino.y };
-          const inicio = { x: -ref.left - 90, y: Math.max(fim.y - 240, -ref.top + 60) };
+          const inicio = { x: especie === "corvo" ? -ref.left - 90 : window.innerWidth - ref.left + 90, y: Math.max(fim.y - 240, -ref.top + 60) };
           const chegada: Trajeto = {
             tipo: "voo",
             pontos: [
@@ -456,6 +506,10 @@ export function Mascote() {
           ({ x, y } = trajeto.pontos[3]);
           trajeto = null;
           mudar("pousando", agora);
+          if (implicando) {
+            implicando = false;
+            provocarEm = agora + 450;
+          }
         }
       } else if (modo === "pousando") {
         alvo = poseAgachada(Math.max(0, 1 - desde / 220) * 0.9);
@@ -482,6 +536,17 @@ export function Mascote() {
         alvo = poseParada();
         alvo.corpoY = Math.sin(agora / 700) * 0.4;
         if (!calmo) {
+          // Acabou de pousar do lado da coruja: vira para ela, provoca e ela vai embora.
+          if (provocarEm && agora > provocarEm) {
+            provocarEm = 0;
+            const coruja = presencas.get("coruja");
+            if (coruja) {
+              virarPara(coruja.x - x);
+              dizerRef.current(provocacao());
+              coruja.enxotar();
+            }
+            ate = Math.max(ate, agora + 2500);
+          }
           // Cursor por perto: olha para ele. Parado ali um tempo: vai até ele e dá uma bicadinha.
           const olhar = cursorPerto(ref);
           if (olhar) {
@@ -535,6 +600,9 @@ export function Mascote() {
       // Piscada: a pálpebra desce e sobe em ~140 ms.
       if (agora > piscarEm + 140) piscarEm = agora + sortear(2200, 5500);
       const piscando = agora > piscarEm ? Math.sin(((agora - piscarEm) / 140) * Math.PI) : 0;
+      presenca.x = x;
+      presenca.y = y;
+      presenca.poleiro = atual;
       desenhar(Math.max(0, piscando));
       quadro = requestAnimationFrame(passo);
     };
@@ -544,6 +612,7 @@ export function Mascote() {
     quadro = requestAnimationFrame(passo);
     return () => {
       cancelAnimationFrame(quadro);
+      presencas.delete(especie);
       window.removeEventListener(EVENTO_POLEIRO_MEXIDO, aoMexerNoPoleiro);
       window.removeEventListener(EVENTO_TV, aoMudarSecao);
       window.removeEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
@@ -568,6 +637,10 @@ export function Mascote() {
    */
   function falar() {
     grasnandoDesde.current = performance.now();
+    if (especie === "coruja") {
+      setFala(falaDaCoruja());
+      return;
+    }
     if (saudacaoRef.current) {
       setFala(saudacaoRef.current());
       saudacaoRef.current = null;
@@ -594,14 +667,7 @@ export function Mascote() {
   // Espantado (tiraram o poleiro dele): grasna e reclama com um balão curto, sem tocar som.
   function reclamar() {
     grasnandoDesde.current = performance.now();
-    const queixas = [
-      t("Cróc!", "Caw!"),
-      t("Crá, crá!", "Caw, caw!"),
-      t("Ei!", "Hey!"),
-      t("Meu poleiro!", "My perch!"),
-      t("Cróc?!", "Caw?!"),
-    ];
-    setFala(queixas[Math.floor(Math.random() * queixas.length)]!);
+    setFala(queixa(especie));
   }
   reclamarRef.current = reclamar;
 
@@ -621,7 +687,11 @@ export function Mascote() {
           {fala}
         </p>
       )}
-      <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+      {especie === "corvo" ? (
+        <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+      ) : (
+        <CorujaSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+      )}
     </div>
   );
 }

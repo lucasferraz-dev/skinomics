@@ -81,6 +81,18 @@ const INICIO: Passo[] = [
     },
   },
   {
+    alvo: "svg[data-coruja]",
+    get titulo() {
+      return t("A coruja", "The owl");
+    },
+    get texto() {
+      return t(
+        "A analista. Fala pouco, quase sempre sobre previsão, e vira a cabeça para acompanhar o cursor. O corvo vive implicando com ela.",
+        "The analyst. Talks little, mostly about forecasts, and turns her head to follow your cursor. The crow keeps pestering her.",
+      );
+    },
+  },
+  {
     alvo: "[data-tour='faq']",
     get titulo() {
       return t("Perguntas frequentes", "FAQ");

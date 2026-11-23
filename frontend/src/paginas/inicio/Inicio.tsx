@@ -44,6 +44,7 @@ export function Inicio() {
       </main>
       <Rodape />
       <Mascote />
+      <Mascote especie="coruja" />
     </div>
   );
 }

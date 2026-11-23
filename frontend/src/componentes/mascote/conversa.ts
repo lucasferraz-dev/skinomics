@@ -71,3 +71,53 @@ export function saudacaoDaVisita(): (() => string) | null {
 export function marcarSaudacaoDita() {
   saudacaoDita = true;
 }
+
+const sortearPar = (pares: [string, string][]) => {
+  const [pt, en] = pares[Math.floor(Math.random() * pares.length)]!;
+  return t(pt, en);
+};
+
+/** A coruja é a analista: fala pouco e sobre previsão. */
+export const falaDaCoruja = () =>
+  sortearPar([
+    ["Huu-huu.", "Hoo-hoo."],
+    ["Uma previsão boa diz o quanto pode errar.", "A good forecast tells you how wrong it can be."],
+    ["Eu olho a faixa de 80%, não só o número.", "I look at the 80% range, not just the number."],
+    ["Previsão de 30 dias erra mais que a de 7. É normal.", "A 30-day forecast misses more than a 7-day one. That's normal."],
+    ["Paciência. Item raro anda devagar.", "Patience. Rare items move slowly."],
+    ["Eu enxergo melhor à noite. Os preços, de dia.", "I see better at night. Prices, during the day."],
+    ["O corvo fala demais.", "The crow talks too much."],
+  ]);
+
+/** O que cada um diz quando é espantado. */
+export const queixa = (especie: "corvo" | "coruja") =>
+  especie === "corvo"
+    ? sortearPar([
+        ["Cróc!", "Caw!"],
+        ["Crá, crá!", "Caw, caw!"],
+        ["Ei!", "Hey!"],
+        ["Meu poleiro!", "My perch!"],
+        ["Cróc?!", "Caw?!"],
+      ])
+    : sortearPar([
+        ["Huu?!", "Hoo?!"],
+        ["Que susto.", "What a fright."],
+        ["Calma!", "Easy!"],
+      ]);
+
+/** A implicância: o corvo pousa do lado da coruja e provoca; ela responde e vai embora. */
+export const provocacao = () =>
+  sortearPar([
+    ["Cróc! Esse card é meu.", "Caw! This card is mine."],
+    ["Sai, coruja!", "Shoo, owl!"],
+    ["Cróc cróc cróc!", "Caw caw caw!"],
+    ["Previsão? Eu tenho é palpite.", "Forecasts? I've got hunches."],
+  ]);
+
+export const respostaDaCoruja = () =>
+  sortearPar([
+    ["Huu... de novo?", "Hoo... again?"],
+    ["Que corvo chato.", "What an annoying crow."],
+    ["Tá bom, tá bom.", "Fine, fine."],
+    ["Vou analisar em outro lugar.", "I'll analyze somewhere else."],
+  ]);
