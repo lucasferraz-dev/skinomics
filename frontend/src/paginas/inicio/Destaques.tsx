@@ -119,7 +119,7 @@ export function DestaquesDaSemana() {
     item?.volume_7d != null ? t(`${formatarInteiro(item.volume_7d)} vendas em 7 dias`, `${formatarInteiro(item.volume_7d)} sales in 7 days`) : t("Sem vendas registradas", "No recorded sales");
 
   return (
-    <section data-tv={t("Destaques da semana", "Weekly highlights")} className="py-14 sm:py-28">
+    <section data-tv={t("Destaques da semana", "Weekly highlights")} data-tv-chave="destaques" className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo={t("Destaques da semana", "Weekly highlights")}

@@ -22,6 +22,7 @@ import {
   dicaAleatoria,
   derrota,
   falaDaCoruja,
+  falaDaSecao,
   marcarSaudacaoDita,
   provocacao,
   queixa,
@@ -209,6 +210,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let emTv = false;
     let emTutorial = false;
     let passoAtual = 0;
+    let secaoAtual = 0;
     const conduzido = () => emTv || emTutorial;
     // Implicância (nos dois sentidos): de tempos em tempos um pousa do lado do outro e provoca.
     let implicando = false;
@@ -370,7 +372,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     window.addEventListener(EVENTO_POLEIRO_MEXIDO, aoMexerNoPoleiro);
 
     /** Voa até um poleiro dentro do elemento (de preferência uma letra do título dele). */
-    const irParaElemento = (el: Element, agora: number) => {
+    const irParaElemento = (el: Element, agora: number, preferirCards = false) => {
       if (el.closest("header")) return;
       const ref = pai.getBoundingClientRect();
       const r = el.getBoundingClientRect();
@@ -381,7 +383,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       const perto = [...poleiros].sort(
         (a, b) => Math.hypot(a.x0 - caixa.x0, a.y - caixa.y0) - Math.hypot(b.x0 - caixa.x0, b.y - caixa.y0),
       );
-      const destino = dentro[0] ?? perto[0];
+      // Só cards que aparecem com a seção no topo da tela (o modo TV rola até lá).
+      const cards = dentro.filter((p) => !p.letra && p.y < caixa.y0 + window.innerHeight * 0.7);
+      const destino = preferirCards && cards.length ? cards[Math.floor(Math.random() * cards.length)] : (dentro[0] ?? perto[0]);
       if (!destino || atual?.chave === destino.chave) return;
       const rota = planejar(destino, agora, "voo") ?? planejar(destino, agora, "voo", false);
       if (!rota) return;
@@ -390,14 +394,22 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       iniciarTrajeto(rota, agora);
     };
 
-    // Modo TV: acompanha a seção que está na tela.
+    // Modo TV: os dois acompanham a seção que está na tela e comentam algo útil sobre ela; a fala fica
+    // até a próxima seção.
     const aoMudarSecao = (evento: Event) => {
       const secao = (evento as CustomEvent<HTMLElement | null>).detail;
       emTv = secao !== null;
-      if (secao) {
-        atualizarPoleiros(performance.now());
-        irParaElemento(secao, performance.now());
+      secaoAtual += 1;
+      if (!secao) {
+        calarRef.current();
+        proximaFalaEm = performance.now() + sortear(8000, 15000);
+        return;
       }
+      atualizarPoleiros(performance.now());
+      irParaElemento(secao, performance.now(), especie === "coruja");
+      const fala = falaDaSecao(secao.dataset.tvChave ?? "", especie);
+      const esta = secaoAtual;
+      if (fala) window.setTimeout(() => esta === secaoAtual && dizerRef.current(fala, true), especie === "corvo" ? 1200 : 1700);
     };
     // Tutorial: voa até a parte explicada e diz o nome dela.
     // Tutorial: os dois pousam na borda de cima da parte explicada (o corvo à direita, a coruja à
@@ -482,9 +494,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       mouse = { cx: evento.clientX, cy: evento.clientY, vel: mouse ? mouse.vel * 0.5 + v * 0.5 : 0, movidoEm: agora };
       curiosoFeito = false;
     };
-    // Os dois guiam o tutorial; só o corvo acompanha o modo TV.
+    // Os dois guiam o tutorial e acompanham o modo TV.
     window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
-    if (especie === "corvo") window.addEventListener(EVENTO_TV, aoMudarSecao);
+    window.addEventListener(EVENTO_TV, aoMudarSecao);
     window.addEventListener("pointermove", aoMoverMouse, { passive: true });
 
     /** Cursor por perto da cabeça: para onde olhar, se está parado e se está sobre o poleiro dele. */

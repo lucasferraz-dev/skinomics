@@ -165,3 +165,43 @@ export const derrota = (quem: Especie) =>
         ["Não vale meu tempo.", "Not worth my time."],
         ["Pode ficar. Eu não ligo.", "Keep it. I don't care."],
       ]);
+
+/**
+ * O que cada um comenta no modo TV, por seção: algo que ajude quem está assistindo (como a taxa da
+ * Steam em cada venda), cada um do seu jeito. Pares [português, inglês].
+ */
+const FALAS_TV: Record<string, { corvo: [string, string]; coruja: [string, string] }> = {
+  inicio: {
+    corvo: ["Esse item foi sorteado! Não gostou? \"Outro item\"! Eu troco sempre!", "This item was drawn! Don't like it? \"Another item\"! I always switch!"],
+    coruja: ["A previsão diz para onde o preço tende a ir. Não garante.", "The forecast says where the price tends to go. No guarantees."],
+  },
+  previa: {
+    corvo: ["A Steam fica com uma parte de cada venda! Lucro de verdade é depois da taxa!", "Steam keeps a cut of every sale! Real profit comes after the fee!"],
+    coruja: ["Se a margem prevista é menor que a taxa da Steam, não há lucro.", "If the forecast margin is smaller than Steam's fee, there's no profit."],
+  },
+  radar: {
+    corvo: ["Muito volume, muita gente comprando! Ou vendendo! Ou os dois!", "Lots of volume, lots of buying! Or selling! Or both!"],
+    coruja: ["Volume baixo engana. Desconfie de preço que ninguém negocia.", "Thin volume misleads. Distrust prices nobody trades."],
+  },
+  "como-funciona": {
+    corvo: ["Busca, vê a previsão, acompanha. Fácil! Até a Glaux entende!", "Search, see the forecast, track it. Easy! Even Glaux gets it!"],
+    coruja: ["Quanto mais longe a previsão, mais larga a faixa.", "The further out the forecast, the wider the range."],
+  },
+  destaques: {
+    corvo: ["Subiu muito? Caiu muito? Eu quero saber de tudo! TUDO!", "Big rise? Big drop? I want to know everything! EVERYTHING!"],
+    coruja: ["Alta forte em pouco volume costuma voltar.", "A sharp rise on thin volume tends to fade."],
+  },
+  transparencia: {
+    corvo: ["Aqui mostra quanto o modelo erra! Eu nunca erro! Quase nunca!", "This shows how much the model misses! I never miss! Almost never!"],
+    coruja: ["Desconte a taxa da Steam antes de comemorar uma alta.", "Subtract Steam's fee before celebrating a rise."],
+  },
+  faq: {
+    corvo: ["Dúvida? Pergunta pra mim! Respondo mais rápido! E mais alto!", "Questions? Ask me! I answer faster! And louder!"],
+    coruja: ["Item novo tem histórico curto. Previsão fraca.", "A new item has a short history. Weak forecast."],
+  },
+};
+
+export function falaDaSecao(chave: string, quem: "corvo" | "coruja"): string | null {
+  const par = FALAS_TV[chave]?.[quem];
+  return par ? t(...par) : null;
+}
