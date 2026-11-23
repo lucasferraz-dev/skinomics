@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 // Medalha que diz por que um item está em destaque (maior alta, maior queda, mais negociado...).
 // A grande, com fita e faixa escrita, vai sobre a imagem da vitrine; a pequena, só o disco, vai no
 // ícone dos terminais de destaque. Cores dentro da paleta do site.
@@ -5,15 +6,25 @@
 export type TipoMedalha = "alta" | "queda" | "volume" | "margem" | "aleatorio";
 
 const MEDALHAS: Record<TipoMedalha, { texto: string; cor: string; icone: string }> = {
-  alta: { texto: "Maior alta", cor: "#c6f36b", icone: "M12 17V7M7.5 11.5 12 7l4.5 4.5" },
-  queda: { texto: "Maior queda", cor: "#f2876b", icone: "M12 7v10M7.5 12.5 12 17l4.5-4.5" },
-  volume: { texto: "Mais negociado", cor: "#e9ece7", icone: "M7 17v-3M10.3 17v-6M13.7 17V8M17 17v-8" },
+  alta: { get texto() {
+    return t("Maior alta", "Top gainer");
+  }, cor: "#c6f36b", icone: "M12 17V7M7.5 11.5 12 7l4.5 4.5" },
+  queda: { get texto() {
+    return t("Maior queda", "Top loser");
+  }, cor: "#f2876b", icone: "M12 7v10M7.5 12.5 12 17l4.5-4.5" },
+  volume: { get texto() {
+    return t("Mais negociado", "Most traded");
+  }, cor: "#e9ece7", icone: "M7 17v-3M10.3 17v-6M13.7 17V8M17 17v-8" },
   margem: {
-    texto: "Maior margem",
+    get texto() {
+    return t("Maior margem", "Best margin");
+  },
     cor: "#c6f36b",
     icone: "M6 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0M10 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0",
   },
-  aleatorio: { texto: "Sorteado", cor: "#8b928c", icone: "M7.5 7.5h9v9h-9zM10 10h.01M14 14h.01M12 12h.01" },
+  aleatorio: { get texto() {
+    return t("Sorteado", "Random pick");
+  }, cor: "#8b928c", icone: "M7.5 7.5h9v9h-9zM10 10h.01M14 14h.01M12 12h.01" },
 };
 
 export function Medalha({

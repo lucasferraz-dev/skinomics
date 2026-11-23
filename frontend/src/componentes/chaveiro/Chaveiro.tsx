@@ -1,7 +1,22 @@
+import { t } from "../../lib/idioma";
 import { type CSSProperties, type RefObject, useEffect, useRef } from "react";
 
 import { acordar, anguloDisco, type Corpo, registrar } from "./fisica";
 import { type TemaChaveiro, temasDoItem } from "./temas";
+
+const NOMES_EN: Record<string, string> = {
+  Caixa: "Crate",
+  Chave: "Key",
+  Presente: "Gift",
+  Pacote: "Package",
+  "Peça de robô": "Robot part",
+  Ferramenta: "Tool",
+  Chapéu: "Hat",
+  Arma: "Weapon",
+  Inverno: "Winter",
+  Verão: "Summer",
+};
+const nomeDoTema = (nome: string) => t(nome, NOMES_EN[nome] ?? nome);
 
 // Tamanhos: o normal, pendurado embaixo de cards, e o mini, que cabe dentro de uma linha de tabela.
 const TAMANHOS = {
@@ -101,13 +116,14 @@ export function Chaveiro({
   }
 
   return (
-    <span ref={raiz} className={`z-20 size-0 select-none ${className}`} style={style} title={tema.nome}>
+    <span ref={raiz} className={`z-20 size-0 select-none ${className}`} style={style} title={nomeDoTema(tema.nome)}>
       <svg
         width="1"
         height="1"
         className="pointer-events-none absolute top-0 left-0 overflow-visible"
         role="img"
-        aria-label={`Chaveiro: ${tema.nome}`}
+        data-chaveiro
+        aria-label={`${t("Chaveiro", "Keychain")}: ${nomeDoTema(tema.nome)}`}
       >
         <circle r={2.5 * Math.max(escala, 0.6)} fill={tema.cor} />
         <polyline ref={linha} fill="none" stroke="var(--color-suave)" strokeWidth={tamanho === "mini" ? 1 : 1.2} strokeLinejoin="round" />

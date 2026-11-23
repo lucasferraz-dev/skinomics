@@ -29,3 +29,66 @@ body {
   font-stretch: 112%;
   letter-spacing: -0.03em;
 }
+
+/* Bolinha do "Como usar": parada a maior parte do tempo, depois dá um pulinho e gira de lado no ar, como
+   uma moeda (em volta do eixo vertical), voltando de frente. */
+@keyframes interrogacao {
+  0%, 76% { transform: perspective(80px) translateY(0) rotateY(0deg); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  81% { transform: perspective(80px) translateY(-6px) rotateY(0deg); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  86% { transform: perspective(80px) translateY(-6px) rotateY(360deg); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+  90% { transform: perspective(80px) translateY(0) rotateY(360deg) scale(1.08, .9); }
+  94%, 100% { transform: perspective(80px) translateY(0) rotateY(360deg); }
+}
+
+/* Modo TV com o mouse parado: o cursor some. */
+html[data-tv-ocioso],
+html[data-tv-ocioso] * {
+  cursor: none !important;
+}
+
+/* Animações dos ícones do header: pequenas, constantes e com ciclos diferentes entre si. */
+.icone-animado * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-play { animation: tv-play 2.2s ease-in-out infinite; }
+  .tv-antena { transform-origin: bottom center; animation: tv-antena 3.6s ease-in-out infinite; }
+  .faq-ponto { animation: faq-ponto 1.5s ease-in-out infinite; }
+  .cheia-canto { animation: cheia-canto 2.8s ease-in-out infinite; }
+  .menu-linha { transform-origin: left center; animation: menu-linha 3.4s ease-in-out infinite; }
+  .conta-cabeca { animation: conta-cabeca 4.2s ease-in-out infinite; }
+  .globo-meridiano { animation: globo 3.8s ease-in-out infinite; }
+}
+@keyframes tv-play {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.72); opacity: 0.55; }
+}
+@keyframes tv-antena {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  70% { transform: rotate(-14deg); }
+  80% { transform: rotate(10deg); }
+  90% { transform: rotate(-5deg); }
+}
+@keyframes faq-ponto {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-1.6px); opacity: 1; }
+}
+@keyframes cheia-canto {
+  0%, 55%, 100% { transform: translate(0, 0); }
+  75% { transform: translate(var(--dx), var(--dy)); }
+}
+@keyframes menu-linha {
+  0%, 50%, 100% { transform: scaleX(1); }
+  70% { transform: scaleX(0.55); }
+}
+@keyframes conta-cabeca {
+  0%, 70%, 100% { transform: translateY(0); }
+  78% { transform: translateY(-1.4px); }
+  86% { transform: translateY(0.4px); }
+  92% { transform: translateY(-0.6px); }
+}
+@keyframes globo {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(-1); }
+}

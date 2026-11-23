@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { useRef } from "react";
 import { Link } from "react-router";
 
@@ -17,22 +18,22 @@ export function PreviaDaPlataforma() {
   const card = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="plataforma" className="scroll-mt-16 py-14 sm:py-28">
+    <section id="plataforma" data-tv={t("Prévia", "Preview")} className="scroll-mt-32 py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
-          rotulo="Prévia"
+          rotulo={t("Prévia", "Preview")}
           titulo={
             <>
-              Histórico e previsão
+              {t("Histórico e previsão", "History and forecast")}
               <br />
-              na mesma tela.
+              {t("na mesma tela.", "on one screen.")}
             </>
           }
-          texto="É assim que cada item aparece no Terminal: o preço diário dos últimos meses e a previsão do modelo, com a faixa onde o preço deve ficar."
-          selo="Dados reais"
+          texto={t("É assim que cada item aparece no Terminal: o preço diário dos últimos meses e a previsão do modelo, com a faixa onde o preço deve ficar.", "This is how each item looks in the Terminal: the daily price over recent months and the model's forecast, with the range where the price should land.")}
+          selo={t("Dados reais", "Real data")}
         />
 
-        <div className="relative">
+        <div data-tour="previa" className="relative">
           <div ref={card} data-poleiro className="overflow-hidden rounded-2xl border border-borda bg-painel">
             <div className="flex h-12 items-center justify-between border-b border-borda px-4">
               <span className="flex items-center gap-2.5 text-sm font-semibold">
@@ -40,7 +41,7 @@ export function PreviaDaPlataforma() {
                 Terminal
               </span>
               <span className="rounded bg-destaque-fundo px-2 py-0.5 font-rotulo text-xs font-semibold tracking-[0.06em] text-destaque">
-                Prévia
+                {t("Prévia", "Preview")}
               </span>
             </div>
 
@@ -79,8 +80,8 @@ export function PreviaDaPlataforma() {
             </div>
 
             <p className="mx-4 mb-4 rounded-lg border border-borda px-4 py-3 text-xs text-suave sm:mx-6 sm:mb-6">
-              Dados reais do Mercado da Comunidade Steam
-              {item?.data_preco ? `, atualizados até ${formatarData(item.data_preco)}` : ""}. Preços em dólar (US$).
+              {t("Dados reais do Mercado da Comunidade Steam", "Real data from the Steam Community Market")}
+              {item?.data_preco ? t(`, atualizados até ${formatarData(item.data_preco)}`, `, updated through ${formatarData(item.data_preco)}`) : ""}{t(". Preços em dólar (US$).", ". Prices in US dollars.")}
             </p>
           </div>
           {/* Pendurado embaixo do card, que funciona como parede para ele. */}
@@ -98,24 +99,24 @@ function PrevisaoVitrine({ itemId }: { itemId: number | undefined }) {
     previsao?.disponivel && previsao.preco_previsto != null
       ? [
           [
-            "Faixa de 80%",
+            t("Faixa de 80%", "80% range"),
             previsao.intervalo_inferior != null && previsao.intervalo_superior != null
-              ? `${formatarPreco(previsao.intervalo_inferior)} a ${formatarPreco(previsao.intervalo_superior)}`
-              : "indisponível",
+              ? `${formatarPreco(previsao.intervalo_inferior)}${t(" a ", " to ")}${formatarPreco(previsao.intervalo_superior)}`
+              : t("indisponível", "unavailable"),
           ],
           [
-            "Média entre",
+            t("Média entre", "Average between"),
             previsao.janela_inicio && previsao.janela_fim
-              ? `${formatarDiaMes(previsao.janela_inicio)} e ${formatarDiaMes(previsao.janela_fim)}`
+              ? `${formatarDiaMes(previsao.janela_inicio)}${t(" e ", " and ")}${formatarDiaMes(previsao.janela_fim)}`
               : "—",
           ],
-          ["Preço de base", previsao.preco_base != null ? formatarPreco(previsao.preco_base) : "—"],
+          [t("Preço de base", "Base price"), previsao.preco_base != null ? formatarPreco(previsao.preco_base) : "—"],
         ]
       : [];
 
   return (
     <aside className="space-y-4 rounded-xl border border-borda bg-fundo/40 p-5">
-      <Rotulo>Previsão para 7 dias</Rotulo>
+      <Rotulo>{t("Previsão para 7 dias", "7-day forecast")}</Rotulo>
       {!previsao ? (
         <Carregando />
       ) : previsao.disponivel && previsao.preco_previsto != null ? (
@@ -123,7 +124,7 @@ function PrevisaoVitrine({ itemId }: { itemId: number | undefined }) {
           <div className="space-y-1">
             <p className="font-mono text-3xl">{formatarPreco(previsao.preco_previsto)}</p>
             <p className="font-mono text-sm">
-              <Variacao valor={previsao.variacao_prevista} /> <span className="text-apagado">em relação a hoje</span>
+              <Variacao valor={previsao.variacao_prevista} /> <span className="text-apagado">{t("em relação a hoje", "vs. today")}</span>
             </p>
           </div>
           <dl className="space-y-2 border-t border-borda pt-4 text-sm">
@@ -135,12 +136,12 @@ function PrevisaoVitrine({ itemId }: { itemId: number | undefined }) {
             ))}
           </dl>
           {previsao.incerteza_elevada && (
-            <p className="text-xs text-queda">Incerteza elevada: a faixa está larga para este item.</p>
+            <p className="text-xs text-queda">{t("Incerteza elevada: a faixa está larga para este item.", "High uncertainty: the range is wide for this item.")}</p>
           )}
-          <p className="text-xs text-apagado">Estimativa do modelo, não recomendação de compra ou venda.</p>
+          <p className="text-xs text-apagado">{t("Estimativa do modelo, não recomendação de compra ou venda.", "Model estimate, not a buy or sell recommendation.")}</p>
         </>
       ) : (
-        <p className="text-sm text-suave">Ainda não há previsão publicada para este item.</p>
+        <p className="text-sm text-suave">{t("Ainda não há previsão publicada para este item.", "No forecast published for this item yet.")}</p>
       )}
     </aside>
   );
@@ -155,27 +156,28 @@ export function Radar() {
   };
 
   return (
-    <section className="py-14 sm:py-28">
+    <section data-tv={t("Mais negociados", "Most traded")} className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
-          rotulo="No radar"
+          rotulo={t("No radar", "On the radar")}
           titulo={
             <>
-              Os itens mais negociados
+              {t("Os itens mais negociados", "The most traded items")}
               <br />
-              da semana.
+              {t("da semana.", "of the week.")}
             </>
           }
-          texto="Preço, variação em 7 dias, tendência de 30 dias e quantas unidades foram vendidas no Mercado da Steam."
+          texto={t("Preço, variação em 7 dias, tendência de 30 dias e quantas unidades foram vendidas no Mercado da Steam.", "Price, 7-day change, 30-day trend and how many units sold on the Steam Market.")}
         />
 
+        <div data-tour="radar">
         <Painel>
           <div className="flex items-center justify-between border-b border-borda px-4 py-3">
             <span className="rounded-md border border-destaque/25 bg-destaque-fundo px-3 py-1.5 text-sm text-destaque">
-              Todos os itens
+              {t("Todos os itens", "All items")}
             </span>
             <Link to="/itens" className="text-sm text-suave hover:text-texto">
-              Buscar item…
+              {t("Buscar item…", "Search item…")}
             </Link>
           </div>
           {data ? (
@@ -183,7 +185,7 @@ export function Radar() {
               <table className="w-full min-w-[800px] text-left">
                 <thead className="whitespace-nowrap">
                   <tr className="border-b border-borda">
-                    {["Item", "Preço", "Var. 7d", "Tendência 30d", "Volume 7d", ""].map((titulo, i) => (
+                    {["Item", t("Preço", "Price"), t("Var. 7d", "7d chg."), t("Tendência 30d", "30d trend"), t("Volume 7d", "7d volume"), ""].map((titulo, i) => (
                       <th key={i} className={`px-4 py-3 ${i === 1 || i === 2 || i === 4 ? "text-right" : ""}`}>
                         <Rotulo>{titulo}</Rotulo>
                       </th>
@@ -201,12 +203,13 @@ export function Radar() {
             <Carregando />
           )}
         </Painel>
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-apagado">
-          <p>Preços em US$ do Mercado da Comunidade Steam. Efeitos e qualidades alteram o valor de um item.</p>
+          <p>{t("Preços em US$ do Mercado da Comunidade Steam. Efeitos e qualidades alteram o valor de um item.", "Prices in US$ from the Steam Community Market. Effects and qualities change an item's value.")}</p>
           <Link to="/itens" className="group/botao inline-flex items-center gap-1.5 text-sm text-destaque">
             <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-300 group-hover/botao:bg-[length:100%_1px]">
-              Explorar todos os itens
+              {t("Explorar todos os itens", "Explore all items")}
             </span>
             <span aria-hidden className="transition-transform duration-300 group-hover/botao:translate-x-1">
               →

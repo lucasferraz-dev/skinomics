@@ -1,3 +1,4 @@
+import { t, useIdioma } from "../../lib/idioma";
 import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
@@ -8,6 +9,11 @@ import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
+import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
+import { BotaoIdioma } from "../../componentes/BotaoIdioma";
+import { IconeFaq } from "../../componentes/IconesAnimados";
+import { BotaoModoTv, classeBotaoRedondo } from "../../componentes/modoTv/ModoTv";
+import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
@@ -21,6 +27,8 @@ import { BotaoPrimario, BotaoSecundario, Container } from "./ui";
 import { jogoDoItem } from "../../lib/jogos";
 
 export function Inicio() {
+  // Assina o idioma: ao trocar, a página inteira redesenha com os textos novos, sem remontar nada.
+  useIdioma();
   return (
     <div className="relative min-h-dvh">
       <Navegacao />
@@ -40,54 +48,49 @@ export function Inicio() {
   );
 }
 
-const LINKS = [
-  ["Plataforma", "#plataforma"],
-  ["Como funciona", "#como-funciona"],
-  ["Transparência", "#transparencia"],
-  ["FAQ", "#faq"],
-] as const;
-
 function Navegacao() {
   return (
-    <header className="sticky top-0 z-50 border-b border-borda bg-fundo/85 backdrop-blur">
-      <Container className="flex h-16 items-center justify-between">
-        <Logo />
-        <nav className="hidden gap-8 text-sm text-suave lg:flex">
-          {LINKS.map(([rotulo, ancora]) => (
-            <a key={ancora} href={ancora} className="hover:text-texto">
-              {rotulo}
-            </a>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          <AcessoAnalise hamburguer />
-          <MenuConta />
-          <span className="hidden sm:inline-flex"><BotaoPrimario para="/itens">Começar agora</BotaoPrimario></span>
+    <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
+      {/* Ocupa a largura toda: logo na ponta esquerda e botões redondos na ponta direita. */}
+      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+        <Logo grande />
+        <div className="flex items-center gap-2">
+          <BotaoComoUsar />
+          <a href="#faq" data-tour="faq" aria-label={t("Perguntas frequentes", "Frequently asked questions")} title={t("Perguntas frequentes", "Frequently asked questions")} className={classeBotaoRedondo}>
+            <IconeFaq />
+          </a>
+          <BotaoModoTv />
+          <BotaoTelaCheia />
+          <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
+          <BotaoIdioma />
+          <span data-tour="conta"><MenuConta redondo /></span>
         </div>
-      </Container>
+      </div>
     </header>
   );
 }
 
 function Hero() {
   return (
-    <section>
+    <section data-tv={t("Início", "Home")}>
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
-          <Rotulo destaque>Preços e previsões de itens do Mercado da Steam</Rotulo>
+          <Rotulo destaque>{t("Preços e previsões de itens do Mercado da Steam", "Steam Market item prices and forecasts")}</Rotulo>
           <h1 data-poleiro="texto" className="text-[2.6rem] leading-[1.02] titulo sm:text-6xl lg:text-[4rem]">
-            O preço de hoje.
+            {t("O preço de hoje.", "Today's price.")}
             <br />
-            O de daqui a
+            {t("O de daqui a", "The price in")}
             <br />
-            <span className="text-destaque">30 dias.</span>
+            <span className="text-destaque">{t("30 dias.", "30 days.")}</span>
           </h1>
           <p className="max-w-md text-lg text-suave">
-            Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a
-            faixa onde o preço deve ficar.
+            {t(
+              "Histórico diário do Mercado da Steam e previsões de preço para 7, 15 e 30 dias, cada uma com a faixa onde o preço deve ficar.",
+              "Daily Steam Market history and price forecasts for 7, 15 and 30 days, each with the range where the price should land.",
+            )}
           </p>
           <div className="flex flex-wrap gap-3">
-            <BotaoPrimario para="/itens">Explorar a plataforma</BotaoPrimario>
+            <BotaoPrimario para="/itens">{t("Explorar a plataforma", "Explore the platform")}</BotaoPrimario>
             <BotaoSecundario
               href="#plataforma"
               icone={
@@ -96,14 +99,14 @@ function Hero() {
                 </span>
               }
             >
-              Ver demonstração
+              {t("Ver demonstração", "See demo")}
             </BotaoSecundario>
           </div>
           <p className="flex items-center gap-2 text-xs text-apagado">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" />
             </svg>
-            Previsões são estimativas, não recomendação de investimento.
+            {t("Previsões são estimativas, não recomendação de investimento.", "Forecasts are estimates, not investment advice.")}
           </p>
         </div>
         <VitrineHero />
@@ -118,8 +121,8 @@ function VitrineHero() {
 
   return (
     <div>
-      <div className="relative">
-        <div ref={card} data-poleiro className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
+      <div data-tour="vitrine-area" className="relative">
+        <div ref={card} data-poleiro data-tour="vitrine" className="relative aspect-[5/4] select-none overflow-hidden rounded-2xl border border-borda bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)]">
           {/* Brilho roxo atrás do item, como a fumaça "unusual" do design. */}
           <div className="absolute top-1/4 left-1/2 size-56 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
           {item?.icon_url && (
@@ -159,7 +162,7 @@ function VitrineHero() {
                 </svg>
               }
             >
-              Outro item
+              {t("Outro item", "Another item")}
             </BotaoSecundario>
           </div>
 
@@ -192,7 +195,7 @@ function VitrineHero() {
       <div aria-hidden className="h-24 sm:hidden" />
       {/* No celular os chaveiros pendem justamente sobre esta legenda; ela só aparece do sm em diante. */}
       <p className="mt-4 hidden sm:block">
-        <Rotulo>Cotação real do Mercado da Steam, em US$</Rotulo>
+        <Rotulo>{t("Cotação real do Mercado da Steam, em US$", "Live Steam Market quote, in US$")}</Rotulo>
       </p>
     </div>
   );
@@ -229,38 +232,38 @@ function Destaques() {
 
   const indicadores: Indicador[] = [
     {
-      rotulo: "Itens monitorados",
+      rotulo: t("Itens monitorados", "Items tracked"),
       valor: itens?.total ?? "—",
-      detalhe: "no Mercado da Steam",
+      detalhe: t("no Mercado da Steam", "on the Steam Market"),
       icone: "itens",
-      verso: { rotulo: "Vendas somadas em 7 dias", valor: todos.length ? formatarInteiro(vendas) : "—" },
+      verso: { rotulo: t("Vendas somadas em 7 dias", "Total sales in 7 days"), valor: todos.length ? formatarInteiro(vendas) : "—" },
     },
     {
-      rotulo: "Última cotação",
+      rotulo: t("Última cotação", "Last quote"),
       valor: dataCotacao ? formatarDataNumerica(dataCotacao) : "—",
-      detalhe: "Atualizada a cada coleta",
+      detalhe: t("Atualizada a cada coleta", "Updated every collection"),
       icone: "calendario",
-      verso: { rotulo: "Subiram na semana", valor: todos.length ? `${subiram} de ${todos.length} itens` : "—" },
+      verso: { rotulo: t("Subiram na semana", "Rose this week"), valor: todos.length ? t(`${subiram} de ${todos.length} itens`, `${subiram} of ${todos.length} items`) : "—" },
     },
     {
-      rotulo: "Oportunidades em 7 dias",
+      rotulo: t("Oportunidades em 7 dias", "7-day opportunities"),
       valor: oportunidades?.total ?? "—",
-      detalhe: "com margem prevista positiva",
+      detalhe: t("com margem prevista positiva", "with a positive forecast margin"),
       icone: "oportunidade",
       para: "/oportunidades",
       verso: {
-        rotulo: "Melhor margem prevista",
+        rotulo: t("Melhor margem prevista", "Best forecast margin"),
         valor: melhor ? formatarVariacao(melhor.margem_estimada) : "—",
         extra: melhor?.nome,
       },
     },
     {
-      rotulo: "Horizontes",
-      valor: "7, 15 e 30",
-      detalhe: "dias, com faixa de 80%",
+      rotulo: t("Horizontes", "Horizons"),
+      valor: t("7, 15 e 30", "7, 15 and 30"),
+      detalhe: t("dias, com faixa de 80%", "days, with an 80% range"),
       icone: "horizonte",
       verso: {
-        rotulo: "Previsões com base em",
+        rotulo: t("Previsões com base em", "Forecasts based on"),
         valor: oportunidades?.data_base ? formatarDataNumerica(oportunidades.data_base) : "—",
       },
     },
@@ -268,7 +271,7 @@ function Destaques() {
 
   return (
     // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
-    <section className="overflow-x-clip">
+    <section data-tour="adesivos" className="overflow-x-clip">
       <Container className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
         {indicadores.map((indicador, i) => (
           <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
@@ -343,7 +346,7 @@ function Rodape() {
     <footer className="border-t border-borda">
       <Container className="flex flex-wrap items-center justify-between gap-4 py-8 text-xs text-apagado">
         <Logo />
-        <p>Não afiliado à Valve nem à Steam.</p>
+        <p>{t("Não afiliado à Valve nem à Steam.", "Not affiliated with Valve or Steam.")}</p>
       </Container>
     </footer>
   );

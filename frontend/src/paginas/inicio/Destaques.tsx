@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { type ReactNode, useRef } from "react";
 import { Link } from "react-router";
 
@@ -13,6 +14,7 @@ import { CabecalhoSecao, Container } from "./ui";
 // Abaixo disso a variação da semana vem de pouquíssimas vendas e não diz muito.
 const VOLUME_MINIMO = 50;
 
+const RISCO_EN = { baixo: "low", moderado: "moderate", alto: "high" } as const;
 const COR_RISCO = { baixo: "text-destaque", moderado: "text-amber-300", alto: "text-queda" } as const;
 
 type Base = {
@@ -114,20 +116,20 @@ export function DestaquesDaSemana() {
   const itemOportunidade = oportunidade && itens.find((item) => item.id === oportunidade.item_id);
 
   const vendas = (item: ItemResumo | undefined) =>
-    item?.volume_7d != null ? `${formatarInteiro(item.volume_7d)} vendas em 7 dias` : "Sem vendas registradas";
+    item?.volume_7d != null ? t(`${formatarInteiro(item.volume_7d)} vendas em 7 dias`, `${formatarInteiro(item.volume_7d)} sales in 7 days`) : t("Sem vendas registradas", "No recorded sales");
 
   return (
-    <section className="py-14 sm:py-28">
+    <section data-tv={t("Destaques da semana", "Weekly highlights")} className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
-          rotulo="Destaques da semana"
-          titulo="Quem mais se mexeu nos últimos 7 dias."
-          texto="Atualizado a cada coleta, com os preços do Mercado da Steam. Clique num terminal para abrir o item."
+          rotulo={t("Destaques da semana", "Weekly highlights")}
+          titulo={t("Quem mais se mexeu nos últimos 7 dias.", "What moved most in the last 7 days.")}
+          texto={t("Atualizado a cada coleta, com os preços do Mercado da Steam. Clique num terminal para abrir o item.", "Updated every collection, with Steam Market prices. Click a terminal to open the item.")}
         />
         {/* No celular, um carrossel horizontal (empilhados passariam de 1600 px); a partir do sm, grade. */}
-        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+        <div data-tour="destaques" className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
           <TerminalItem
-            rotulo="Maior alta em 7 dias"
+            rotulo={t("Maior alta em 7 dias", "Biggest 7-day rise")}
             medalha="alta"
             item={alta}
             preco={alta?.preco_atual}
@@ -135,7 +137,7 @@ export function DestaquesDaSemana() {
             rodape={vendas(alta)}
           />
           <TerminalItem
-            rotulo="Maior queda em 7 dias"
+            rotulo={t("Maior queda em 7 dias", "Biggest 7-day drop")}
             medalha="queda"
             item={queda}
             preco={queda?.preco_atual}
@@ -143,7 +145,7 @@ export function DestaquesDaSemana() {
             rodape={vendas(queda)}
           />
           <TerminalItem
-            rotulo="Mais negociado"
+            rotulo={t("Mais negociado", "Most traded")}
             medalha="volume"
             item={maisNegociado}
             preco={maisNegociado?.preco_atual}
@@ -151,9 +153,9 @@ export function DestaquesDaSemana() {
             rodape={vendas(maisNegociado)}
           />
           <TerminalItem
-            rotulo="Maior margem prevista"
+            rotulo={t("Maior margem prevista", "Best forecast margin")}
             medalha="margem"
-            semDados={ranking && !oportunidade ? "Nenhum item com margem positiva prevista agora." : undefined}
+            semDados={ranking && !oportunidade ? t("Nenhum item com margem positiva prevista agora.", "No item with a positive forecast margin right now.") : undefined}
             item={
               oportunidade && {
                 id: oportunidade.item_id,
@@ -176,10 +178,10 @@ export function DestaquesDaSemana() {
             rodape={
               oportunidade ? (
                 <span>
-                  Risco <span className={COR_RISCO[oportunidade.risco]}>{oportunidade.risco}</span>
+                  {t("Risco", "Risk")} <span className={COR_RISCO[oportunidade.risco]}>{t(oportunidade.risco, RISCO_EN[oportunidade.risco])}</span>
                 </span>
               ) : (
-                "Sem oportunidade com margem positiva"
+                t("Sem oportunidade com margem positiva", "No opportunity with a positive margin")
               )
             }
           />

@@ -1,3 +1,4 @@
+import { t } from "../../lib/idioma";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
@@ -15,17 +16,35 @@ const PONTA_MIRANDO = 38; // ... com o mouse em cima
 const PONTA_ACENO = 34; // ... no aceno
 const PARTE_COLADA = 0.15; // fração da largura (à esquerda) que nunca descola
 
-/** Divide o retângulo pela dobra: o que continua colado e a aba (já espelhada sobre a dobra). */
+const RAIO_CANTO = 16; // o mesmo do rounded-2xl do adesivo
+const PONTOS_POR_CANTO = 8;
+
+/**
+ * Contorno do adesivo com os cantos arredondados, em pontos (sentido horário). Recortar a dobra a partir
+ * dele, e não do retângulo de quatro pontas, mantém os cantos redondos na parte colada e na aba.
+ */
+function contornoArredondado(largura: number, altura: number): Ponto[] {
+  const r = Math.min(RAIO_CANTO, largura / 2, altura / 2);
+  const cantos = [
+    { x: r, y: r, inicio: 180 },
+    { x: largura - r, y: r, inicio: 270 },
+    { x: largura - r, y: altura - r, inicio: 0 },
+    { x: r, y: altura - r, inicio: 90 },
+  ];
+  return cantos.flatMap(({ x, y, inicio }) =>
+    Array.from({ length: PONTOS_POR_CANTO + 1 }, (_, i) => {
+      const angulo = ((inicio + (90 * i) / PONTOS_POR_CANTO) * Math.PI) / 180;
+      return { x: x + r * Math.cos(angulo), y: y + r * Math.sin(angulo) };
+    }),
+  );
+}
+
+/** Divide o adesivo pela dobra: o que continua colado e a aba (já espelhada sobre a dobra). */
 function dobrar(largura: number, altura: number, puxado: Ponto) {
   const canto = { x: largura, y: altura };
   const d = { x: puxado.x - canto.x, y: puxado.y - canto.y };
   const tamanho = Math.hypot(d.x, d.y);
-  const retangulo: Ponto[] = [
-    { x: 0, y: 0 },
-    { x: largura, y: 0 },
-    { x: largura, y: altura },
-    { x: 0, y: altura },
-  ];
+  const retangulo = contornoArredondado(largura, altura);
   if (tamanho < 0.5) return { colado: retangulo, aba: [] as Ponto[], angulo: 0 };
   const n = { x: d.x / tamanho, y: d.y / tamanho };
   const meio = { x: (canto.x + puxado.x) / 2, y: (canto.y + puxado.y) / 2 };
@@ -181,6 +200,8 @@ export function Adesivo({
     cancelAnimationFrame(animacao.current);
     ocupado.current = true;
     setPuxando(true);
+    // Avisa o corvo: se ele estiver pousado aqui, sai voando.
+    window.dispatchEvent(new CustomEvent("skinomics:poleiro-mexido", { detail: raiz.current }));
     puxado.current = pontoLocal(evento);
     desenhar();
   }
@@ -228,8 +249,8 @@ export function Adesivo({
       {/* A ponta: pegue e puxe para a esquerda ou para cima */}
       <button
         type="button"
-        aria-label="Puxe para descolar o adesivo"
-        title="Puxe para descolar"
+        aria-label={t("Puxe para descolar o adesivo", "Drag to peel the sticker")}
+        title={t("Puxe para descolar", "Drag to peel")}
         onPointerDown={pegar}
         onPointerMove={arrastar}
         onPointerUp={soltar}
