@@ -53,6 +53,11 @@ const INICIO: Passo[] = [
       "O mascote do Skinomics. Anda pelos cards, voa entre as seções e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.",
   },
   {
+    alvo: "[data-tour='faq']",
+    titulo: "Perguntas frequentes",
+    texto: "Leva direto às dúvidas mais comuns: se precisa de conta Steam, de quanto em quanto tempo os preços mudam, se as previsões são garantidas e quais jogos estão no site.",
+  },
+  {
     alvo: "[data-tour='modo-tv']",
     titulo: "Modo TV",
     texto:

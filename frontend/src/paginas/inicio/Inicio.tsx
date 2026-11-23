@@ -9,7 +9,7 @@ import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
 import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
-import { BotaoModoTv } from "../../componentes/modoTv/ModoTv";
+import { BotaoModoTv, classeBotaoRedondo, icone } from "../../componentes/modoTv/ModoTv";
 import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
@@ -43,28 +43,17 @@ export function Inicio() {
   );
 }
 
-const LINKS = [
-  ["Plataforma", "#plataforma"],
-  ["Como funciona", "#como-funciona"],
-  ["Transparência", "#transparencia"],
-  ["FAQ", "#faq"],
-] as const;
-
 function Navegacao() {
   return (
     <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
-      {/* Ocupa a largura toda: logo na ponta esquerda, links no meio e botões redondos na ponta direita. */}
-      <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-10">
+      {/* Ocupa a largura toda: logo na ponta esquerda e botões redondos na ponta direita. */}
+      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <Logo />
-        <nav className="hidden gap-8 text-sm text-suave lg:flex">
-          {LINKS.map(([rotulo, ancora]) => (
-            <a key={ancora} href={ancora} className="hover:text-texto">
-              {rotulo}
-            </a>
-          ))}
-        </nav>
-        <div className="flex items-center gap-2 justify-self-end">
+        <div className="flex items-center gap-2">
           <BotaoComoUsar />
+          <a href="#faq" data-tour="faq" aria-label="Perguntas frequentes" title="Perguntas frequentes" className={classeBotaoRedondo}>
+            {icone("M20.5 11.5a8 8 0 0 1-11.9 7L4 19.6l1.2-4.3a8 8 0 1 1 15.3-3.8zM8.5 10h7M8.5 13.5h4.5")}
+          </a>
           <BotaoModoTv />
           <BotaoTelaCheia />
           <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
