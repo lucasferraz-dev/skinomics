@@ -59,27 +59,40 @@ function Espelhado({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ---- Corpo (de costas, meio de lado) ----
+// ---- Corpo pousado (de costas, meio de lado) ----
 
-const CORPO = "M43 38C52 33 70 33 80 40C83.6 48 83.4 62 80.6 74C78.8 82 76 88 72.4 93C60 95.4 44 97.6 30 99C32.4 86 35.4 70 38 58C39.4 50 40.6 43 43 38Z";
+// Costas com volume: o ombro e as costas arredondam para fora e só afinam perto da cauda.
+const CORPO =
+  "M43 38C52 33 70 33 80 40C83.6 48 83.4 62 80.6 74C78.8 82 76 88 72.4 93C60 95.4 44 97.6 30 99C29.6 88 30.4 76 31.6 66C32.8 55 36.4 44.6 43 38Z";
 // A asa cobre as costas e desce em diagonal até a ponta; à direita sobra a lateral escura do corpo.
-const ASA = "M44 40C54 37 68 37 75.4 42.4C78.4 52.4 77 66 72 78C68 86 62.4 91.4 56 94.6C48 96.6 39 98 30 99C33 86 36 70 39 58C40.4 50 41.6 44 44 40Z";
+const ASA =
+  "M44 40C54 37 68 37 75.4 42.4C78.4 52.4 77 66 72 78C68 86 62.4 91.4 56 94.6C48 96.6 39 98 30 99C29.8 88 30.6 76 31.8 66C33 56 37 45.6 44 40Z";
 const GOLA = "M48.6 41.4C55.6 38.4 66.6 38.2 76.4 42.6";
-const PONTAS = [
-  pena({ x: 38.6, y: 88 }, 118, 12, 2.1),
-  pena({ x: 43, y: 89.6 }, 112, 11, 2),
-  pena({ x: 47.6, y: 90.8 }, 106, 9.5, 1.9),
-];
-// Coberteiras do ombro: lâminas longas e finas, varrendo para baixo e para trás.
-const COBERTEIRAS = [
-  lamina({ x: 71, y: 44 }, 126, 12, 1.4),
-  lamina({ x: 65.4, y: 43.4 }, 124, 12, 1.4),
-  lamina({ x: 59.8, y: 43.6 }, 122, 11.4, 1.4),
-  lamina({ x: 54.4, y: 44.6 }, 120, 10.6, 1.3),
-  lamina({ x: 68.6, y: 50.4 }, 124, 11, 1.3),
-  lamina({ x: 63, y: 50.4 }, 122, 10.6, 1.3),
-  lamina({ x: 57.4, y: 51.2 }, 120, 10, 1.3),
-]
+// Linhas de volume: a curva do ombro e a dobra das costas.
+const VOLUME = "M44.4 44C39.6 49 36.8 56 36 64M73.4 46.4C74.6 54 73.4 63 70 71";
+
+/**
+ * Penas da asa em fileiras sobrepostas, do ombro até a ponta: coberteiras curtas em cima, penas médias
+ * no meio, primárias longas e barradas embaixo. As fileiras de cima são desenhadas por último, cobrindo
+ * a base das de baixo, como numa asa de verdade; as pontas saem da silhueta, recortadas.
+ */
+const FILEIRAS = Array.from({ length: 8 }, (_, k) => {
+  const esquerda = { x: 44.4 - 1.9 * k, y: 45.4 + 6.4 * k };
+  const direita = { x: 73.4 - 4.2 * k, y: 45 + 5.6 * k };
+  const quantas = Math.max(2, 7 - Math.floor(k * 0.7));
+  const comprimento = 7.5 + 2.3 * k;
+  return Array.from({ length: quantas }, (_, i) => {
+    const f = quantas === 1 ? 0.5 : i / (quantas - 1);
+    // Leve desencontro entre fileiras, para não parecer grade.
+    const base = { x: esquerda.x + (direita.x - esquerda.x) * f + (k % 2) * 1.6, y: esquerda.y + (direita.y - esquerda.y) * f };
+    return pena(base, 114 + k * 1.6 + f * 6, comprimento, 1.7 + k * 0.12, k >= 4 ? 3 : k >= 2 ? 2 : 0);
+  });
+}).reverse();
+
+// ---- Corpo em voo (o de costas some; aparece o tronco de frente) ----
+
+const TRONCO = "M50.4 42C56 38.6 66.4 38.6 72 42C75.6 51 74.6 63.4 70 72.4C67 78 63.4 81.4 61 81.8C58.4 81.4 54.6 78 52 72.4C47.6 63.4 46.8 51 50.4 42Z";
+const CAUDA_VOO = [pena({ x: 58.4, y: 79 }, 104, 11, 2, 2), pena({ x: 61, y: 80 }, 92, 11.6, 2, 2), pena({ x: 63.6, y: 79 }, 78, 11, 2, 2)];
 
 // ---- Cabeça (de frente, encarando) ----
 
@@ -99,7 +112,8 @@ const BRACO = "M0 -2L12 -8L26 -8.6L35 -3L29 6L14 8.4L0 6Z";
 
 export type PartesCoruja = {
   corpo: React.RefObject<SVGGElement | null>;
-  manto: React.RefObject<SVGGElement | null>;
+  pousada: React.RefObject<SVGGElement | null>;
+  emVoo: React.RefObject<SVGGElement | null>;
   asas: React.RefObject<SVGGElement | null>;
   asaEsquerda: React.RefObject<SVGGElement | null>;
   asaDireita: React.RefObject<SVGGElement | null>;
@@ -112,7 +126,8 @@ export type PartesCoruja = {
 export function usePartesCoruja(): PartesCoruja {
   return {
     corpo: useRef(null),
-    manto: useRef(null),
+    pousada: useRef(null),
+    emVoo: useRef(null),
     asas: useRef(null),
     asaEsquerda: useRef(null),
     asaDireita: useRef(null),
@@ -142,10 +157,12 @@ export function aplicarCoruja(partes: PartesCoruja, e: EstadoCoruja) {
   const t = (ref: React.RefObject<Element | null>, valor: string) => ref.current?.setAttribute("transform", valor);
   const o = (ref: React.RefObject<Element | null>, valor: number) => ref.current?.setAttribute("opacity", n(valor));
   t(partes.corpo, `translate(0 ${n(Math.min(e.respiro, 1))}) rotate(${n(e.inclinacao * 0.5)} 60 70)`);
-  o(partes.manto, e.voando ? 0 : 1);
+  o(partes.pousada, e.voando ? 0 : 1);
+  o(partes.emVoo, e.voando ? 1 : 0);
   o(partes.asas, e.voando ? 1 : 0);
-  t(partes.asaDireita, `translate(78 44) rotate(${n(e.asa)})`);
-  t(partes.asaEsquerda, `translate(78 44) rotate(${n(e.asa)})`);
+  // As asas abertas saem dos ombros do tronco de voo (a esquerda é o espelho da direita).
+  t(partes.asaDireita, `translate(71.6 46) rotate(${n(e.asa)}) scale(1.3)`);
+  t(partes.asaEsquerda, `translate(71.6 46) rotate(${n(e.asa)}) scale(1.3)`);
   t(partes.cabeca, `translate(${n(e.cabecaX)} ${n(e.cabecaY)}) rotate(${n(e.inclinacaoCabeca)} ${PESCOCO.x} ${PESCOCO.y})`);
   // Girar a cabeça: o rosto desliza para o lado e se comprime; passando de ±0,8, dá lugar à nuca.
   const v = Math.max(-1, Math.min(1, e.virada));
@@ -164,8 +181,8 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
         <clipPath id={`${id}-corpo`}>
           <path d={CORPO} />
         </clipPath>
-        <clipPath id={`${id}-asa`}>
-          <path d={ASA} />
+        <clipPath id={`${id}-tronco`}>
+          <path d={TRONCO} />
         </clipPath>
         <clipPath id={`${id}-cabeca`}>
           <path d={CABECA} />
@@ -184,7 +201,7 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
           {/* Asas abertas (só em voo), barradas, atrás do corpo */}
           <g ref={partes.asas} opacity="0">
             {[partes.asaEsquerda, partes.asaDireita].map((ref, i) => (
-              <g key={i} transform={i === 0 ? "matrix(-1 0 0 1 120 0)" : undefined}>
+              <g key={i} transform={i === 0 ? "matrix(-1 0 0 1 122 0)" : undefined}>
                 <g ref={ref}>
                   <Penas penas={[...SECUNDARIAS].reverse()} brilho={0.8} />
                   <Penas penas={[...PRIMARIAS].reverse()} />
@@ -196,33 +213,34 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
             ))}
           </g>
 
-          {/* Corpo de costas: a lateral escura, com estrias que escorrem para baixo */}
-          <path d={CORPO} strokeOpacity="0.7" />
-          <g clipPath={`url(#${id}-corpo)`} fill="none" strokeOpacity="0.45" strokeWidth="0.5">
-            <path d="M79.4 48L79.8 60M81.2 54L81 68M77.8 62L77.4 76M80 70L78.6 82M75.6 78L74 88" />
-          </g>
-          {/* Escorridos que pingam da barra do corpo */}
-          <path d="M74.6 89.6V97.6M70 93.6V99M41.6 97.6V101.4M36 98.4V100.6" fill="none" strokeWidth="0.45" strokeOpacity="0.4" />
-
-          {/* A asa sobre as costas (some quando ela abre as asas para voar) */}
-          <g ref={partes.manto}>
-            <Penas penas={PONTAS} brilho={0.9} />
-            <path d={ASA} strokeWidth="0.95" />
-            <g clipPath={`url(#${id}-asa)`} fill="none">
-              {/* Penas longas varrendo das costas até a ponta, como nos traços da referência */}
-              <path d="M72 46C66 58 54 74 36 95M75 54C69 66 57 81 42 96M66 44C60 54 50 69 37 88M60 44C54 52 46 64 39 78M74.4 64C70 74 62 85 50 95" strokeWidth="0.55" strokeOpacity="0.5" />
-              <path d="M62 60l3 1.6M56 66l3 1.6M50 72l3 1.6M44 78l3 1.6M66 66l2.8 1.6M60 72l2.8 1.6M54 78l2.8 1.6M48 84l2.8 1.6M70 70l2.6 1.4M64 78l2.6 1.4M58 84l2.6 1.4" strokeWidth="0.7" strokeOpacity="0.55" />
+          {/* Em voo: tronco de frente com o peito barrado, cauda em leque e garras penduradas */}
+          <g ref={partes.emVoo} opacity="0">
+            <Penas penas={CAUDA_VOO} brilho={0.85} />
+            <path d={TRONCO} strokeWidth="0.95" />
+            <g clipPath={`url(#${id}-tronco)`} fill="none" strokeWidth="0.6" strokeOpacity="0.6">
+              <path d="M55.6 47l3 1 3-1 3 1 3-1M54.4 53l3.2 1 3.2-1 3.2 1 3.2-1M55 59l3 1 3-1 3 1 3-1M56.4 65l2.8 1 2.8-1 2.8 1 2.8-1M58 71l3 1 3-1" />
             </g>
-            {COBERTEIRAS.map(({ contorno }) => (
-              <path key={contorno} d={contorno} strokeWidth="0.6" strokeOpacity="0.8" />
-            ))}
-            <path d={espiral(47.4, 50, 3, 1.6, 3.4)} fill="none" strokeWidth="0.6" strokeOpacity="0.7" />
-            {/* A borda da asa fazendo a gola sob o rosto */}
-            <path d={GOLA} fill="none" strokeWidth="1.3" />
+            <path d="M57.4 81.4C56.8 83.4 56.6 85.6 57.4 88M59.4 82C59.2 84.2 59.6 86.4 60.4 88.4M63.6 82C63.8 84.2 63.4 86.4 62.6 88.4M65.6 81.4C66.2 83.4 66.4 85.6 65.6 88" fill="none" strokeWidth="1" />
           </g>
 
-          {/* Garras cravadas no poleiro, sob a barriga */}
-          <path d="M64.6 91.4C63.8 93 63.4 94.6 64 97M66.8 91.6C66.6 93.4 66.8 95 67.4 97.2M69 91.4C69.6 93 70.2 94.6 71 96.6" fill="none" strokeWidth="1.05" />
+          {/* Pousada: o corpo de costas e a asa cobrindo as costas */}
+          <g ref={partes.pousada}>
+            <path d={CORPO} strokeOpacity="0.7" />
+            <g clipPath={`url(#${id}-corpo)`} fill="none" strokeOpacity="0.45" strokeWidth="0.5">
+              <path d="M79.4 48L79.8 60M81.2 54L81 68M77.8 62L77.4 76M80 70L78.6 82M75.6 78L74 88" />
+            </g>
+            <path d="M74.6 89.6V97.6M70 93.6V99M41.6 97.6V101.4M36 98.4V100.6" fill="none" strokeWidth="0.45" strokeOpacity="0.4" />
+
+            <path d={ASA} strokeWidth="0.95" />
+            {FILEIRAS.map((fileira, k) => (
+              <Penas key={k} penas={fileira} brilho={0.92} />
+            ))}
+            <path d={VOLUME} fill="none" strokeWidth="0.7" strokeOpacity="0.55" />
+            <path d={espiral(47.6, 49.6, 2.8, 1.6, 3.4)} fill="none" strokeWidth="0.6" strokeOpacity="0.75" />
+            <path d={GOLA} fill="none" strokeWidth="1.3" />
+
+            <path d="M64.6 91.4C63.8 93 63.4 94.6 64 97M66.8 91.6C66.6 93.4 66.8 95 67.4 97.2M69 91.4C69.6 93 70.2 94.6 71 96.6" fill="none" strokeWidth="1.05" />
+          </g>
 
           {/* Cabeça grande, por cima do ombro, encarando */}
           <g transform={CABECA_NO_OMBRO}>
