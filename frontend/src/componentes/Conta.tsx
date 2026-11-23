@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
 import { type UsuarioAtual, useSair, useUsuario } from "../api/auth";
+import { IconeConta } from "./IconesAnimados";
 
 export function nomeDoUsuario(usuario: UsuarioAtual) {
   return usuario.nome ?? "Conta Steam";
@@ -37,10 +38,7 @@ export function MenuConta({ redondo = false }: { redondo?: boolean }) {
         title="Entrar"
         className="grid size-10 place-items-center rounded-full border border-borda bg-painel/60 text-suave transition-colors duration-300 hover:border-destaque/60 hover:text-texto"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <circle cx="12" cy="8.5" r="3.5" />
-          <path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5" />
-        </svg>
+        <IconeConta />
       </Link>
     );
   }

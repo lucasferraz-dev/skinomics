@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { classeBotaoRedondo, icone } from "./ModoTv";
-
-const EXPANDIR = "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5";
-const RECOLHER = "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5";
+import { IconeTelaCheia } from "../IconesAnimados";
+import { classeBotaoRedondo } from "./ModoTv";
 
 /** Liga e desliga a tela cheia do navegador. Some onde a API não existe (ex.: Safari do iPhone). */
 export function BotaoTelaCheia() {
@@ -33,7 +31,7 @@ export function BotaoTelaCheia() {
       title={cheia ? "Sair da tela cheia" : "Tela cheia"}
       className={`hidden sm:grid ${classeBotaoRedondo}`}
     >
-      {icone(cheia ? RECOLHER : EXPANDIR)}
+      <IconeTelaCheia cheia={cheia} />
     </button>
   );
 }

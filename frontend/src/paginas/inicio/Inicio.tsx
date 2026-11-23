@@ -9,7 +9,8 @@ import { MenuConta } from "../../componentes/Conta";
 import { Logo } from "../../componentes/Logo";
 import { Mascote } from "../../componentes/mascote/Mascote";
 import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
-import { BotaoModoTv, classeBotaoRedondo, icone } from "../../componentes/modoTv/ModoTv";
+import { IconeFaq } from "../../componentes/IconesAnimados";
+import { BotaoModoTv, classeBotaoRedondo } from "../../componentes/modoTv/ModoTv";
 import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
 import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
@@ -52,7 +53,7 @@ function Navegacao() {
         <div className="flex items-center gap-2">
           <BotaoComoUsar />
           <a href="#faq" data-tour="faq" aria-label="Perguntas frequentes" title="Perguntas frequentes" className={classeBotaoRedondo}>
-            {icone("M20.5 11.5a8 8 0 0 1-11.9 7L4 19.6l1.2-4.3a8 8 0 1 1 15.3-3.8zM8.5 10h7M8.5 13.5h4.5")}
+            <IconeFaq />
           </a>
           <BotaoModoTv />
           <BotaoTelaCheia />

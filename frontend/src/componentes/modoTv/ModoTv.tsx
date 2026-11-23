@@ -1,6 +1,8 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { IconeTv } from "../IconesAnimados";
+
 /**
  * Modo TV: passa sozinho pelas seções da página marcadas com `data-tv="Nome"` (em `main`), na ordem em
  * que aparecem. Seção que cabe na tela fica parada um tempo; seção mais alta que a tela para no topo,
@@ -25,8 +27,6 @@ export const icone = (d: string, tamanho = 18) => (
     <path d={d} />
   </svg>
 );
-
-const ICONE_TV = "M3 7h18v12H3zM8 3l4 4 4-4M8 22h8";
 
 function lerEstacoes(): Estacao[] {
   return [...document.querySelectorAll<HTMLElement>("main [data-tv]")].map((el) => ({ el, nome: el.dataset.tv ?? "" }));
@@ -88,7 +88,7 @@ export function BotaoModoTv() {
         title="Modo TV"
         className={`hidden sm:grid ${classeBotaoRedondo}`}
       >
-        {icone(ICONE_TV)}
+        <IconeTv />
       </button>
       {ligado && <ModoTv aoSair={sair} />}
     </>
