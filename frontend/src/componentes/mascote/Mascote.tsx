@@ -18,7 +18,9 @@ import {
   grasnar as poseGrasnando,
   pesJuntos,
 } from "./corvo";
+import { dicaAleatoria, marcarSaudacaoDita, saudacaoDaVisita } from "./conversa";
 import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
+import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
 
 // O corvo do Skinomics. Pousa no topo dos cards e da primeira linha dos títulos (`data-poleiro`),
@@ -112,6 +114,16 @@ export function Mascote() {
   // O laço de animação chama a fala por esta ref, para usar sempre as linhas mais recentes.
   const falarRef = useRef<() => void>(() => {});
   const reclamarRef = useRef<() => void>(() => {});
+  const dizerRef = useRef<(texto: string) => void>(() => {});
+  // Saudação desta visita ("Voltou! Faz 3 dias."), dita logo que ele pousa pela primeira vez.
+  const saudacaoRef = useRef(saudacaoDaVisita());
+  // No tutorial ele fica acima do fundo escurecido, como guia.
+  const [guiando, setGuiando] = useState(false);
+  useEffect(() => {
+    const aoMudarPasso = (evento: Event) => setGuiando((evento as CustomEvent<PassoTutorial | null>).detail !== null);
+    window.addEventListener(EVENTO_TUTORIAL, aoMudarPasso);
+    return () => window.removeEventListener(EVENTO_TUTORIAL, aoMudarPasso);
+  }, []);
 
   useEffect(() => {
     try {
@@ -150,10 +162,19 @@ export function Mascote() {
     let bicadaAte = 0;
     let caudaAte = 0;
     // Fala sozinho de tempos em tempos (a primeira logo, para se apresentar).
-    let proximaFalaEm = performance.now() + sortear(12000, 20000);
+    let proximaFalaEm = performance.now() + (saudacaoRef.current ? 2600 : sortear(12000, 20000));
     let anterior = performance.now();
     let quadro = 0;
     let chegou = false;
+    // Cursor: posição na tela, velocidade e quando mexeu pela última vez (só mouse, não toque).
+    let mouse: { cx: number; cy: number; vel: number; movidoEm: number } | null = null;
+    let curiosoFeito = false;
+    let bicarAoChegar = false;
+    let sossegoAte = 0;
+    // Conduzido pelo modo TV ou pelo tutorial: não passeia sozinho nem se assusta com o cursor.
+    let emTv = false;
+    let emTutorial = false;
+    const conduzido = () => emTv || emTutorial;
 
     const mudar = (novo: Modo, agora: number) => {
       modo = novo;
@@ -247,10 +268,79 @@ export function Mascote() {
       const emCima = x >= r.left - ref.left - 4 && x <= r.right - ref.left + 4 && Math.abs(y - (r.top - ref.top)) < 8;
       if (emCima) espantar(performance.now());
     };
-    window.addEventListener("skinomics:poleiro-mexido", aoMexerNoPoleiro);
+    window.addEventListener(EVENTO_POLEIRO_MEXIDO, aoMexerNoPoleiro);
+
+    /** Voa até um poleiro dentro do elemento (de preferência uma letra do título dele). */
+    const irParaElemento = (el: Element, agora: number) => {
+      if (el.closest("header")) return;
+      const ref = pai.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const caixa = { x0: r.left - ref.left, x1: r.right - ref.left, y0: r.top - ref.top, y1: r.bottom - ref.top };
+      const dentro = poleiros
+        .filter((p) => p.x1 > caixa.x0 && p.x0 < caixa.x1 && p.y >= caixa.y0 - 4 && p.y <= caixa.y1)
+        .sort((a, b) => Number(b.letra) - Number(a.letra) || a.y - b.y);
+      const perto = [...poleiros].sort(
+        (a, b) => Math.hypot(a.x0 - caixa.x0, a.y - caixa.y0) - Math.hypot(b.x0 - caixa.x0, b.y - caixa.y0),
+      );
+      const destino = dentro[0] ?? perto[0];
+      if (!destino || atual?.chave === destino.chave) return;
+      const rota = planejar(destino, agora, "voo") ?? planejar(destino, agora, "voo", false);
+      if (!rota) return;
+      atual = null;
+      proximoTrajeto = null;
+      iniciarTrajeto(rota, agora);
+    };
+
+    // Modo TV: acompanha a seção que está na tela.
+    const aoMudarSecao = (evento: Event) => {
+      const secao = (evento as CustomEvent<HTMLElement | null>).detail;
+      emTv = secao !== null;
+      if (secao) {
+        atualizarPoleiros(performance.now());
+        irParaElemento(secao, performance.now());
+      }
+    };
+    // Tutorial: voa até a parte explicada e diz o nome dela.
+    const aoMudarPassoTutorial = (evento: Event) => {
+      const passo = (evento as CustomEvent<PassoTutorial | null>).detail;
+      emTutorial = passo !== null;
+      if (!passo) return;
+      if (passo.alvo && el.contains(passo.alvo)) {
+        dizerRef.current(t("Sou eu!", "That's me!"));
+        return;
+      }
+      if (passo.alvo) irParaElemento(passo.alvo, performance.now());
+      dizerRef.current(passo.titulo);
+    };
+    const aoMoverMouse = (evento: PointerEvent) => {
+      if (evento.pointerType !== "mouse") return;
+      const agora = performance.now();
+      const v = mouse ? (Math.hypot(evento.clientX - mouse.cx, evento.clientY - mouse.cy) / Math.max(8, agora - mouse.movidoEm)) * 1000 : 0;
+      mouse = { cx: evento.clientX, cy: evento.clientY, vel: mouse ? mouse.vel * 0.5 + v * 0.5 : 0, movidoEm: agora };
+      curiosoFeito = false;
+    };
+    window.addEventListener(EVENTO_TV, aoMudarSecao);
+    window.addEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
+    window.addEventListener("pointermove", aoMoverMouse, { passive: true });
+
+    /** Cursor por perto da cabeça: para onde olhar, se está parado e se está sobre o poleiro dele. */
+    const cursorPerto = (ref: DOMRect) => {
+      if (!mouse || !atual) return null;
+      const cx = mouse.cx - ref.left;
+      const cy = mouse.cy - ref.top;
+      const dx = cx - x;
+      const dy = cy - (y - ALTURA * 0.6);
+      if (Math.hypot(dx, dy) > 300) return null;
+      return {
+        dx,
+        angulo: (Math.atan2(dy, Math.abs(dx) + 1) * 180) / Math.PI,
+        parado: performance.now() - mouse.movidoEm > 1500,
+        noPoleiro: cx >= atual.x0 && cx <= atual.x1 && Math.abs(cy - atual.y) < 90,
+      };
+    };
 
     const decidir = (agora: number) => {
-      if (!atual) return;
+      if (!atual || conduzido()) return;
       // Nos cards ele anda; nas letras só se empoleira.
       if (!atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
         // Caminhadas curtas: alguns passos para um lado, não a extensão inteira do poleiro.
@@ -301,6 +391,15 @@ export function Mascote() {
         atualizarPoleiros(agora);
       }
       const desde = agora - modoDesde;
+
+      // Cursor chegando rápido perto dele: se assusta e voa (e reclama).
+      if (mouse && atual && !conduzido() && agora > sossegoAte && agora - mouse.movidoEm < 80 && mouse.vel > 1600) {
+        const perto = Math.hypot(mouse.cx - ref.left - x, mouse.cy - ref.top - (y - ALTURA * 0.6)) < 110;
+        if (perto) {
+          espantar(agora);
+          sossegoAte = agora + 6000;
+        }
+      }
 
       // Chegada: entra voando pela borda esquerda da tela e pousa numa letra visível. Se nenhuma letra
       // aparecer em 1,5 s (fontes ainda carregando, página aberta já rolada), vale qualquer poleiro à vista.
@@ -373,12 +472,33 @@ export function Mascote() {
         if (Math.abs(dx) < 0.5) {
           mudar("parado", agora);
           ate = agora + sortear(900, 2600);
+          if (bicarAoChegar) {
+            bicarAoChegar = false;
+            bicadaAte = agora + 350;
+          }
         }
       } else if (atual) {
         // Parado: respira, vira a cabeça de vez em quando, às vezes bica o chão ou mexe a cauda.
         alvo = poseParada();
         alvo.corpoY = Math.sin(agora / 700) * 0.4;
         if (!calmo) {
+          // Cursor por perto: olha para ele. Parado ali um tempo: vai até ele e dá uma bicadinha.
+          const olhar = cursorPerto(ref);
+          if (olhar) {
+            if (Math.abs(olhar.dx) > 12) virarPara(olhar.dx);
+            giroAlvo = limitar(olhar.angulo * 0.6, -24, 34);
+            proximoGiro = agora + 500;
+            if (olhar.parado && !curiosoFeito && !conduzido()) {
+              curiosoFeito = true;
+              if (Math.abs(olhar.dx) > 34 && olhar.noPoleiro && !atual.letra) {
+                alvoX = limitar(x + olhar.dx - Math.sign(olhar.dx) * 24, atual.x0, atual.x1);
+                bicarAoChegar = true;
+                mudar("andando", agora);
+              } else {
+                bicadaAte = agora + 320;
+              }
+            }
+          }
           if (agora > proximoGiro) {
             giroAlvo = sortear(-14, 10);
             proximoGiro = agora + sortear(900, 2800);
@@ -389,7 +509,7 @@ export function Mascote() {
           alvo.cabecaGiro = agora < bicadaAte ? 42 : giroCabeca;
           if (agora < bicadaAte) alvo.cabecaX = 2.5;
           alvo.cauda = agora < caudaAte ? -12 : 0;
-          if (agora > proximaFalaEm && !falando.current && visivel(atual, ref)) {
+          if (agora > proximaFalaEm && !falando.current && !emTutorial && visivel(atual, ref)) {
             // Pousado, parado e à vista: grasna e conta um dado; fica no lugar enquanto fala.
             falarRef.current();
             proximaFalaEm = agora + sortear(30000, 60000);
@@ -424,7 +544,10 @@ export function Mascote() {
     quadro = requestAnimationFrame(passo);
     return () => {
       cancelAnimationFrame(quadro);
-      window.removeEventListener("skinomics:poleiro-mexido", aoMexerNoPoleiro);
+      window.removeEventListener(EVENTO_POLEIRO_MEXIDO, aoMexerNoPoleiro);
+      window.removeEventListener(EVENTO_TV, aoMudarSecao);
+      window.removeEventListener(EVENTO_TUTORIAL, aoMudarPassoTutorial);
+      window.removeEventListener("pointermove", aoMoverMouse);
       window.removeEventListener("resize", aoRedimensionar);
     };
   }, []);
@@ -439,15 +562,33 @@ export function Mascote() {
     return () => clearTimeout(t);
   }, [fala]);
 
-  /** Grasna e mostra no balão um dado da base (sem repetir o último). */
+  /**
+   * Grasna e fala: na primeira vez, a saudação da visita; depois, metade das vezes um dado do dia (sem
+   * repetir o último) e metade uma dica de mercado.
+   */
   function falar() {
     grasnandoDesde.current = performance.now();
-    if (!linhas.length) return;
+    if (saudacaoRef.current) {
+      setFala(saudacaoRef.current());
+      saudacaoRef.current = null;
+      marcarSaudacaoDita();
+      return;
+    }
+    if (!linhas.length || Math.random() < 0.5) {
+      setFala(dicaAleatoria());
+      return;
+    }
     let indice = Math.floor(Math.random() * linhas.length);
     if (indice === ultimaLinha.current) indice = (indice + 1) % linhas.length;
     ultimaLinha.current = indice;
     setFala(linhas[indice]!);
   }
+
+  function dizer(texto: string) {
+    grasnandoDesde.current = performance.now();
+    setFala(texto);
+  }
+  dizerRef.current = dizer;
   falarRef.current = falar;
 
   // Espantado (tiraram o poleiro dele): grasna e reclama com um balão curto, sem tocar som.
@@ -469,7 +610,7 @@ export function Mascote() {
   return (
     <div
       ref={raiz}
-      className="pointer-events-none absolute top-0 left-0 z-30 opacity-0 transition-opacity duration-300 select-none"
+      className={`pointer-events-none absolute top-0 left-0 ${guiando ? "z-[110]" : "z-30"} opacity-0 transition-opacity duration-300 select-none`}
       style={{ width: LARGURA, height: ALTURA }}
     >
       {fala && (

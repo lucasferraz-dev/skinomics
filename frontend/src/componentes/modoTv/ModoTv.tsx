@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 
 import { IconeTv } from "../IconesAnimados";
+import { avisar, EVENTO_TV } from "../mascote/eventos";
 
 /**
  * Modo TV: passa sozinho pelas seções da página marcadas com `data-tv="Nome"` (em `main`), na ordem em
@@ -119,6 +120,7 @@ function ModoTv({ aoSair }: { aoSair: () => void }) {
       m.para = inicioDe(estacoes[m.indice]!.el);
       m.total = IDA_MS + PARADA_CURTA_MS;
       setIndice(m.indice);
+      avisar(EVENTO_TV, estacoes[m.indice]!.el);
     },
     [estacoes],
   );
@@ -182,6 +184,8 @@ function ModoTv({ aoSair }: { aoSair: () => void }) {
     quadro = requestAnimationFrame(passo);
     return () => cancelAnimationFrame(quadro);
   }, [estacoes, irPara, aoSair]);
+
+  useEffect(() => () => avisar(EVENTO_TV, null), []);
 
   // Mouse parado por 3 s: some o cursor e a barra de controle; mexeu, voltam.
   useEffect(() => {

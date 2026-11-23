@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
 
+import { avisar, EVENTO_TUTORIAL } from "../mascote/eventos";
 import { type Passo, TUTORIAIS } from "./passos";
 
 type Caixa = { x: number; y: number; w: number; h: number };
@@ -112,7 +113,10 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
   const mostrada = useRef<Caixa | null>(null);
   useEffect(() => {
     rolarAte(passo.alvo);
-  }, [passo.alvo]);
+    // O corvo vai junto até a parte explicada.
+    avisar(EVENTO_TUTORIAL, { alvo: document.querySelector(passo.alvo), titulo: passo.titulo });
+  }, [passo]);
+  useEffect(() => () => avisar(EVENTO_TUTORIAL, null), []);
 
   // O destaque desliza até o novo alvo logo após trocar de passo e depois cola nele.
   useEffect(() => {
