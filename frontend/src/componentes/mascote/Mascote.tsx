@@ -30,6 +30,7 @@ import {
   saudacaoDaVisita,
 } from "./conversa";
 import { aplicarPose, CorvoSvg, ESQUELETO_CORVO, usePartes } from "./desenho";
+import { poseCorujaParada, poseCorujaVoando } from "./coruja";
 import { CorujaSvg, ESQUELETO_CORUJA } from "./desenhoCoruja";
 import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
@@ -184,6 +185,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     let curiosoFeito = false;
     let bicarAoChegar = false;
     let sossegoAte = 0;
+    // Coruja: de vez em quando balança a cabeça de lado, medindo distância.
+    let balancoAte = 0;
+    let proximoBalanco = performance.now() + sortear(5000, 9000);
     // Conduzido pelo modo TV ou pelo tutorial: não passeia sozinho nem se assusta com o cursor.
     let emTv = false;
     let emTutorial = false;
@@ -279,7 +283,13 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         tipo,
         pontos,
         inicio: agora,
-        duracao: tipo === "pulo" ? 420 + Math.abs(dx) * 0.6 : Math.min(700 + comprimento * 0.9, 2200),
+        // A coruja voa mais devagar, planando.
+        duracao:
+          tipo === "pulo"
+            ? 420 + Math.abs(dx) * 0.6
+            : especie === "coruja"
+              ? Math.min(1000 + comprimento * 1.25, 3200)
+              : Math.min(700 + comprimento * 0.9, 2200),
         destino,
       };
     };
@@ -443,8 +453,13 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           return;
         }
       }
-      // Nos cards ele anda; nas letras só se empoleira.
-      if (!atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
+      // A coruja fica imóvel bem mais tempo antes de mudar de lugar.
+      if (especie === "coruja" && Math.random() < 0.45) {
+        ate = agora + sortear(3000, 7000);
+        return;
+      }
+      // Nos cards ele anda; nas letras só se empoleira. A coruja não anda: quando muda de lugar, voa.
+      if (especie === "corvo" && !atual.letra && atual.x1 - atual.x0 > 90 && Math.random() < 0.35) {
         // Caminhadas curtas: alguns passos para um lado, não a extensão inteira do poleiro.
         const distancia = sortear(40, 140) * (Math.random() < 0.5 ? -1 : 1);
         alvoX = semEncostar(limitar(x + distancia, atual.x0, atual.x1));
@@ -477,7 +492,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         .map(({ p }) => {
           const centro = (p.x0 + p.x1) / 2;
           const aoLado = Math.abs(p.y - y) <= PULO_MAX_DY && Math.abs(centro - x) <= PULO_MAX_DX;
-          return planejar(p, agora, aoLado ? "pulo" : "voo");
+          return planejar(p, agora, aoLado && especie === "corvo" ? "pulo" : "voo");
         })
         .find((t): t is Trajeto => t !== null);
       if (!rota) {
@@ -567,7 +582,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           const v = derivada(trajeto.pontos, u);
           if (Math.abs(v.x) > 40) virarPara(v.x);
           const inclinacao = limitar(((Math.atan2(v.y, Math.abs(v.x) + 1) * 180) / Math.PI) * 0.4, -24, 24);
-          alvo = t > 0.82 ? poseFreando(agora) : poseVoando(agora, inclinacao);
+          // O corvo bate as asas o voo todo; a coruja bate poucas vezes e plana.
+          if (especie === "coruja") alvo = t > 0.9 ? poseFreando(agora) : poseCorujaVoando(agora, inclinacao, t);
+          else alvo = t > 0.82 ? poseFreando(agora) : poseVoando(agora, inclinacao);
         }
         if (t >= 1) {
           atual = trajeto.destino;
@@ -603,8 +620,8 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         }
       } else if (atual) {
         // Parado: respira, vira a cabeça de vez em quando, às vezes bica o chão ou mexe a cauda.
-        alvo = poseParada();
-        alvo.corpoY = Math.sin(agora / 700) * 0.4;
+        alvo = especie === "coruja" ? poseCorujaParada(agora) : poseParada();
+        if (especie === "corvo") alvo.corpoY = Math.sin(agora / 700) * 0.4;
         if (!calmo) {
           // Acabou de pousar do lado da coruja: vira para ela, provoca e ela vai embora.
           if (provocarEm && agora > provocarEm) {
@@ -628,7 +645,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
             Math.abs(vizinho.x - x) < DISTANCIA - 4
           ) {
             const destinoX = limitar(vizinho.x + (x >= vizinho.x ? 1 : -1) * DISTANCIA, atual.x0, atual.x1);
-            if (Math.abs(destinoX - vizinho.x) >= DISTANCIA - 4) {
+            if (especie === "corvo" && Math.abs(destinoX - vizinho.x) >= DISTANCIA - 4) {
               alvoX = destinoX;
               virarPara(alvoX - x);
               mudar("andando", agora);
@@ -642,7 +659,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
             if (Math.abs(olhar.dx) > 12) virarPara(olhar.dx);
             giroAlvo = limitar(olhar.angulo * 0.6, -24, 34);
             proximoGiro = agora + 500;
-            if (olhar.parado && !curiosoFeito && !conduzido()) {
+            if (olhar.parado && !curiosoFeito && !conduzido() && especie === "corvo") {
               curiosoFeito = true;
               if (Math.abs(olhar.dx) > 34 && olhar.noPoleiro && !atual.letra) {
                 alvoX = semEncostar(limitar(x + olhar.dx - Math.sign(olhar.dx) * 24, atual.x0, atual.x1));
@@ -656,13 +673,22 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
           if (agora > proximoGiro) {
             giroAlvo = sortear(-14, 10);
             proximoGiro = agora + sortear(900, 2800);
-            if (Math.random() < 0.18) bicadaAte = agora + 320;
+            if (especie === "corvo" && Math.random() < 0.18) bicadaAte = agora + 320;
             if (Math.random() < 0.2) caudaAte = agora + 260;
           }
-          giroCabeca += (giroAlvo - giroCabeca) * Math.min(1, dt * 8);
+          // A coruja vira a cabeça devagar, de propósito; o corvo, de estalo.
+          giroCabeca += (giroAlvo - giroCabeca) * Math.min(1, dt * (especie === "coruja" ? 2.5 : 8));
           alvo.cabecaGiro = agora < bicadaAte ? 42 : giroCabeca;
           if (agora < bicadaAte) alvo.cabecaX = 2.5;
           alvo.cauda = agora < caudaAte ? -12 : 0;
+          if (especie === "coruja") {
+            if (agora > proximoBalanco) {
+              balancoAte = agora + 900;
+              proximoBalanco = agora + sortear(7000, 14000);
+            }
+            if (agora < balancoAte) alvo.cabecaX = Math.sin((balancoAte - agora) / 75) * 2.6;
+            alvo.cauda = 0;
+          }
           if (agora > proximaFalaEm && !falando.current && !emTutorial && visivel(atual, ref)) {
             // Pousado, parado e à vista: grasna e conta um dado; fica no lugar enquanto fala.
             falarRef.current();
