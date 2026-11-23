@@ -56,7 +56,7 @@ const INICIO: Passo[] = [
     alvo: "[data-tour='modo-tv']",
     titulo: "Modo TV",
     texto:
-      "Passa sozinho pelas seções da página, descendo devagar nas mais longas. Bom para deixar numa tela. Dá para pausar, voltar, avançar e sair pela barra de baixo; o mouse some depois de 3 segundos parado.",
+      "Abre em tela cheia e passa sozinho pelas seções da página, descendo devagar nas mais longas. Bom para deixar numa TV. Dá para pausar, voltar, avançar e sair pela barra de baixo; o mouse some depois de 3 segundos parado.",
   },
   {
     alvo: "[data-tour='tela-cheia']",

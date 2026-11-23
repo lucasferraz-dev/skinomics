@@ -56,13 +56,34 @@ const suave = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 
 export function BotaoModoTv() {
   const [ligado, setLigado] = useState(false);
   // Estável: o laço do modo TV depende dela e recomeçaria do início se mudasse a cada render.
-  const sair = useCallback(() => setLigado(false), []);
+  const sair = useCallback(() => {
+    setLigado(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
+
+  // O modo TV é em tela cheia: entra nela ao ligar (precisa ser no clique) e, se a pessoa sair da tela
+  // cheia (Esc ou F11, que o navegador trata antes da página), o modo TV acaba junto.
+  const ligar = () => {
+    setLigado(true);
+    document.documentElement.requestFullscreen?.().catch(() => {
+      /* navegador sem tela cheia ou recusou: segue em janela */
+    });
+  };
+  useEffect(() => {
+    if (!ligado) return;
+    const aoMudar = () => {
+      if (!document.fullscreenElement) setLigado(false);
+    };
+    document.addEventListener("fullscreenchange", aoMudar);
+    return () => document.removeEventListener("fullscreenchange", aoMudar);
+  }, [ligado]);
+
   return (
     <>
       <button
         type="button"
         data-tour="modo-tv"
-        onClick={() => setLigado(true)}
+        onClick={ligar}
         aria-label="Modo TV"
         title="Modo TV"
         className={`hidden sm:grid ${classeBotaoRedondo}`}
