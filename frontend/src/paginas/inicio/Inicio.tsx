@@ -49,7 +49,7 @@ const LINKS = [
 
 function Navegacao() {
   return (
-    <header className="sticky top-0 z-50 border-b border-borda bg-fundo/85 backdrop-blur">
+    <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
       <Container className="flex h-16 items-center justify-between">
         <Logo />
         <nav className="hidden gap-8 text-sm text-suave lg:flex">

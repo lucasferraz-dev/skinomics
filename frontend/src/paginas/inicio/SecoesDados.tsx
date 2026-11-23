@@ -17,7 +17,7 @@ export function PreviaDaPlataforma() {
   const card = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="plataforma" className="scroll-mt-16 py-14 sm:py-28">
+    <section id="plataforma" className="scroll-mt-32 py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo="Prévia"
