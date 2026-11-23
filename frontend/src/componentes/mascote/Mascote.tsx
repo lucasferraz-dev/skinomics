@@ -29,9 +29,9 @@ import {
   resposta,
   saudacaoDaVisita,
 } from "./conversa";
-import { aplicarPose, CorvoSvg, ESQUELETO_CORVO, usePartes } from "./desenho";
+import { aplicarPose, CorvoSvg, usePartes } from "./desenho";
 import { poseCorujaParada, poseCorujaVoando } from "./coruja";
-import { CorujaSvg, ESQUELETO_CORUJA } from "./desenhoCoruja";
+import { aplicarCoruja, CorujaSvg, usePartesCoruja } from "./desenhoCoruja";
 import { EVENTO_POLEIRO_MEXIDO, EVENTO_TUTORIAL, EVENTO_TV, type PassoTutorial } from "./eventos";
 import { atravessa, type Caixa, coletarCena, type Poleiro, visivel } from "./poleiros";
 import { DISTANCIA, MESMA_ALTURA, type Presenca, presencas } from "./rivais";
@@ -114,6 +114,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
   const [fala, setFala] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
   const partes = usePartes();
+  const partesCoruja = usePartesCoruja();
   const falando = useRef(false);
   const grasnandoDesde = useRef(-Infinity);
   const { data } = useItens({ por_pagina: 100 });
@@ -188,6 +189,11 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     // Coruja: de vez em quando balança a cabeça de lado, medindo distância.
     let balancoAte = 0;
     let proximoBalanco = performance.now() + sortear(5000, 9000);
+    // Coruja: para onde a cabeça olha (0 de frente, ±1 virada para trás) e quando ela gira para trás.
+    let virada = 0;
+    let olharTrasAte = 0;
+    let ladoTras = 1;
+    let proximoOlharTras = performance.now() + sortear(9000, 16000);
     // Conduzido pelo modo TV ou pelo tutorial: não passeia sozinho nem se assusta com o cursor.
     let emTv = false;
     let emTutorial = false;
@@ -507,7 +513,22 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     const desenhar = (piscada: number) => {
       el.style.transform = `translate(${x - APOIO_X * ESCALA}px, ${y - CHAO * ESCALA}px)`;
       el.style.opacity = atual || trajeto ? "1" : "0";
-      aplicarPose(partes, pose, direcao, piscada, especie === "corvo" ? ESQUELETO_CORVO : ESQUELETO_CORUJA);
+      if (especie === "coruja") {
+        aplicarCoruja(partesCoruja, {
+          voando: pose.asa === "aberta",
+          // A pose de voo vem no ângulo de perfil do corvo; de frente, vira subir e descer das asas.
+          asa: -55 + (pose.asaAngulo - 20) * 0.8,
+          virada,
+          inclinacaoCabeca: limitar(pose.cabecaGiro, -14, 14) * 0.8,
+          cabecaX: pose.cabecaX,
+          cabecaY: pose.cabecaY,
+          respiro: pose.corpoY,
+          inclinacao: pose.inclinacao,
+          piscada,
+        });
+      } else {
+        aplicarPose(partes, pose, direcao, piscada);
+      }
     };
 
     const comecouEm = performance.now();
@@ -715,6 +736,24 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       // Piscada: a pálpebra desce e sobe em ~140 ms.
       if (agora > piscarEm + 140) piscarEm = agora + sortear(2200, 5500);
       const piscando = agora > piscarEm ? Math.sin(((agora - piscarEm) / 140) * Math.PI) : 0;
+      if (especie === "coruja") {
+        // Só a cabeça se mexe: acompanha o cursor, olha para o rival por perto e às vezes gira para trás.
+        const parada = atual !== null && !trajeto;
+        if (parada && !calmo && agora > proximoOlharTras) {
+          olharTrasAte = agora + 1900;
+          ladoTras = Math.random() < 0.5 ? -1 : 1;
+          proximoOlharTras = agora + sortear(14000, 26000);
+        }
+        const olhar = parada ? cursorPerto(ref) : null;
+        const outro = rival();
+        let alvoVirada = 0;
+        if (agora < olharTrasAte) alvoVirada = ladoTras;
+        else if (olhar) alvoVirada = limitar(olhar.dx / 220, -0.7, 0.7);
+        else if (outro && parada && Math.abs(outro.y - y) < 160 && Math.abs(outro.x - x) < 320) {
+          alvoVirada = limitar((outro.x - x) / 200, -0.7, 0.7);
+        }
+        virada += (alvoVirada - virada) * Math.min(1, dt * 2.6);
+      }
       presenca.x = x;
       presenca.y = y;
       presenca.poleiro = atual;
@@ -805,7 +844,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
       {especie === "corvo" ? (
         <CorvoSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
       ) : (
-        <CorujaSvg partes={partes} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
+        <CorujaSvg partes={partesCoruja} largura={LARGURA} altura={ALTURA} aoClicar={aoClicar} />
       )}
     </div>
   );

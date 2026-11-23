@@ -4,13 +4,12 @@ import { CHAO, type Pose, poseParada } from "./corvo";
 
 const limitar01 = (v: number) => Math.min(Math.max(v, 0), 1);
 
-/** Encolhida: afundada nos ombros, cabeça baixa, respirando devagar. */
+/** Imóvel, respirando devagar: só a cabeça se mexe (ver Mascote). */
 export function poseCorujaParada(tempo: number): Pose {
   return {
     ...poseParada(),
-    corpoY: 1.4 + Math.sin(tempo / 1300) * 0.35,
-    inclinacao: -2,
-    cabecaY: 1.8,
+    corpoY: Math.sin(tempo / 1300) * 0.3,
+    cabecaY: 0.4,
   };
 }
 
