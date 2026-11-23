@@ -93,22 +93,31 @@ html[data-tv-ocioso] * {
   50% { transform: scaleX(-1); }
 }
 
-/* Aura dos olhos do Muninn e da Glaux: o halo pulsa e os fiapos de luz tremulam, como chama. */
+/* "Ego" nos olhos do Muninn e da Glaux: uma chama tremulando no canto do olho e fiapos de fumaça
+   que nascem no olho, crescem enquanto se afastam e se desfazem, sem parar. */
 .aura-olho,
-.rastro-olho {
+.chama-olho,
+.fumaca-olho {
   transform-box: fill-box;
-  transform-origin: center;
 }
+.aura-olho { transform-origin: center; }
+.fumaca-olho { transform-origin: center; opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .aura-olho { animation: aura-olho 2.6s ease-in-out infinite; }
-  .rastro-olho { animation: rastro-olho 1.7s ease-in-out infinite; }
-  .rastro-olho:nth-of-type(2n) { animation-delay: -0.8s; animation-duration: 2.1s; }
+  .chama-olho { animation: chama-olho 0.8s ease-in-out infinite; }
+  .fumaca-olho { animation: fumaca-olho 1.7s ease-out infinite; }
 }
 @keyframes aura-olho {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.95; transform: scale(1.22); }
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
 }
-@keyframes rastro-olho {
-  0%, 100% { opacity: 0.3; transform: translateX(0) scaleY(1); }
-  50% { opacity: 0.85; transform: translateX(-0.6px) scaleY(1.35); }
+@keyframes chama-olho {
+  0%, 100% { opacity: 0.85; transform: scale(1, 1); }
+  35% { opacity: 1; transform: scale(1.18, 0.86); }
+  70% { opacity: 0.7; transform: scale(0.9, 1.12); }
+}
+@keyframes fumaca-olho {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.35); }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(var(--s)); }
 }

@@ -1,7 +1,7 @@
 import { useId, useRef } from "react";
 
 import { t } from "../../lib/idioma";
-import { espiral, lamina, n, type Ponto } from "./desenho";
+import { espiral, FumacaOlho, lamina, n, type Ponto } from "./desenho";
 
 // Glaux, a coruja do Skinomics, na pose da referência: de costas, meio de lado, olhando para trás por
 // cima do ombro. A asa grande cobre as costas e desce em diagonal até a ponta das penas; a borda da asa
@@ -195,6 +195,9 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
           <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="1" />
           <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
         </linearGradient>
+        <filter id={`${id}-fumaca`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="0.8" />
+        </filter>
         <filter id={`${id}-brilho`} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="1.1" result="halo" />
           <feMerge>
@@ -275,13 +278,18 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
                   <path d={LOBULO} strokeWidth="0.7" strokeOpacity="0.8" />
                   <path d="M45.6 23.6l1.6 1M44.6 27.4l2 .2M45.6 31.2l1.8-1M49 33.6l.8-1.8M53.6 33.6l-.6-1.8M57 30.4l-1.6-.6" fill="none" strokeWidth="0.4" strokeOpacity="0.5" />
                 </Espelhado>
-                {/* Aura: halo pulsando em cada olho e fiapos de luz subindo pelo canto de fora */}
+                {/* Ego: brilho em volta de cada olho, chama no canto de fora e fumaça subindo */}
                 <Espelhado>
-                  <circle className="aura-olho" cx="51.4" cy="25.6" r="8.6" fill={`url(#${id}-aura)`} stroke="none" />
-                  <g fill="none" stroke={`url(#${id}-rastro)`} strokeWidth="0.75" strokeLinecap="round">
-                    <path className="rastro-olho" d="M45.2 25C42 23.4 39.4 20.6 36.4 17.4" />
-                    <path className="rastro-olho" d="M45.6 26.8C42.6 26.4 39.6 24.6 36.6 22.6" />
-                  </g>
+                  <circle className="aura-olho" cx="51.4" cy="25.6" r="7.6" fill={`url(#${id}-aura)`} stroke="none" />
+                  <FumacaOlho x={45.4} y={25} angulo={218} alcance={14} filtro={`url(#${id}-fumaca)`} />
+                  <path
+                    className="chama-olho"
+                    style={{ transformOrigin: "100% 100%" }}
+                    d="M45.6 24.4C42.4 22.4 39.6 19.4 36.6 15.6C39.2 21 42 24.8 45.4 26.6Z"
+                    fill={`url(#${id}-rastro)`}
+                    stroke="none"
+                    filter={`url(#${id}-brilho)`}
+                  />
                 </Espelhado>
                 {/* Olhos que brilham, sem pupila, com um núcleo mais claro */}
                 <g ref={partes.olhos} filter={`url(#${id}-brilho)`}>

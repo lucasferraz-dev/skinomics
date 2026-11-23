@@ -1,5 +1,5 @@
 import { t } from "../../lib/idioma";
-import { useId, useRef } from "react";
+import { type CSSProperties, useId, useRef } from "react";
 
 import { APOIO_X, BASE_CAUDA, OMBRO, perna, PESCOCO, type Pose, transformarCorpo } from "./corvo";
 
@@ -51,6 +51,28 @@ export function espiral(cx: number, cy: number, raio: number, voltas: number, gi
     d += `${i ? "L" : "M"}${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
   }
   return d;
+}
+
+/**
+ * Fumaça saindo do olho (o "ego" dos mascotes): fiapos que nascem no olho, crescem enquanto se afastam
+ * na direção `angulo` (graus, no sistema do SVG) e se desfazem, um atrás do outro.
+ */
+export function FumacaOlho({ x, y, angulo, alcance, filtro }: { x: number; y: number; angulo: number; alcance: number; filtro: string }) {
+  return (
+    <g filter={filtro} stroke="none" fill="var(--color-destaque)" aria-hidden>
+      {Array.from({ length: 7 }, (_, i) => {
+        const a = ((angulo + ((i * 37) % 28) - 14) * Math.PI) / 180;
+        const d = alcance * (0.75 + ((i * 53) % 50) / 100);
+        const estilo = {
+          "--dx": `${n(Math.cos(a) * d)}px`,
+          "--dy": `${n(Math.sin(a) * d)}px`,
+          "--s": String(2 + (i % 3) * 0.5),
+          animationDelay: `${n(-i * 0.24)}s`,
+        } as CSSProperties;
+        return <ellipse key={i} className="fumaca-olho" cx={x} cy={y} rx={1.3 + (i % 3) * 0.3} ry={0.9 + (i % 2) * 0.3} style={estilo} />;
+      })}
+    </g>
+  );
 }
 
 // ---- Formas fixas ----
@@ -212,6 +234,9 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
           <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="1" />
           <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
         </linearGradient>
+        <filter id={`${id}-fumaca`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="0.75" />
+        </filter>
         <filter id={`${id}-brilho`} x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur stdDeviation="0.9" result="halo" />
           <feMerge>
@@ -275,12 +300,17 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
             <path d={BICO_CIMA} />
             <path d="M99.6 26.6C101.8 26.6 104 27.6 106.4 29.4M99.4 28.4c2 .2 3.8 1 5.6 2.4" fill="none" strokeWidth="0.55" />
             {/* Olho de bravo: fenda inclinada sob a sobrancelha; pisca fechando a fenda */}
-            {/* Aura: halo pulsando e fiapos de luz escapando do olho para trás (não é um corvo comum) */}
-            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="7.2" fill={`url(#${id}-aura)`} stroke="none" />
-            <g fill="none" stroke={`url(#${id}-rastro)`} strokeWidth="0.9" strokeLinecap="round">
-              <path className="rastro-olho" d={`M92.4 ${OLHO_Y - 0.8}C88.4 ${OLHO_Y - 2.6} 84 ${OLHO_Y - 2} 78.6 ${OLHO_Y - 4.6}`} />
-              <path className="rastro-olho" d={`M92.6 ${OLHO_Y + 0.6}C88.6 ${OLHO_Y + 0.4} 84.4 ${OLHO_Y + 1.8} 80 ${OLHO_Y + 0.6}`} />
-            </g>
+            {/* Ego: brilho em volta do olho, chama no canto e fumaça escapando para trás (não é um corvo comum) */}
+            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="6" fill={`url(#${id}-aura)`} stroke="none" />
+            <FumacaOlho x={93.4} y={OLHO_Y - 0.4} angulo={196} alcance={17} filtro={`url(#${id}-fumaca)`} />
+            <path
+              className="chama-olho"
+              style={{ transformOrigin: "100% 50%" }}
+              d={`M93 ${OLHO_Y - 1.1}C88.6 ${OLHO_Y - 3.4} 83.6 ${OLHO_Y - 3.2} 78.4 ${OLHO_Y - 5.6}C83.4 ${OLHO_Y - 1.6} 88.2 ${OLHO_Y + 1} 93 ${OLHO_Y + 0.8}Z`}
+              fill={`url(#${id}-rastro)`}
+              stroke="none"
+              filter={`url(#${id}-brilho)`}
+            />
             <g ref={partes.olho} filter={`url(#${id}-brilho)`}>
               <path d={`M91.6 ${OLHO_Y - 0.2}Q95.2 ${OLHO_Y - 2.2} 98.8 ${OLHO_Y + 0.6}Q95 ${OLHO_Y + 1.5} 91.6 ${OLHO_Y - 0.2}Z`} fill="var(--color-destaque)" strokeWidth="0.4" />
               <circle cx="95.8" cy={OLHO_Y} r="0.75" fill="#000" stroke="none" />
