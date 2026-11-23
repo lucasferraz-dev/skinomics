@@ -66,10 +66,10 @@ export function FumacaOlho({ x, y, angulo, alcance, filtro }: { x: number; y: nu
         const estilo = {
           "--dx": `${n(Math.cos(a) * d)}px`,
           "--dy": `${n(Math.sin(a) * d)}px`,
-          "--s": String(2 + (i % 3) * 0.5),
+          "--s": String(2.6 + (i % 3) * 0.6),
           animationDelay: `${n(-i * 0.24)}s`,
         } as CSSProperties;
-        return <ellipse key={i} className="fumaca-olho" cx={x} cy={y} rx={1.3 + (i % 3) * 0.3} ry={0.9 + (i % 2) * 0.3} style={estilo} />;
+        return <ellipse key={i} className="fumaca-olho" cx={x} cy={y} rx={1.9 + (i % 3) * 0.4} ry={1.3 + (i % 2) * 0.4} style={estilo} />;
       })}
     </g>
   );
@@ -301,8 +301,10 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
             <path d="M99.6 26.6C101.8 26.6 104 27.6 106.4 29.4M99.4 28.4c2 .2 3.8 1 5.6 2.4" fill="none" strokeWidth="0.55" />
             {/* Olho de bravo: fenda inclinada sob a sobrancelha; pisca fechando a fenda */}
             {/* Ego: brilho em volta do olho, chama no canto e fumaça escapando para trás (não é um corvo comum) */}
-            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="6" fill={`url(#${id}-aura)`} stroke="none" />
-            <FumacaOlho x={93.4} y={OLHO_Y - 0.4} angulo={196} alcance={17} filtro={`url(#${id}-fumaca)`} />
+            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="9" fill={`url(#${id}-aura)`} stroke="none" />
+            <FumacaOlho x={93.4} y={OLHO_Y - 0.4} angulo={196} alcance={29} filtro={`url(#${id}-fumaca)`} />
+            {/* Chama maior (o grupo escala a partir do olho; a animação mexe no próprio caminho) */}
+            <g transform={`translate(93 ${OLHO_Y}) scale(1.7) translate(-93 ${-OLHO_Y})`}>
             <path
               className="chama-olho"
               style={{ transformOrigin: "100% 50%" }}
@@ -311,6 +313,7 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
               stroke="none"
               filter={`url(#${id}-brilho)`}
             />
+            </g>
             <g ref={partes.olho} filter={`url(#${id}-brilho)`}>
               <path d={`M91.6 ${OLHO_Y - 0.2}Q95.2 ${OLHO_Y - 2.2} 98.8 ${OLHO_Y + 0.6}Q95 ${OLHO_Y + 1.5} 91.6 ${OLHO_Y - 0.2}Z`} fill="var(--color-destaque)" strokeWidth="0.4" />
               <circle cx="95.8" cy={OLHO_Y} r="0.75" fill="#000" stroke="none" />

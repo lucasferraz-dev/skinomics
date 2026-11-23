@@ -280,8 +280,9 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
                 </Espelhado>
                 {/* Ego: brilho em volta de cada olho, chama no canto de fora e fumaça subindo */}
                 <Espelhado>
-                  <circle className="aura-olho" cx="51.4" cy="25.6" r="7.6" fill={`url(#${id}-aura)`} stroke="none" />
-                  <FumacaOlho x={45.4} y={25} angulo={218} alcance={14} filtro={`url(#${id}-fumaca)`} />
+                  <circle className="aura-olho" cx="51.4" cy="25.6" r="10.4" fill={`url(#${id}-aura)`} stroke="none" />
+                  <FumacaOlho x={45.4} y={25} angulo={218} alcance={24} filtro={`url(#${id}-fumaca)`} />
+                  <g transform="translate(45.5 25.5) scale(1.6) translate(-45.5 -25.5)">
                   <path
                     className="chama-olho"
                     style={{ transformOrigin: "100% 100%" }}
@@ -290,6 +291,7 @@ export function CorujaSvg({ partes, largura, altura, aoClicar }: { partes: Parte
                     stroke="none"
                     filter={`url(#${id}-brilho)`}
                   />
+                  </g>
                 </Espelhado>
                 {/* Olhos que brilham, sem pupila, com um núcleo mais claro */}
                 <g ref={partes.olhos} filter={`url(#${id}-brilho)`}>

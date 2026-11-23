@@ -108,8 +108,8 @@ html[data-tv-ocioso] * {
   .fumaca-olho { animation: fumaca-olho 1.7s ease-out infinite; }
 }
 @keyframes aura-olho {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.15); }
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.18); }
 }
 @keyframes chama-olho {
   0%, 100% { opacity: 0.85; transform: scale(1, 1); }
