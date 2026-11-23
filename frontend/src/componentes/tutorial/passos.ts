@@ -74,10 +74,22 @@ const INICIO: Passo[] = [
   {
     alvo: "svg[data-corvo]",
     get titulo() {
-      return t("O corvo", "The crow");
+      return t("Muninn, o corvo", "Muninn, the raven");
     },
     get texto() {
-      return t("O mascote do Skinomics. Anda pelos cards, voa entre as seções e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.", "Skinomics' mascot. It walks on the cards, flies between sections and now and then says something about the market. Click it to hear.");
+      return t("Muninn, um dos corvos de Odin: o nome quer dizer memória. Anda pelos cards, voa entre as seções, lembra das suas visitas e de vez em quando conta algo sobre o mercado. Clique nele para ouvir.", "Muninn, one of Odin's ravens: the name means memory. He walks the cards, flies between sections, remembers your visits and now and then says something about the market. Click him to hear.");
+    },
+  },
+  {
+    alvo: "svg[data-coruja]",
+    get titulo() {
+      return t("Glaux, a coruja", "Glaux, the owl");
+    },
+    get texto() {
+      return t(
+        "Glaux, a coruja de Atena, deusa da sabedoria. A analista: fala pouco, quase sempre sobre previsão, e vira a cabeça para acompanhar o cursor. Muninn vive implicando com ela.",
+        "Glaux, the owl of Athena, goddess of wisdom. The analyst: talks little, mostly about forecasts, and turns her head to follow your cursor. Muninn keeps pestering her.",
+      );
     },
   },
   {
@@ -149,3 +161,79 @@ const INICIO: Passo[] = [
 export const TUTORIAIS: Record<string, Passo[]> = {
   "/": INICIO,
 };
+
+/**
+ * O que cada um diz em cada passo do tutorial: Muninn ligado no 220, falando demais; Glaux seca, o
+ * mínimo necessário. Casado pelo trecho do seletor do passo. Pares [português, inglês].
+ */
+const FALAS: [string, { corvo: [string, string]; coruja: [string, string] }][] = [
+  ["'vitrine'", {
+    corvo: ["Olha esse item! Olha! Fui eu que achei. Não fui, mas podia ter sido!", "Look at this item! Look! I found it. I didn't, but I could have!"],
+    coruja: ["A medalha explica por que ele está aqui. Leia.", "The medal explains why it's here. Read it."],
+  }],
+  ["data-chaveiro", {
+    corvo: ["Puxa! Puxa! Solta! Puxa de novo! Eu adoro isso!", "Pull it! Pull it! Let go! Again! I love this!"],
+    coruja: ["Jogo, tipo, evento. Só isso.", "Game, type, event. That's all."],
+  }],
+  ["'adesivos'", {
+    corvo: ["Descola o adesivo! Tem coisa atrás! Eu já vi! Duas vezes!", "Peel the sticker! There's stuff behind! I've seen it! Twice!"],
+    coruja: ["Números de hoje. Amanhã serão outros.", "Today's numbers. Tomorrow, others."],
+  }],
+  ["'previa'", {
+    corvo: ["A linha tracejada é o futuro! Eu prefiro o passado: esse eu decorei!", "The dashed line is the future! I prefer the past: I memorized it!"],
+    coruja: ["Leia a faixa, não a linha.", "Read the range, not the line."],
+  }],
+  ["'radar'", {
+    corvo: ["Volume! Movimento! Barulho! Meu lugar favorito!", "Volume! Movement! Noise! My favorite spot!"],
+    coruja: ["Volume alto: dá para sair sem derrubar o preço.", "High volume: you can exit without sinking the price."],
+  }],
+  ["'destaques'", {
+    corvo: ["Quem subiu mais? Quem caiu mais? Eu aposto nos dois! Ao mesmo tempo!", "Who rose most? Who fell most? I bet on both! At once!"],
+    coruja: ["Alta com pouco volume costuma voltar.", "A rise on thin volume tends to fade."],
+  }],
+  ["'transparencia'", {
+    corvo: ["Odin tinha dois corvos pra saber tudo. Você tem eu. Sorte sua!", "Odin had two ravens to know everything. You have me. Lucky you!"],
+    coruja: ["Modelo que esconde o erro não serve.", "A model that hides its error is useless."],
+  }],
+  ["data-corvo", {
+    corvo: ["Sou eu! Muninn! A memória de Odin! Pergunta qualquer preço! Qualquer um!", "It's me! Muninn! Odin's memory! Ask me any price! Any!"],
+    coruja: ["Infelizmente.", "Unfortunately."],
+  }],
+  ["data-coruja", {
+    corvo: ["Essa aí? Lenta. Muito lenta. Pergunta pra ela, vai demorar.", "Her? Slow. Very slow. Ask her, it'll take a while."],
+    coruja: ["Glaux. Coruja de Atena. Eu analiso.", "Glaux. Athena's owl. I analyze."],
+  }],
+  ["'faq'", {
+    corvo: ["Pergunta pra mim! Eu respondo mais rápido que esse FAQ!", "Ask me! I answer faster than this FAQ!"],
+    coruja: ["Leia antes de perguntar.", "Read before asking."],
+  }],
+  ["'modo-tv'", {
+    corvo: ["Modo TV! Eu voo junto! Toda seção! Todas!", "TV mode! I fly along! Every section! All of them!"],
+    coruja: ["Para quem observa de longe. Como eu.", "For those who watch from afar. Like me."],
+  }],
+  ["'tela-cheia'", {
+    corvo: ["Mais tela, mais céu, mais eu!", "More screen, more sky, more me!"],
+    coruja: ["Menos distração.", "Fewer distractions."],
+  }],
+  ["'menu-analise'", {
+    corvo: ["Atalho! Corvo ama atalho! Clica, clica!", "Shortcuts! Ravens love shortcuts! Click, click!"],
+    coruja: ["O ranking de oportunidades está aqui.", "The opportunities ranking is here."],
+  }],
+  ["'idioma'", {
+    corvo: ["Eu grasno nas duas línguas! Ouve: CRÓC! Em inglês: CAW!", "I caw in both languages! Listen: CRÓC! In English: CAW!"],
+    coruja: ["Os números não mudam de língua.", "Numbers don't change language."],
+  }],
+  ["'conta'", {
+    corvo: ["Entra com a Steam! Aí eu decoro os seus itens também! Todos!", "Sign in with Steam! Then I'll memorize your items too! All of them!"],
+    coruja: ["A Minha lista mostra quanto variou desde que você salvou.", "My list shows the change since you saved it."],
+  }],
+  ["'como-usar'", {
+    corvo: ["Acabou? Já? Clica de novo! De novo!", "Done? Already? Click again! Again!"],
+    coruja: ["Fim. Pode ir.", "The end. You may go."],
+  }],
+];
+
+export function falasDoPasso(alvo: string): { corvo?: string; coruja?: string } {
+  const par = FALAS.find(([trecho]) => alvo.includes(trecho))?.[1];
+  return par ? { corvo: t(...par.corvo), coruja: t(...par.coruja) } : {};
+}

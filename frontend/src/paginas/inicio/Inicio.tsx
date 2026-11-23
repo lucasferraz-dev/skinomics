@@ -44,6 +44,7 @@ export function Inicio() {
       </main>
       <Rodape />
       <Mascote />
+      <Mascote especie="coruja" />
     </div>
   );
 }
@@ -72,7 +73,7 @@ function Navegacao() {
 
 function Hero() {
   return (
-    <section data-tv={t("Início", "Home")}>
+    <section data-tv={t("Início", "Home")} data-tv-chave="inicio">
       <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
         <div className="space-y-7">
           <Rotulo destaque>{t("Preços e previsões de itens do Mercado da Steam", "Steam Market item prices and forecasts")}</Rotulo>

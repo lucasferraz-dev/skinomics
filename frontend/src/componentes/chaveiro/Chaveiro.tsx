@@ -1,6 +1,7 @@
 import { t } from "../../lib/idioma";
 import { type CSSProperties, type RefObject, useEffect, useRef } from "react";
 
+import { EVENTO_PUXAR_CHAVEIRO } from "../mascote/eventos";
 import { acordar, anguloDisco, type Corpo, registrar } from "./fisica";
 import { type TemaChaveiro, temasDoItem } from "./temas";
 
@@ -82,6 +83,33 @@ export function Chaveiro({
     novo.desenhar();
     return registrar(novo);
   }, [parede, segmentos, RAIO, COMPRIMENTO_SEGMENTO, balanco]);
+
+  // O Muninn puxa este chaveiro no tutorial: um puxão curto para o lado e solta; ele volta com o embalo
+  // e bate no vizinho, como se alguém tivesse puxado com o mouse.
+  useEffect(() => {
+    let quadro = 0;
+    const puxar = (evento: Event) => {
+      const alvo = (evento as CustomEvent<Element | null>).detail;
+      const c = corpo.current;
+      if (!c || !alvo || !raiz.current?.contains(alvo) || c.arrasto) return;
+      const ponta = { ...c.pontos[c.pontos.length - 1]! };
+      const inicio = performance.now();
+      c.arrasto = { ...ponta };
+      acordar();
+      const passo = (agora: number) => {
+        const k = Math.min(1, (agora - inicio) / 380);
+        c.arrasto = { x: ponta.x + 34 * k * k, y: ponta.y - 12 * k };
+        if (k < 1) quadro = requestAnimationFrame(passo);
+        else c.arrasto = null;
+      };
+      quadro = requestAnimationFrame(passo);
+    };
+    window.addEventListener(EVENTO_PUXAR_CHAVEIRO, puxar);
+    return () => {
+      cancelAnimationFrame(quadro);
+      window.removeEventListener(EVENTO_PUXAR_CHAVEIRO, puxar);
+    };
+  }, []);
 
   function cursorLocal(evento: React.PointerEvent) {
     const ancora = corpo.current!.ancora();

@@ -18,7 +18,7 @@ export function PreviaDaPlataforma() {
   const card = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="plataforma" data-tv={t("Prévia", "Preview")} className="scroll-mt-32 py-14 sm:py-28">
+    <section id="plataforma" data-tv={t("Prévia", "Preview")} data-tv-chave="previa" className="scroll-mt-32 py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo={t("Prévia", "Preview")}
@@ -156,7 +156,7 @@ export function Radar() {
   };
 
   return (
-    <section data-tv={t("Mais negociados", "Most traded")} className="py-14 sm:py-28">
+    <section data-tv={t("Mais negociados", "Most traded")} data-tv-chave="radar" className="py-14 sm:py-28">
       <Container className="space-y-10">
         <CabecalhoSecao
           rotulo={t("No radar", "On the radar")}
@@ -170,7 +170,8 @@ export function Radar() {
           texto={t("Preço, variação em 7 dias, tendência de 30 dias e quantas unidades foram vendidas no Mercado da Steam.", "Price, 7-day change, 30-day trend and how many units sold on the Steam Market.")}
         />
 
-        <div data-tour="radar">
+        {/* A tabela também é poleiro: a borda de cima é larga e cabe os dois mascotes */}
+        <div data-tour="radar" data-poleiro>
         <Painel>
           <div className="flex items-center justify-between border-b border-borda px-4 py-3">
             <span className="rounded-md border border-destaque/25 bg-destaque-fundo px-3 py-1.5 text-sm text-destaque">

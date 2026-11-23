@@ -37,7 +37,7 @@ const PASSOS = [
 /** Seção 4: como funciona, em três passos. */
 export function FluxoSimples() {
   return (
-    <section id="como-funciona" data-tv={t("Como funciona", "How it works")} className="scroll-mt-32 py-14 sm:py-20">
+    <section id="como-funciona" data-tv={t("Como funciona", "How it works")} data-tv-chave="como-funciona" className="scroll-mt-32 py-14 sm:py-20">
       <Container className="space-y-8">
         <Rotulo destaque>{t("Como funciona", "How it works")}</Rotulo>
         <ol className="relative grid gap-8 md:grid-cols-3 md:gap-6">
@@ -120,7 +120,7 @@ function TextoQualidade() {
 /** Transparência: de onde vêm os números e os limites do produto. */
 export function Transparencia() {
   return (
-    <section id="transparencia" data-tv={t("Transparência", "Transparency")} className="scroll-mt-32 py-14 sm:py-28">
+    <section id="transparencia" data-tv={t("Transparência", "Transparency")} data-tv-chave="transparencia" className="scroll-mt-32 py-14 sm:py-28">
       <Container className="space-y-12">
         <CabecalhoSecao
           rotulo={t("Transparência", "Transparency")}
@@ -177,13 +177,13 @@ const PERGUNTAS = [
 
 export function Faq() {
   return (
-    <section id="faq" data-tv={t("Perguntas frequentes", "Frequently asked questions")} className="scroll-mt-32 py-14 sm:py-28">
+    <section id="faq" data-tv={t("Perguntas frequentes", "Frequently asked questions")} data-tv-chave="faq" className="scroll-mt-32 py-14 sm:py-28">
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-4">
           <Rotulo destaque>FAQ</Rotulo>
           <h2 data-poleiro="texto" className="text-4xl titulo sm:text-5xl">{t("Perguntas frequentes", "Frequently asked questions")}</h2>
         </div>
-        <div className="divide-y divide-borda border-y border-borda">
+        <div data-poleiro className="divide-y divide-borda border-y border-borda">
           {PERGUNTAS.map(({ pergunta, resposta }) => (
             <details key={pergunta} className="group py-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg">

@@ -1,5 +1,5 @@
 import { t } from "../../lib/idioma";
-import { useId, useRef } from "react";
+import { type CSSProperties, useId, useRef } from "react";
 
 import { APOIO_X, BASE_CAUDA, OMBRO, perna, PESCOCO, type Pose, transformarCorpo } from "./corvo";
 
@@ -7,11 +7,11 @@ import { APOIO_X, BASE_CAUDA, OMBRO, perna, PESCOCO, type Pose, transformarCorpo
 // escamas, penas em lâmina com nervura e espirais. Coordenadas do viewBox 120 × 100, olhando para a
 // direita, chão em y = 96. As partes animadas ficam em grupos separados (ver `aplicarPose`).
 
-type Ponto = { x: number; y: number };
-const n = (v: number) => v.toFixed(2);
+export type Ponto = { x: number; y: number };
+export const n = (v: number) => v.toFixed(2);
 
 /** Pena em lâmina: base larga, ponta afilada levemente arredondada. */
-function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: number) {
+export function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: number) {
   const a = (anguloGraus * Math.PI) / 180;
   const d = { x: Math.cos(a), y: Math.sin(a) };
   const nrm = { x: -d.y * largura, y: d.x * largura };
@@ -29,7 +29,7 @@ function lamina(base: Ponto, anguloGraus: number, comprimento: number, largura: 
 }
 
 /** Fileiras de "escamas" (pequenos arcos) que imitam a plumagem; recortadas pela forma da região. */
-function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) {
+export function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) {
   let d = "";
   let linha = 0;
   for (let y = y0; y <= y1; y += passo * 0.75, linha++) {
@@ -41,7 +41,7 @@ function escamas(x0: number, y0: number, x1: number, y1: number, passo: number) 
 }
 
 /** Espiral ornamental: começa por fora e fecha para dentro. */
-function espiral(cx: number, cy: number, raio: number, voltas: number, giro = 0) {
+export function espiral(cx: number, cy: number, raio: number, voltas: number, giro = 0) {
   let d = "";
   const passos = Math.round(voltas * 24);
   for (let i = 0; i <= passos; i++) {
@@ -51,6 +51,28 @@ function espiral(cx: number, cy: number, raio: number, voltas: number, giro = 0)
     d += `${i ? "L" : "M"}${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
   }
   return d;
+}
+
+/**
+ * Fumaça saindo do olho (o "ego" dos mascotes): fiapos que nascem no olho, crescem enquanto se afastam
+ * na direção `angulo` (graus, no sistema do SVG) e se desfazem, um atrás do outro.
+ */
+export function FumacaOlho({ x, y, angulo, alcance, filtro }: { x: number; y: number; angulo: number; alcance: number; filtro: string }) {
+  return (
+    <g filter={filtro} stroke="none" fill="var(--color-destaque)" aria-hidden>
+      {Array.from({ length: 7 }, (_, i) => {
+        const a = ((angulo + ((i * 37) % 28) - 14) * Math.PI) / 180;
+        const d = alcance * (0.75 + ((i * 53) % 50) / 100);
+        const estilo = {
+          "--dx": `${n(Math.cos(a) * d)}px`,
+          "--dy": `${n(Math.sin(a) * d)}px`,
+          "--s": String(2.6 + (i % 3) * 0.6),
+          animationDelay: `${n(-i * 0.24)}s`,
+        } as CSSProperties;
+        return <ellipse key={i} className="fumaca-olho" cx={x} cy={y} rx={1.9 + (i % 3) * 0.4} ry={1.3 + (i % 2) * 0.4} style={estilo} />;
+      })}
+    </g>
+  );
 }
 
 // ---- Formas fixas ----
@@ -121,27 +143,50 @@ export function usePartes(): Partes {
 }
 
 const OLHO_Y = 30.2;
-const ARTICULACAO_BICO = { x: 104.2, y: 34.8 };
+
+/** Pontos onde as partes giram; cada bicho tem os seus (as pernas e o corpo usam os quadris comuns). */
+export type Esqueleto = { pescoco: Ponto; ombro: Ponto; baseCauda: Ponto; olhoY: number; bico: Ponto };
+
+export const ESQUELETO_CORVO: Esqueleto = {
+  pescoco: PESCOCO,
+  ombro: OMBRO,
+  baseCauda: BASE_CAUDA,
+  olhoY: OLHO_Y,
+  bico: { x: 104.2, y: 34.8 },
+};
 
 /** Aplica uma pose às partes do desenho (sem passar pelo React). `piscada` vai de 0 (aberto) a 1. */
-export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada = 0) {
+/**
+ * `espelho` vai de -1 (olhando para a esquerda) a 1 (direita), passando pelos valores do meio na virada;
+ * `viradaCabeca` vai de 0 (cabeça para frente) a 1 (virada para trás, por cima do ombro).
+ */
+export function aplicarPose(partes: Partes, pose: Pose, espelho: number, piscada = 0, esqueleto = ESQUELETO_CORVO, viradaCabeca = 0) {
+  const { pescoco, ombro, baseCauda, olhoY, bico } = esqueleto;
   const t = (ref: React.RefObject<Element | null>, valor: string) => ref.current?.setAttribute("transform", valor);
-  t(partes.espelho, direcao < 0 ? `translate(${APOIO_X * 2} 0) scale(-1 1)` : "");
+  // Virar o corpo: espelha em torno do apoio dos pés, passando suave pelo perfil fino.
+  const e = Math.abs(espelho) < 0.08 ? 0.08 * (Math.sign(espelho) || 1) : espelho;
+  t(partes.espelho, `translate(${APOIO_X} 0) scale(${n(e)} 1) translate(${-APOIO_X} 0)`);
   t(partes.corpo, transformarCorpo(pose));
-  t(partes.cabeca, `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) rotate(${n(pose.cabecaGiro)} ${PESCOCO.x} ${PESCOCO.y})`);
-  t(partes.cauda, `rotate(${n(pose.cauda)} ${BASE_CAUDA.x} ${BASE_CAUDA.y})`);
-  t(partes.asaFechada, `rotate(${n(pose.asaFechadaGiro)} ${OMBRO.x} ${OMBRO.y})`);
+  // Olhar para trás: espelha só a cabeça em torno do pescoço (o bico passa por cima do ombro).
+  const giro = Math.cos(viradaCabeca * Math.PI);
+  const h = Math.abs(giro) < 0.08 ? 0.08 * (Math.sign(giro) || 1) : giro;
+  t(
+    partes.cabeca,
+    `translate(${n(pose.cabecaX)} ${n(pose.cabecaY)}) translate(${pescoco.x} ${pescoco.y}) scale(${n(h)} 1) rotate(${n(pose.cabecaGiro)}) translate(${-pescoco.x} ${-pescoco.y})`,
+  );
+  t(partes.cauda, `rotate(${n(pose.cauda)} ${baseCauda.x} ${baseCauda.y})`);
+  t(partes.asaFechada, `rotate(${n(pose.asaFechadaGiro)} ${ombro.x} ${ombro.y})`);
   partes.asaFechada.current?.setAttribute("opacity", pose.asa === "fechada" ? "1" : "0");
   for (const [ref, angulo] of [
     [partes.asaPerto, pose.asaAngulo],
     [partes.asaLonge, pose.asaLonge],
   ] as const) {
     // A asa aberta é desenhada apontando para cima; girar no sentido anti-horário a leva para trás.
-    t(ref, `translate(${OMBRO.x} ${OMBRO.y}) rotate(${n(-angulo)})`);
+    t(ref, `translate(${ombro.x} ${ombro.y}) rotate(${n(-angulo)})`);
     ref.current?.setAttribute("opacity", pose.asa === "aberta" ? "1" : "0");
   }
-  t(partes.olho, `translate(0 ${OLHO_Y}) scale(1 ${n(1 - piscada)}) translate(0 ${-OLHO_Y})`);
-  t(partes.bico, `rotate(${n(pose.bico)} ${ARTICULACAO_BICO.x} ${ARTICULACAO_BICO.y})`);
+  t(partes.olho, `translate(0 ${olhoY}) scale(1 ${n(1 - piscada)}) translate(0 ${-olhoY})`);
+  t(partes.bico, `rotate(${n(pose.bico)} ${bico.x} ${bico.y})`);
   ([0, 1] as const).forEach((lado) => {
     const p = perna(pose, lado);
     partes.pernas.current[lado * 4]?.setAttribute("d", p.tarso);
@@ -151,7 +196,7 @@ export function aplicarPose(partes: Partes, pose: Pose, direcao: number, piscada
   });
 }
 
-function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura: string }[]; opacidade?: number }) {
+export function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura: string }[]; opacidade?: number }) {
   return (
     <>
       {penas.map(({ contorno, nervura }) => (
@@ -164,7 +209,7 @@ function Penas({ penas, opacidade = 0.55 }: { penas: { contorno: string; nervura
   );
 }
 
-function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
+export function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
   return (
     <g strokeOpacity={fundo ? 0.4 : 1}>
       <Penas penas={[...SECUNDARIAS_ABERTAS].reverse()} />
@@ -182,7 +227,7 @@ function AsaAberta({ id, fundo = false }: { id: string; fundo?: boolean }) {
 export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes; largura: number; altura: number; aoClicar?: () => void }) {
   const id = useId().replace(/:/g, "");
   return (
-    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-corvo aria-label={t("Corvo do Skinomics", "Skinomics crow")}>
+    <svg viewBox="0 0 120 100" width={largura} height={altura} className="overflow-visible" role="img" data-corvo aria-label={t("Muninn, o corvo do Skinomics", "Muninn, the Skinomics raven")}>
       <defs>
         <clipPath id={`${id}-corpo`}>
           <path d={CORPO} />
@@ -193,6 +238,25 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
         <clipPath id={`${id}-cabeca`}>
           <path d={CABECA} />
         </clipPath>
+        <radialGradient id={`${id}-aura`}>
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${id}-rastro`} gradientUnits="userSpaceOnUse" x1="93" y1="0" x2="76" y2="0">
+          <stop offset="0%" stopColor="var(--color-destaque)" stopOpacity="1" />
+          <stop offset="100%" stopColor="var(--color-destaque)" stopOpacity="0" />
+        </linearGradient>
+        <filter id={`${id}-fumaca`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="0.75" />
+        </filter>
+        <filter id={`${id}-brilho`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="0.9" result="halo" />
+          <feMerge>
+            <feMergeNode in="halo" />
+            <feMergeNode in="halo" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <g
         ref={partes.espelho}
@@ -248,7 +312,21 @@ export function CorvoSvg({ partes, largura, altura, aoClicar }: { partes: Partes
             <path d={BICO_CIMA} />
             <path d="M99.6 26.6C101.8 26.6 104 27.6 106.4 29.4M99.4 28.4c2 .2 3.8 1 5.6 2.4" fill="none" strokeWidth="0.55" />
             {/* Olho de bravo: fenda inclinada sob a sobrancelha; pisca fechando a fenda */}
-            <g ref={partes.olho}>
+            {/* Ego: brilho em volta do olho, chama no canto e fumaça escapando para trás (não é um corvo comum) */}
+            <circle className="aura-olho" cx="95.2" cy={OLHO_Y} r="9" fill={`url(#${id}-aura)`} stroke="none" />
+            <FumacaOlho x={93.4} y={OLHO_Y - 0.4} angulo={196} alcance={29} filtro={`url(#${id}-fumaca)`} />
+            {/* Chama maior (o grupo escala a partir do olho; a animação mexe no próprio caminho) */}
+            <g transform={`translate(93 ${OLHO_Y}) scale(1.7) translate(-93 ${-OLHO_Y})`}>
+            <path
+              className="chama-olho"
+              style={{ transformOrigin: "100% 50%" }}
+              d={`M93 ${OLHO_Y - 1.1}C88.6 ${OLHO_Y - 3.4} 83.6 ${OLHO_Y - 3.2} 78.4 ${OLHO_Y - 5.6}C83.4 ${OLHO_Y - 1.6} 88.2 ${OLHO_Y + 1} 93 ${OLHO_Y + 0.8}Z`}
+              fill={`url(#${id}-rastro)`}
+              stroke="none"
+              filter={`url(#${id}-brilho)`}
+            />
+            </g>
+            <g ref={partes.olho} filter={`url(#${id}-brilho)`}>
               <path d={`M91.6 ${OLHO_Y - 0.2}Q95.2 ${OLHO_Y - 2.2} 98.8 ${OLHO_Y + 0.6}Q95 ${OLHO_Y + 1.5} 91.6 ${OLHO_Y - 0.2}Z`} fill="var(--color-destaque)" strokeWidth="0.4" />
               <circle cx="95.8" cy={OLHO_Y} r="0.75" fill="#000" stroke="none" />
             </g>

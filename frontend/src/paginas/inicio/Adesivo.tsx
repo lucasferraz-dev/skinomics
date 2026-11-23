@@ -2,6 +2,8 @@ import { t } from "../../lib/idioma";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
+import { avisar, EVENTO_POLEIRO_MEXIDO } from "../../componentes/mascote/eventos";
+
 // Adesivo que dá para descolar puxando pela ponta do canto inferior direito. A dobra fica na
 // mediatriz entre o canto e o ponto puxado: o que está do lado do canto sai do adesivo e reaparece
 // espelhado por cima, como a aba dobrada mostrando o verso. Embaixo aparece um dado a mais.
@@ -201,7 +203,7 @@ export function Adesivo({
     ocupado.current = true;
     setPuxando(true);
     // Avisa o corvo: se ele estiver pousado aqui, sai voando.
-    window.dispatchEvent(new CustomEvent("skinomics:poleiro-mexido", { detail: raiz.current }));
+    avisar(EVENTO_POLEIRO_MEXIDO, raiz.current);
     puxado.current = pontoLocal(evento);
     desenhar();
   }
