@@ -10,6 +10,6 @@
   ],
   "rewrites": [
     { "source": "/api/:caminho*", "destination": "https://skinomics-api.onrender.com/:caminho*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!_vercel/).*)", "destination": "/index.html" }
   ]
 }

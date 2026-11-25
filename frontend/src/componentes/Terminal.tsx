@@ -1,24 +1,15 @@
 import { Outlet } from "react-router";
 
-import { MenuConta } from "./Conta";
-import { Logo } from "./Logo";
+import { useIdioma } from "../lib/idioma";
+import { Cabecalho } from "./Cabecalho";
 import { MenuAnalise } from "./MenuAnalise";
 
 export function Terminal() {
+  // Os botões do header (idioma, tutorial) têm textos traduzidos.
+  useIdioma();
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center justify-between border-b border-borda px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Logo />
-          {/* No celular não cabe ao lado da conta; o jogo já aparece nos rótulos das telas. */}
-          <span className="hidden text-apagado sm:inline">/</span>
-          <span className="hidden text-sm text-suave sm:inline">Mercado da Steam</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="rounded border border-borda px-2 py-1 font-mono text-[11px] text-suave">USD</span>
-          <MenuConta />
-        </div>
-      </header>
+      <Cabecalho />
 
       <div className="flex flex-1 flex-col md:flex-row">
         <MenuAnalise />

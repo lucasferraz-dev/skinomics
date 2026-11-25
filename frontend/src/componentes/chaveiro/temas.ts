@@ -117,13 +117,22 @@ const TEMAS: [RegExp, TemaChaveiro][] = [
   [/^strange/, T.strange],
 ];
 
+/**
+ * O que o item é (caixa, ferramenta, peça de robô...), pelo nome e pelo tipo. A Steam deixa o `tipo` vazio
+ * na maioria dos itens, então os filtros do Explorar usam esta categoria, a mesma do chaveiro.
+ */
+export function categoriaDoItem(item: { nome: string; tipo?: string | null }): TemaChaveiro | undefined {
+  const texto = `${item.nome} ${item.tipo ?? ""}`.toLowerCase();
+  return TIPOS.find(([regra]) => regra.test(texto))?.[1];
+}
+
 /** Chaveiros do item: primeiro o do jogo; depois até três com o que ele é, o evento e a qualidade. */
 export function temasDoItem(
   item: { appid: number; nome: string; tipo?: string | null } | undefined,
 ): TemaChaveiro[] {
   if (!item) return [];
   const texto = `${item.nome} ${item.tipo ?? ""}`.toLowerCase();
-  const tipo = TIPOS.find(([regra]) => regra.test(texto))?.[1];
+  const tipo = categoriaDoItem(item);
   const extras = TEMAS.filter(([regra]) => regra.test(texto)).map(([, tema]) => tema);
   const doItem = [tipo, ...extras].filter((t): t is TemaChaveiro => Boolean(t)).slice(0, 3);
   // O chaveiro do jogo (pela lista de jogos do site) vem sempre primeiro.
