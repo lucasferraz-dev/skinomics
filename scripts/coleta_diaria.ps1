@@ -3,7 +3,8 @@
 #
 # 1. Baixa da Steam só os itens cuja série ainda não chega a ontem (--pendentes): se o dia já foi
 #    coletado, sai sem pedir nada; se a Steam pediu uma pausa (429), continua da próxima vez.
-# 2. Se entrou preço novo, publica as previsões dos modelos ativos (ml.worker --once).
+# 2. Se entrou preço novo, publica as previsões dos modelos ativos (ml.worker --once) e confere
+#    os alertas de preço dos usuários (app.servicos.alertas).
 # 3. Avisa por notificação do Windows como terminou: deu certo, precisa de alguém (cookie
 #    vencido) ou falhou, já com o motivo.
 #
@@ -168,6 +169,21 @@ try {
             Mostrar-Aviso "Skinomics: as previsões falharam" "Os preços entraram, mas a previsão não: $motivo"
         } elseif ($codigo -eq 0) {
             Mostrar-Aviso "Skinomics: preços atualizados" "$itensGravados itens com os preços de ontem, e as previsões publicadas."
+        }
+
+        # Alertas de preço: só mudam com preço novo. O aviso de cada usuário aparece no sino do site.
+        Escrever-Log "conferindo os alertas de preço"
+        Push-Location (Join-Path $raiz "backend")
+        try {
+            $resultado = Rodar $uv @("run", "python", "-m", "app.servicos.alertas")
+            $saidaAlertas, $codigoAlertas = $resultado.Saida, $resultado.Codigo
+        } finally {
+            Pop-Location
+        }
+        if ($codigoAlertas -ne 0) {
+            $motivo = Ultimo-Motivo $saidaAlertas
+            Escrever-Log "resultado: os alertas não foram conferidos. Motivo: $motivo"
+            Mostrar-Aviso "Skinomics: os alertas falharam" "Os preços entraram, mas os alertas não foram conferidos: $motivo"
         }
     }
 } catch {
