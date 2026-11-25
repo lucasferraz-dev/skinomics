@@ -4,6 +4,15 @@
 
 ### Adicionado
 
+- Alertas de preço (US012, #24): "cair até" (para comprar) ou "subir até" (para vender) um
+  preço-alvo, criados no detalhe do item (botão ao lado de Acompanhar, com atalhos de -5%, -10%,
+  -20% e a faixa da previsão) ou na aba Alertas, que lista os disparados e os que estão vigiando,
+  com a barra de quanto falta, pausar, retomar, trocar o alvo e apagar. A checagem roda depois de
+  cada coleta diária (`app.servicos.alertas`) e cada alerta dispara uma vez só; o alvo que o preço
+  de hoje já atingiu é recusado. O aviso fica só no site: o sino do header fica verde com o número
+  de alertas disparados, como o da Steam, sem e-mail. API: `GET/POST /alertas`,
+  `PATCH/DELETE /alertas/{id}`, `GET /alertas/avisos` e `POST /alertas/avisos/vistos`; tabela
+  `alerta` (migração `5b3e0c7d9a41`). Muninn e Glaux comentam os alertas na aba.
 - Coleta diária agendada no Windows (#12): `scripts/coleta_diaria.ps1` baixa só os itens
   pendentes, publica as previsões (`ml.worker --once`), grava log por dia e avisa por notificação
   quando o cookie da Steam vence ou algo falha; `scripts/agendar_coleta.ps1` registra a tarefa

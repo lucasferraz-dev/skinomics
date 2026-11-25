@@ -213,6 +213,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/alertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar
+         * @description Alertas do usuário logado, os mais recentes primeiro.
+         */
+        get: operations["listar_alertas_get"];
+        put?: never;
+        /**
+         * Criar
+         * @description Cria o alerta. O alvo precisa ainda não ter sido atingido pelo preço de hoje.
+         */
+        post: operations["criar_alertas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alertas/avisos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Avisos
+         * @description Alertas disparados que o usuário ainda não viu: o que acende o sino do header.
+         */
+        get: operations["avisos_alertas_avisos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alertas/avisos/vistos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar Vistos */
+        post: operations["marcar_vistos_alertas_avisos_vistos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alertas/{alerta_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remover */
+        delete: operations["remover_alertas__alerta_id__delete"];
+        options?: never;
+        head?: never;
+        /** Atualizar */
+        patch: operations["atualizar_alertas__alerta_id__patch"];
+        trace?: never;
+    };
     "/oportunidades": {
         parameters: {
             query?: never;
@@ -257,6 +336,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertaResumo */
+        AlertaResumo: {
+            /** Id */
+            id: number;
+            item: components["schemas"]["ItemResumo"];
+            condicao: components["schemas"]["CondicaoAlerta"];
+            /** Preco Alvo */
+            preco_alvo: number;
+            /**
+             * Preco Criacao
+             * @description Preço quando o alerta foi criado ou rearmado, base do quanto falta
+             */
+            preco_criacao: number | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "aguardando" | "disparado" | "pausado";
+            /**
+             * Criado Em
+             * Format: date-time
+             */
+            criado_em: string;
+            /** Disparado Em */
+            disparado_em: string | null;
+            /** Preco Disparo */
+            preco_disparo: number | null;
+            /**
+             * Data Preco Disparo
+             * @description Dia do preço que disparou o alerta
+             */
+            data_preco_disparo: string | null;
+            /**
+             * Visto
+             * @description Falso enquanto o aviso do disparo está no sino
+             */
+            visto: boolean;
+        };
+        /**
+         * CondicaoAlerta
+         * @enum {string}
+         */
+        CondicaoAlerta: "abaixo" | "acima";
         /**
          * Direcao
          * @enum {string}
@@ -390,6 +512,27 @@ export interface components {
              * @description Fração do teste dentro da faixa de 80%.
              */
             cobertura_intervalo?: number | null;
+        };
+        /**
+         * MudancaAlerta
+         * @description Trocar o alvo ou reativar um alerta disparado o arma de novo; `ativo` pausa e retoma.
+         */
+        MudancaAlerta: {
+            /** Preco Alvo */
+            preco_alvo?: number | null;
+            /** Ativo */
+            ativo?: boolean | null;
+        };
+        /** NovoAlerta */
+        NovoAlerta: {
+            /** Item Id */
+            item_id: number;
+            condicao: components["schemas"]["CondicaoAlerta"];
+            /**
+             * Preco Alvo
+             * @description Em USD
+             */
+            preco_alvo: number;
         };
         /** Oportunidade */
         Oportunidade: {
@@ -982,6 +1125,200 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_alertas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertaResumo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    criar_alertas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoAlerta"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertaResumo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    avisos_alertas_avisos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertaResumo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    marcar_vistos_alertas_avisos_vistos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remover_alertas__alerta_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alerta_id: number;
+            };
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_alertas__alerta_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alerta_id: number;
+            };
+            cookie?: {
+                skinomics_sessao?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MudancaAlerta"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertaResumo"];
+                };
             };
             /** @description Validation Error */
             422: {

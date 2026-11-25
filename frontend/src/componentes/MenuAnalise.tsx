@@ -28,7 +28,7 @@ const MENU: ItemMenu[] = [
   }, icone: icone("M6 3h12v18l-6-4-6 4z"), para: "/minha-lista" },
   { get rotulo() {
     return t("Alertas", "Alerts");
-  }, icone: icone("M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4") },
+  }, icone: icone("M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"), para: "/alertas" },
 ];
 
 function LinkMenu({ item }: { item: ItemMenu }) {

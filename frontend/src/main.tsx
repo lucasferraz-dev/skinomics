@@ -17,6 +17,7 @@ import { DetalheItem } from "./paginas/DetalheItem";
 import { Entrar } from "./paginas/Entrar";
 import { ExplorarItens } from "./paginas/ExplorarItens";
 import { Inicio } from "./paginas/inicio/Inicio";
+import { Alertas } from "./paginas/Alertas";
 import { MinhaLista } from "./paginas/MinhaLista";
 import { Oportunidades } from "./paginas/Oportunidades";
 
@@ -33,6 +34,7 @@ const rotas = createBrowserRouter([
       { path: "itens", element: <ExplorarItens /> },
       { path: "itens/:id", element: <DetalheItem /> },
       { path: "minha-lista", element: <MinhaLista /> },
+      { path: "alertas", element: <Alertas /> },
       { path: "oportunidades", element: <Oportunidades /> },
       { path: "*", element: <MensagemErro titulo="Página não encontrada." /> },
     ],

@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { ErroApi } from "../api/cliente";
 import { type HorizontePrevisao, type ItemResumo, type PontoHistorico, useHistorico, useItem, usePrevisao } from "../api/itens";
 import { Carregando, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
+import { BotaoCriarAlerta } from "../componentes/alertas/CriarAlerta";
 import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { CardItem } from "../componentes/CardItem";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
@@ -203,6 +204,12 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
   // Selos do evento e da qualidade (os mesmos dos chaveiros), sem repetir o jogo e a categoria.
   const selos = temasDoItem(item).filter((tema) => !tema.texto && tema.nome !== categoria?.nome);
   const urlSteam = `https://steamcommunity.com/market/listings/${item.appid}/${encodeURIComponent(item.market_hash_name)}`;
+  // A faixa de 80% da previsão de 7 dias vira um atalho no formulário do alerta.
+  const previsao = usePrevisao(item.id, 7).data;
+  const faixa =
+    previsao?.disponivel && previsao.intervalo_inferior != null && previsao.intervalo_superior != null
+      ? { inferior: previsao.intervalo_inferior, superior: previsao.intervalo_superior }
+      : undefined;
 
   return (
     <section data-tv={t("O item", "The item")} className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
@@ -245,6 +252,7 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
 
         <div data-tour="item-acompanhar" className="flex flex-wrap items-start gap-3">
           <BotaoAcompanhar itemId={item.id} />
+          <BotaoCriarAlerta item={item} faixa={faixa} />
           <BotaoSecundario href={urlSteam} icone={<span aria-hidden>↗</span>}>
             Ver no Mercado da Steam
           </BotaoSecundario>
