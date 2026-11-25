@@ -12,7 +12,40 @@
   coleta interrompida e não pede nada à Steam se o dia já foi coletado. `--variacao` sorteia até
   N segundos a mais entre os pedidos. Códigos de saída: 10 (429, tentar depois) e 11 (cookie
   vencido ou conta em outra moeda).
+- Explorar itens no visual da landing (US005, #16): filtros por categoria (a mesma dos chaveiros),
+  faixa de preço (`preco_min`/`preco_max` da API) e atalhos de ordenação, em chips; visão em grade
+  (cards no estilo dos terminais) ou lista; destaques da semana no topo e medalhas nos itens em
+  destaque. Chaveiros nos terminais, nos cards (mini, dentro da vitrine) e nas linhas da lista. Os
+  filtros ficam na URL.
+- Detalhe do item com hero de vitrine (imagem, brilho, medalha e chaveiros), selos de evento e
+  qualidade, adesivos com preço, variação, previsão de 7 dias e vendas, link para o Mercado da Steam
+  e a seção "Itens parecidos" (mesma categoria).
+- Muninn e Glaux de plantão no canto da tela no Explorar e no detalhe do item (`MascotesFixos`),
+  empoleirados num card "De plantão" no formato dos terminais, sem voar pela página, comentando os dados dela (`componentes/mascote/analise.ts`): no item, a Glaux lê
+  a previsão com a faixa de confiança, o volume e o risco, e o Muninn as medalhas, a variação e o
+  histórico; no Explorar, o resultado dos filtros. "Como usar" das duas páginas, apresentado pelos
+  dois e aberto só quando pedido (na landing continua abrindo sozinho na primeira visita).
 
+- Leitura do modelo no estilo touro e urso (`lib/sinal.ts`, `componentes/SinalModelo.tsx`): cinco
+  níveis tirados da previsão e da faixa de 80% (alta forte quando até o pior caso fica acima do preço
+  de hoje), sem leitura com pouco volume ou faixa larga demais. Medidor no detalhe do item, selo nos
+  cards do Explorar, falas do Muninn e da Glaux sobre a leitura e passo no "Como usar". É uma leitura
+  do modelo, não recomendação de investimento.
+
+- Vercel Web Analytics no front (`@vercel/analytics`): visitas e páginas vistas, sem cookies, no
+  painel do projeto na Vercel. O `vercel.json` deixa os caminhos `/_vercel/*` fora da regra que
+  manda tudo para o `index.html`.
+
+### Alterado
+
+- O Terminal usa o mesmo header da landing (`componentes/Cabecalho.tsx`): alto, translúcido e fixo,
+  com os mesmos botões; o modo TV fica só na landing.
+- Tutorial: ao rolar até uma parte, deixa espaço em cima para os mascotes e os balões deles (antes
+  ficavam fora da tela em partes altas) e não erra a conta quando o header rolou para fora; o balão
+  de explicação não cobre os mascotes de plantão.
+- O balão de fala dos mascotes da landing passa para baixo deles quando ficaria atrás do header.
+- `SKINOMICS_API_PROXY` no `frontend/.env.local` permite rodar o front sem Docker, apontando o
+  proxy do Vite para a API publicada (`changeOrigin` ligado).
 - Coletor do mercado da Steam (`app.coleta.steam`): requisições espaçadas e parada no primeiro
   HTTP 429, sem novas tentativas que estenderiam o bloqueio do IP.
 - `app.coleta.historico_steam`: regrava a série diária completa de cada item ativo a partir do

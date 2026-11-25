@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 
 import { obter } from "./cliente";
 import type { components, paths } from "./esquema";
@@ -34,6 +34,17 @@ export function usePrevisao(id: number, horizonte: HorizontePrevisao = 7, habili
     queryFn: () => obter<PrevisaoItem>(`/itens/${id}/previsao`, { horizonte }),
     enabled: habilitado,
     staleTime: 5 * 60_000,
+  });
+}
+
+/** As previsões de vários itens, com as mesmas chaves de `usePrevisao` (os cards e a página dividem o cache). */
+export function usePrevisoes(ids: number[], horizonte: HorizontePrevisao = 7) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["previsao", id, horizonte],
+      queryFn: () => obter<PrevisaoItem>(`/itens/${id}/previsao`, { horizonte }),
+      staleTime: 5 * 60_000,
+    })),
   });
 }
 

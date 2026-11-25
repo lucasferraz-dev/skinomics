@@ -1,30 +1,74 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { type ReactNode, useEffect, useEffectEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
-import { type FiltrosItens, type ItemResumo, type PontoHistorico, useHistorico, useItens } from "../api/itens";
+import { type FiltrosItens, type ItemResumo, type PontoHistorico, useHistorico, useItens, usePrevisoes } from "../api/itens";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
+import { CardItem, CardItemCarregando } from "../componentes/CardItem";
+import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
+import { IconeTema } from "../componentes/chaveiro/IconeTema";
+import { categoriaDoItem, type TemaChaveiro } from "../componentes/chaveiro/temas";
+import { analiseDoExplorar } from "../componentes/mascote/analise";
+import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { Sparkline } from "../componentes/Sparkline";
+import { useIdioma } from "../lib/idioma";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
 import { jogoDoItem } from "../lib/jogos";
-import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
+import { sinalDoModelo } from "../lib/sinal";
+import { TerminaisDestaque, useDestaquesDaSemana } from "./inicio/Destaques";
+import { Medalha, type TipoMedalha } from "./inicio/Medalha";
+import { CabecalhoSecao } from "./inicio/ui";
 
 type Ordenacao = NonNullable<FiltrosItens["ordenar"]>;
 type Direcao = NonNullable<FiltrosItens["direcao"]>;
+type Visao = "grade" | "lista";
 
-const POR_PAGINA = 20;
+const POR_PAGINA = 24;
+// A API devolve no máximo 100 itens por página: é o teto do filtro por categoria, feito aqui no front.
+const TETO_CATALOGO = 100;
+
+const FAIXAS = {
+  centavos: { rotulo: "Até US$ 0,10", max: 0.1 },
+  "ate-1": { rotulo: "US$ 0,10 a 1", min: 0.1, max: 1 },
+  "ate-10": { rotulo: "US$ 1 a 10", min: 1, max: 10 },
+  "acima-10": { rotulo: "Acima de US$ 10", min: 10 },
+} satisfies Record<string, { rotulo: string; min?: number; max?: number }>;
+type Faixa = keyof typeof FAIXAS;
+
+const ORDENS: { rotulo: string; ordenar: Ordenacao; direcao: Direcao }[] = [
+  { rotulo: "Mais negociados", ordenar: "volume_7d", direcao: "desc" },
+  { rotulo: "Maiores altas", ordenar: "variacao_7d", direcao: "desc" },
+  { rotulo: "Maiores quedas", ordenar: "variacao_7d", direcao: "asc" },
+  { rotulo: "Menor preço", ordenar: "preco", direcao: "asc" },
+  { rotulo: "Maior preço", ordenar: "preco", direcao: "desc" },
+  { rotulo: "A–Z", ordenar: "nome", direcao: "asc" },
+];
+
+type Filtros = {
+  busca?: string;
+  categoria?: string;
+  faixa?: Faixa;
+  ordenar: Ordenacao;
+  direcao: Direcao;
+  pagina: number;
+  visao: Visao;
+};
+type Mudancas = Partial<Record<"busca" | "categoria" | "faixa" | "ordenar" | "direcao" | "pagina" | "visao", string>>;
 
 /** Os filtros moram na URL: dá para compartilhar o link e o "voltar" do navegador funciona. */
 function useFiltrosDaUrl() {
   const [parametros, setParametros] = useSearchParams();
-  const filtros: FiltrosItens = {
+  const faixa = parametros.get("faixa");
+  const filtros: Filtros = {
     busca: parametros.get("busca") ?? undefined,
+    categoria: parametros.get("categoria") ?? undefined,
+    faixa: faixa && faixa in FAIXAS ? (faixa as Faixa) : undefined,
     ordenar: (parametros.get("ordenar") as Ordenacao | null) ?? "volume_7d",
     direcao: (parametros.get("direcao") as Direcao | null) ?? "desc",
-    pagina: Number(parametros.get("pagina") ?? 1),
-    por_pagina: POR_PAGINA,
+    pagina: Math.max(1, Number(parametros.get("pagina") ?? 1) || 1),
+    visao: parametros.get("visao") === "lista" ? "lista" : "grade",
   };
 
-  function atualizar(mudancas: Partial<Record<"busca" | "ordenar" | "direcao" | "pagina", string>>) {
+  function atualizar(mudancas: Mudancas) {
     setParametros(
       (atual) => {
         const novo = new URLSearchParams(atual);
@@ -32,8 +76,8 @@ function useFiltrosDaUrl() {
           if (valor) novo.set(nome, valor);
           else novo.delete(nome);
         }
-        // Qualquer mudança que não seja de página volta para a primeira.
-        if (!("pagina" in mudancas)) novo.delete("pagina");
+        // Mudar filtro ou ordem volta para a primeira página; trocar grade/lista, não.
+        if (!("pagina" in mudancas) && !("visao" in mudancas)) novo.delete("pagina");
         return novo;
       },
       { replace: true },
@@ -43,67 +87,282 @@ function useFiltrosDaUrl() {
   return { filtros, atualizar };
 }
 
+/**
+ * Busca, faixa de preço, ordem e página vão para a API. A categoria não existe na API (sai do nome do
+ * item): com ela, pede o resultado filtrado inteiro e filtra e pagina aqui.
+ */
+function useResultado(filtros: Filtros) {
+  const faixa = filtros.faixa ? FAIXAS[filtros.faixa] : undefined;
+  const base: FiltrosItens = {
+    busca: filtros.busca,
+    ordenar: filtros.ordenar,
+    direcao: filtros.direcao,
+    preco_min: faixa && "min" in faixa ? faixa.min : undefined,
+    preco_max: faixa && "max" in faixa ? faixa.max : undefined,
+  };
+  const consulta = useItens(
+    filtros.categoria ? { ...base, por_pagina: TETO_CATALOGO } : { ...base, pagina: filtros.pagina, por_pagina: POR_PAGINA },
+  );
+  const { data } = consulta;
+
+  if (!data || !filtros.categoria) {
+    return { ...consulta, itens: data?.itens, total: data?.total, pagina: data?.pagina ?? filtros.pagina };
+  }
+  const daCategoria = data.itens.filter((item) => categoriaDoItem(item)?.nome === filtros.categoria);
+  const inicio = (filtros.pagina - 1) * POR_PAGINA;
+  return {
+    ...consulta,
+    itens: daCategoria.slice(inicio, inicio + POR_PAGINA),
+    total: daCategoria.length,
+    pagina: filtros.pagina,
+  };
+}
+
 export function ExplorarItens() {
+  useIdioma(); // os terminais de destaque têm textos traduzidos
   const { filtros, atualizar } = useFiltrosDaUrl();
-  const { data, isPending, isError, isPlaceholderData } = useItens(filtros);
+  const { itens, total, pagina, isPending, isError, isPlaceholderData } = useResultado(filtros);
+  const { itens: catalogo, medalhas } = useDestaquesDaSemana();
+  const filtrando = Boolean(filtros.busca || filtros.categoria || filtros.faixa);
+  // Muda a cada "Limpar filtros", para o campo de busca recomeçar vazio (sem remontar a cada tecla).
+  const [limpezas, setLimpezas] = useState(0);
+  // As mesmas previsões que os cards pedem (cache dividido): os mascotes contam touros e ursos da página.
+  const previsoes = usePrevisoes((itens ?? []).map((item) => item.id));
+  const sinais = (itens ?? []).flatMap((item, i) => {
+    const previsao = previsoes[i]?.data;
+    return previsao ? [sinalDoModelo(previsao, item.volume_7d)] : [];
+  });
+  const falas = analiseDoExplorar({ sinais, catalogo, resultado: itens, total, categoria: filtros.categoria, filtrando });
+  const limpar = () => {
+    atualizar({ busca: "", categoria: "", faixa: "" });
+    setLimpezas((n) => n + 1);
+  };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-3">
-          <Rotulo destaque>Mercado da Steam</Rotulo>
-          <h1 className="text-3xl titulo sm:text-4xl">Explorar itens</h1>
-        </div>
-        <p className="max-w-sm text-sm text-suave">
-          Compare preço, movimento da semana e liquidez. Clique em um item para ver o histórico completo.
-        </p>
-      </header>
+    // pb: o fim da página não fica escondido atrás dos mascotes de plantão no canto.
+    <div className="mx-auto max-w-6xl space-y-10 pb-44">
+      <CabecalhoSecao
+        nivel={1}
+        rotulo="Mercado da Steam"
+        titulo="Explorar itens"
+        texto="Compare preço, movimento da semana e liquidez. Filtre por categoria e faixa de preço, e clique num item para ver o histórico e a previsão."
+      />
 
-      <Painel>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borda p-3 sm:p-4">
-          <span className="font-mono text-xs text-suave">
-            {data ? `${formatarInteiro(data.total)} itens` : " "}
-          </span>
-          <CampoBusca valorInicial={filtros.busca ?? ""} aoBuscar={(busca) => atualizar({ busca })} />
-        </div>
+      {/* Sem filtro, a página abre com o que mais se mexeu na semana, como na landing. */}
+      {!filtrando && filtros.pagina === 1 && (
+        // lg:pb: espaço para os chaveiros dos terminais, que pendem embaixo deles (só aparecem do lg em diante).
+        <section className="space-y-4 lg:pb-16">
+          <Rotulo destaque>Destaques da semana</Rotulo>
+          <TerminaisDestaque tour="destaques-explorar" />
+        </section>
+      )}
+
+      <section className="space-y-4">
+        <BarraFiltros
+          limpezas={limpezas}
+          filtros={filtros}
+          atualizar={atualizar}
+          catalogo={catalogo}
+          total={total}
+          filtrando={filtrando}
+          aoLimpar={limpar}
+        />
 
         {isPending ? (
-          <Carregando texto="Carregando itens…" />
+          filtros.visao === "grade" ? (
+            <GradeItens>
+              {Array.from({ length: 8 }, (_, i) => (
+                <CardItemCarregando key={i} />
+              ))}
+            </GradeItens>
+          ) : (
+            <Painel>
+              <Carregando texto="Carregando itens…" />
+            </Painel>
+          )
         ) : isError ? (
-          <MensagemErro titulo="Não foi possível carregar os itens." detalhe="Confira se a API está no ar." />
-        ) : data.itens.length === 0 ? (
-          <MensagemErro titulo="Nenhum item encontrado." detalhe="Tente outro termo de busca." />
+          <Painel>
+            <MensagemErro titulo="Não foi possível carregar os itens." detalhe="Confira se a API está no ar." />
+          </Painel>
+        ) : !itens || itens.length === 0 ? (
+          <Painel className="flex flex-col items-center pb-8">
+            <MensagemErro titulo="Nenhum item encontrado." detalhe="Tente outro termo ou tire algum filtro." />
+            {filtrando && (
+              <button type="button" onClick={limpar} className="text-sm text-destaque underline-offset-4 hover:underline">
+                Limpar filtros
+              </button>
+            )}
+          </Painel>
         ) : (
-          <div className={`overflow-x-auto transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
-            <table className="w-full min-w-[800px] text-left">
-              <thead className="whitespace-nowrap">
-                <tr className="border-b border-borda">
-                  <Cabecalho rotulo="Item" coluna="nome" filtros={filtros} atualizar={atualizar} />
-                  <Cabecalho rotulo="Preço" coluna="preco" filtros={filtros} atualizar={atualizar} alinharDireita />
-                  <Cabecalho rotulo="Var. 7d" coluna="variacao_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
-                  <th className="px-4 py-3"><Rotulo>Tendência 30d</Rotulo></th>
-                  <Cabecalho rotulo="Volume 7d" coluna="volume_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.itens.map((item) => (
-                  <LinhaItem key={item.id} item={item} />
+          <div data-tour="resultados" className={`transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
+            {filtros.visao === "grade" ? (
+              <GradeItens>
+                {itens.map((item) => (
+                  <CardItem key={item.id} item={item} medalha={medalhas.get(item.id)} />
                 ))}
-              </tbody>
-            </table>
+              </GradeItens>
+            ) : (
+              <TabelaItens itens={itens} filtros={filtros} atualizar={atualizar} medalhas={medalhas} />
+            )}
           </div>
         )}
 
-        {data && data.total > POR_PAGINA && (
-          <Paginacao pagina={data.pagina} total={data.total} aoMudar={(pagina) => atualizar({ pagina: String(pagina) })} />
+        {total !== undefined && total > POR_PAGINA && (
+          <Paginacao pagina={pagina} total={total} aoMudar={(nova) => atualizar({ pagina: String(nova) })} />
         )}
-      </Painel>
+      </section>
 
       <p className="text-xs text-apagado">
         Preços em dólar (US$) do Mercado da Comunidade Steam, um ponto por dia. Variação e volume contam os
-        últimos 7 dias com preço de cada item.
+        últimos 7 dias com preço de cada item. As medalhas marcam os destaques da semana.
       </p>
+
+      <MascotesFixos falas={falas} />
+    </div>
+  );
+}
+
+function GradeItens({ children }: { children: ReactNode }) {
+  return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{children}</div>;
+}
+
+function BarraFiltros({
+  limpezas,
+  filtros,
+  atualizar,
+  catalogo,
+  total,
+  filtrando,
+  aoLimpar,
+}: {
+  limpezas: number;
+  filtros: Filtros;
+  atualizar: (mudancas: Mudancas) => void;
+  catalogo: ItemResumo[];
+  total: number | undefined;
+  filtrando: boolean;
+  aoLimpar: () => void;
+}) {
+  // Só as categorias que existem no catálogo, das mais comuns para as mais raras.
+  const contagem = new Map<string, { tema: TemaChaveiro; quantos: number }>();
+  for (const item of catalogo) {
+    const tema = categoriaDoItem(item);
+    if (!tema) continue;
+    const atual = contagem.get(tema.nome);
+    contagem.set(tema.nome, { tema, quantos: (atual?.quantos ?? 0) + 1 });
+  }
+  const categorias = [...contagem.values()].sort((a, b) => b.quantos - a.quantos);
+
+  return (
+    <Painel className="divide-y divide-borda">
+      <div className="flex flex-wrap items-center gap-3 p-3 sm:p-4">
+        <CampoBusca key={limpezas} valorInicial={filtros.busca ?? ""} aoBuscar={(busca) => atualizar({ busca })} />
+        <span className="font-mono text-xs text-suave">{total !== undefined ? `${formatarInteiro(total)} itens` : " "}</span>
+        {filtrando && (
+          <button type="button" onClick={aoLimpar} className="font-mono text-xs text-apagado transition-colors hover:text-destaque">
+            × Limpar filtros
+          </button>
+        )}
+        <AlternarVisao visao={filtros.visao} aoMudar={(visao) => atualizar({ visao: visao === "grade" ? "" : visao })} />
+      </div>
+
+      <div data-tour="filtros" className="space-y-3 p-3 sm:p-4">
+        <GrupoFiltro rotulo="Categoria">
+          {categorias.map(({ tema, quantos }) => {
+            const ativo = filtros.categoria === tema.nome;
+            return (
+              <Chip key={tema.nome} ativo={ativo} aoClicar={() => atualizar({ categoria: ativo ? "" : tema.nome })}>
+                <IconeTema tema={tema} cor={ativo ? "currentColor" : undefined} />
+                {tema.nome}
+                <span className={`font-mono text-[10px] ${ativo ? "opacity-70" : "text-apagado"}`}>{quantos}</span>
+              </Chip>
+            );
+          })}
+        </GrupoFiltro>
+        <GrupoFiltro rotulo="Preço">
+          {(Object.keys(FAIXAS) as Faixa[]).map((chave) => {
+            const ativo = filtros.faixa === chave;
+            return (
+              <Chip key={chave} ativo={ativo} aoClicar={() => atualizar({ faixa: ativo ? "" : chave })}>
+                {FAIXAS[chave].rotulo}
+              </Chip>
+            );
+          })}
+        </GrupoFiltro>
+        <GrupoFiltro rotulo="Ordenar">
+          {ORDENS.map((ordem) => (
+            <Chip
+              key={ordem.rotulo}
+              ativo={filtros.ordenar === ordem.ordenar && filtros.direcao === ordem.direcao}
+              aoClicar={() => atualizar({ ordenar: ordem.ordenar, direcao: ordem.direcao })}
+            >
+              {ordem.rotulo}
+            </Chip>
+          ))}
+        </GrupoFiltro>
+      </div>
+    </Painel>
+  );
+}
+
+function GrupoFiltro({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:items-center">
+      <Rotulo>{rotulo}</Rotulo>
+      {/* No celular, uma faixa que rola de lado em vez de várias linhas de chips. */}
+      <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Chip de filtro: contorno que se preenche de verde no hover (como o botão secundário); ativo, verde-limão. */
+function Chip({ ativo, aoClicar, children }: { ativo: boolean; aoClicar: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={ativo}
+      onClick={aoClicar}
+      className={`group/botao relative inline-flex shrink-0 items-center overflow-hidden rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition-[color,border-color,background-color] duration-300 active:scale-[0.97] ${
+        ativo ? "border-destaque bg-destaque font-medium text-fundo" : "border-borda text-suave hover:border-destaque/60 hover:text-destaque"
+      }`}
+    >
+      {!ativo && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 origin-left scale-x-0 bg-destaque/10 transition-transform duration-300 ease-out group-hover/botao:scale-x-100"
+        />
+      )}
+      <span className="relative inline-flex items-center gap-1.5">{children}</span>
+    </button>
+  );
+}
+
+function AlternarVisao({ visao, aoMudar }: { visao: Visao; aoMudar: (visao: Visao) => void }) {
+  const opcoes: { valor: Visao; rotulo: string; icone: string }[] = [
+    { valor: "grade", rotulo: "Grade", icone: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+    { valor: "lista", rotulo: "Lista", icone: "M4 6h16M4 12h16M4 18h16" },
+  ];
+  return (
+    <div data-tour="visao" className="ml-auto flex rounded-lg border border-borda p-0.5" role="group" aria-label="Modo de exibição">
+      {opcoes.map((opcao) => (
+        <button
+          key={opcao.valor}
+          type="button"
+          aria-pressed={visao === opcao.valor}
+          onClick={() => aoMudar(opcao.valor)}
+          title={opcao.rotulo}
+          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+            visao === opcao.valor ? "bg-painel-alto text-destaque" : "text-apagado hover:text-texto"
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d={opcao.icone} />
+          </svg>
+          <span className="hidden sm:inline">{opcao.rotulo}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -121,7 +380,7 @@ function CampoBusca({ valorInicial, aoBuscar }: { valorInicial: string; aoBuscar
   }, [texto, valorInicial]);
 
   return (
-    <label className="flex w-full items-center gap-2 rounded-lg border border-borda bg-fundo px-3 py-2 focus-within:border-destaque/50 sm:w-72">
+    <label data-tour="busca" className="flex w-full items-center gap-2 rounded-lg border border-borda bg-fundo px-3 py-2 transition-colors focus-within:border-destaque/50 sm:w-80">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-apagado" aria-hidden>
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />
@@ -138,6 +397,40 @@ function CampoBusca({ valorInicial, aoBuscar }: { valorInicial: string; aoBuscar
   );
 }
 
+function TabelaItens({
+  itens,
+  filtros,
+  atualizar,
+  medalhas,
+}: {
+  itens: ItemResumo[];
+  filtros: Filtros;
+  atualizar: (mudancas: Mudancas) => void;
+  medalhas: Map<number, TipoMedalha>;
+}) {
+  return (
+    <Painel className="overflow-x-auto">
+      <table className="w-full min-w-[800px] text-left">
+        <thead className="whitespace-nowrap">
+          <tr className="border-b border-borda">
+            <Cabecalho rotulo="Item" coluna="nome" filtros={filtros} atualizar={atualizar} />
+            <Cabecalho rotulo="Preço" coluna="preco" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <Cabecalho rotulo="Var. 7d" coluna="variacao_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <th className="px-4 py-3"><Rotulo>Tendência 30d</Rotulo></th>
+            <Cabecalho rotulo="Volume 7d" coluna="volume_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <th className="w-10" />
+          </tr>
+        </thead>
+        <tbody>
+          {itens.map((item) => (
+            <LinhaItem key={item.id} item={item} medalha={medalhas.get(item.id)} chaveiros />
+          ))}
+        </tbody>
+      </table>
+    </Painel>
+  );
+}
+
 function Cabecalho({
   rotulo,
   coluna,
@@ -147,8 +440,8 @@ function Cabecalho({
 }: {
   rotulo: string;
   coluna: Ordenacao;
-  filtros: FiltrosItens;
-  atualizar: ReturnType<typeof useFiltrosDaUrl>["atualizar"];
+  filtros: Filtros;
+  atualizar: (mudancas: Mudancas) => void;
   alinharDireita?: boolean;
 }) {
   const ativa = filtros.ordenar === coluna;
@@ -169,8 +462,11 @@ function Cabecalho({
   );
 }
 
-/** Linha da tabela de itens. Com `chaveiros`, mostra os chaveiros mini do item (jogo, tipo, evento). */
-export function LinhaItem({ item, chaveiros = false }: { item: ItemResumo; chaveiros?: boolean }) {
+/**
+ * Linha da tabela de itens. Com `chaveiros`, mostra os chaveiros mini do item (jogo, tipo, evento);
+ * com `medalha`, a medalha do destaque da semana no canto do ícone.
+ */
+export function LinhaItem({ item, chaveiros = false, medalha }: { item: ItemResumo; chaveiros?: boolean; medalha?: TipoMedalha }) {
   const inicio = item.data_preco ? diasAntes(item.data_preco, 30) : undefined;
   const historico = useHistorico(item.id, inicio, item.data_preco !== null);
 
@@ -180,12 +476,15 @@ export function LinhaItem({ item, chaveiros = false }: { item: ItemResumo; chave
       <td className="relative px-4 py-3">
         {chaveiros && <ChaveirosDoItem item={item} tamanho="mini" direita="0.75rem" className="hidden sm:block" />}
         <div className="flex items-center gap-3">
-          <IconeItem url={item.icon_url} nome={item.nome} />
+          <span className="relative shrink-0">
+            <IconeItem url={item.icon_url} nome={item.nome} />
+            {medalha && <Medalha tipo={medalha} tamanho="pequena" className="absolute -top-2 -right-2 scale-75" />}
+          </span>
           <div className="min-w-0">
             <Link to={`/itens/${item.id}`} className="block truncate text-sm after:absolute after:inset-0">
               {item.nome}
             </Link>
-            <span className="text-xs text-apagado">{item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
+            <span className="text-xs text-apagado">{categoriaDoItem(item)?.nome ?? item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
           </div>
         </div>
       </td>
@@ -231,13 +530,16 @@ function Tendencia({ pontos }: { pontos: PontoHistorico[] | undefined }) {
 
 function Paginacao({ pagina, total, aoMudar }: { pagina: number; total: number; aoMudar: (pagina: number) => void }) {
   const ultima = Math.ceil(total / POR_PAGINA);
-  const botao = "rounded-md border border-borda px-3 py-1.5 font-mono text-xs enabled:hover:border-suave disabled:opacity-40";
+  const botao = "rounded-md border border-borda px-3 py-1.5 font-mono text-xs transition-colors enabled:hover:border-destaque/60 enabled:hover:text-destaque disabled:opacity-40";
   return (
-    <div className="flex items-center justify-between border-t border-borda p-3 sm:px-4">
+    <div className="flex items-center justify-between rounded-xl border border-borda bg-painel p-3 sm:px-4">
       <span className="font-mono text-xs text-suave">
         {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, total)} de {total}
       </span>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        <span className="hidden font-mono text-xs text-apagado sm:inline">
+          página {pagina} de {ultima}
+        </span>
         <button type="button" className={botao} disabled={pagina <= 1} onClick={() => aoMudar(pagina - 1)}>
           Anterior
         </button>

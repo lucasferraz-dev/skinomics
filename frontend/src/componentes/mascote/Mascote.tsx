@@ -616,6 +616,7 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     };
 
     const comecouEm = performance.now();
+    const cabecalho = document.querySelector("header");
     const passo = (agora: number) => {
       const dt = Math.min((agora - anterior) / 1000, 0.05);
       anterior = agora;
@@ -867,7 +868,9 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
         b.style.transform = "";
         const r = b.getBoundingClientRect();
         let dx = r.left < 8 ? 8 - r.left : r.right > window.innerWidth - 8 ? window.innerWidth - 8 - r.right : 0;
-        let dy = r.top < 8 ? r.height + altura + 6 : 0;
+        // Teto: o fim do header fixo (o balão atrás dele não dá para ler), ou a borda da tela.
+        const teto = Math.max(0, cabecalho?.getBoundingClientRect().bottom ?? 0) + 8;
+        let dy = r.top < teto ? r.height + altura + 6 : 0;
         // Os dois perto um do outro: o balão da coruja desvia do balão do corvo (para baixo dela e,
         // se ainda bater, para o lado), para as duas falas ficarem legíveis.
         const doOutro = especie === "coruja" ? rival()?.balao : null;
@@ -910,12 +913,14 @@ export function Mascote({ especie = "corvo" }: { especie?: "corvo" | "coruja" })
     if (!fala) return;
     falando.current = true;
     if (falaFixa.current) return;
+    // Fala comprida (a análise da previsão) fica mais tempo, para dar tempo de ler.
     const t = setTimeout(() => {
       setFala(null);
       falando.current = false;
-    }, 5000);
+    }, Math.max(5000, fala.length * 70));
     return () => clearTimeout(t);
   }, [fala]);
+
 
   /**
    * Grasna e fala: na primeira vez, a saudação da visita; depois, metade das vezes um dado do dia (sem

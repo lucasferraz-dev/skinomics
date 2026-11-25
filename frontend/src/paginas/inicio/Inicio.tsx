@@ -1,23 +1,17 @@
 import { t, useIdioma } from "../../lib/idioma";
-import { type ReactNode, useRef } from "react";
+import { useRef } from "react";
 import { Link } from "react-router";
 
 import { useItens } from "../../api/itens";
 import { useOportunidades } from "../../api/oportunidades";
 import { Rotulo, Variacao } from "../../componentes/Basicos";
-import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
-import { MenuConta } from "../../componentes/Conta";
+import { Cabecalho } from "../../componentes/Cabecalho";
 import { Logo } from "../../componentes/Logo";
+import { ChaveirosDoItem } from "../../componentes/chaveiro/Chaveiro";
 import { Mascote } from "../../componentes/mascote/Mascote";
-import { BotaoComoUsar } from "../../componentes/tutorial/Tutorial";
-import { BotaoIdioma } from "../../componentes/BotaoIdioma";
-import { IconeFaq } from "../../componentes/IconesAnimados";
-import { BotaoModoTv, classeBotaoRedondo } from "../../componentes/modoTv/ModoTv";
-import { BotaoTelaCheia } from "../../componentes/modoTv/TelaCheia";
-import { AcessoAnalise } from "../../componentes/MenuAnalise";
 import { Sparkline } from "../../componentes/Sparkline";
 import { formatarDataNumerica, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
-import { Adesivo } from "./Adesivo";
+import { ADESIVOS, CardIndicador, type Indicador } from "./CardIndicador";
 import { Medalha } from "./Medalha";
 import { useItemVitrine } from "./dados";
 import { PreviaDaPlataforma, Radar } from "./SecoesDados";
@@ -31,7 +25,7 @@ export function Inicio() {
   useIdioma();
   return (
     <div className="relative min-h-dvh">
-      <Navegacao />
+      <Cabecalho landing />
       <main>
         <Hero />
         <Destaques />
@@ -46,28 +40,6 @@ export function Inicio() {
       <Mascote />
       <Mascote especie="coruja" />
     </div>
-  );
-}
-
-function Navegacao() {
-  return (
-    <header className="sticky top-0 z-50 h-32 border-b border-borda/60 bg-fundo/55 backdrop-blur-[3px]">
-      {/* Ocupa a largura toda: logo na ponta esquerda e botões redondos na ponta direita. */}
-      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-        <Logo grande />
-        <div className="flex items-center gap-2">
-          <BotaoComoUsar />
-          <a href="#faq" data-tour="faq" aria-label={t("Perguntas frequentes", "Frequently asked questions")} title={t("Perguntas frequentes", "Frequently asked questions")} className={classeBotaoRedondo}>
-            <IconeFaq />
-          </a>
-          <BotaoModoTv />
-          <BotaoTelaCheia />
-          <span data-tour="menu-analise"><AcessoAnalise redondo /></span>
-          <BotaoIdioma />
-          <span data-tour="conta"><MenuConta redondo /></span>
-        </div>
-      </div>
-    </header>
   );
 }
 
@@ -202,24 +174,6 @@ function VitrineHero() {
   );
 }
 
-// Ícones de traço (24×24), no mesmo estilo dos demais da landing.
-const ICONES = {
-  itens: "M12 3 3 7.5l9 4.5 9-4.5zM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5",
-  calendario: "M7 3v3m10-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm3 8h3v3H8z",
-  oportunidade: "M3 17l6-6 4 4 7-7m0 0h-5m5 0v5",
-  horizonte: "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
-} as const;
-
-type Indicador = {
-  rotulo: string;
-  valor: ReactNode;
-  detalhe: string;
-  icone: keyof typeof ICONES;
-  para?: string;
-  /** O que aparece escrito embaixo do adesivo quando ele é descolado. */
-  verso: { rotulo: string; valor: ReactNode; extra?: string };
-};
-
 /** Cards logo abaixo do hero: números reais da base, iguais para todos os itens. */
 function Destaques() {
   // A mesma lista completa que a vitrine e os destaques já pedem (um pedido só para a landing toda).
@@ -279,66 +233,6 @@ function Destaques() {
         ))}
       </Container>
     </section>
-  );
-}
-
-// Os indicadores são adesivos compactos nas cores do site, alternando verde-limão e preto. Dá para
-// descolar puxando a ponta (ver Adesivo.tsx), e um reflexo de vinil passa ao mover o mouse.
-const TINTAS = {
-  verde: {
-    "--fundo": "var(--color-destaque)",
-    "--contorno": "transparent",
-    "--numero": "#0b0d0c",
-    "--rotulo": "rgba(11, 13, 12, 0.72)",
-    "--detalhe": "rgba(11, 13, 12, 0.62)",
-    "--icone-fundo": "#0b0d0c",
-    "--icone-traco": "var(--color-destaque)",
-    "--verso": "#97bd4f",
-  },
-  preto: {
-    "--fundo": "#10140f",
-    "--contorno": "rgba(198, 243, 107, 0.35)",
-    "--numero": "var(--color-destaque)",
-    "--rotulo": "var(--color-suave)",
-    "--detalhe": "var(--color-apagado)",
-    "--icone-fundo": "var(--color-destaque)",
-    "--icone-traco": "#0b0d0c",
-    "--verso": "#2b3427",
-  },
-} as const;
-
-const ADESIVOS = ["verde", "preto", "verde", "preto"] as const;
-
-function CardIndicador({ rotulo, valor, detalhe, icone, para, verso, adesivo }: Indicador & { adesivo: (typeof ADESIVOS)[number] }) {
-  return (
-    <Adesivo
-      estilo={TINTAS[adesivo] as unknown as React.CSSProperties}
-      para={para}
-      titulo={detalhe}
-      verso={verso}
-      frente={
-        <>
-          {/* Reflexo do vinil: desliza pelo adesivo quando o mouse passa */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.28)_47%,transparent_56%)] bg-[length:250%_100%] bg-[position:100%_0] transition-[background-position] duration-700 group-hover:bg-[position:0%_0]"
-          />
-          <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-[var(--icone-fundo)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--icone-traco)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d={ICONES[icone]} />
-            </svg>
-          </span>
-          <div className="relative min-w-0">
-            <span className="block truncate font-rotulo text-[11px] font-bold tracking-[0.06em] text-[var(--rotulo)]">
-              {rotulo}
-              {para && <span aria-hidden> ↗</span>}
-            </span>
-            <p className="titulo text-xl leading-tight text-[var(--numero)] sm:text-2xl">{valor}</p>
-            <p className="truncate font-mono text-[10px] text-[var(--detalhe)]">{detalhe}</p>
-          </div>
-        </>
-      }
-    />
   );
 }
 

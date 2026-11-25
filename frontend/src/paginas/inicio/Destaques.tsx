@@ -35,7 +35,9 @@ function TerminalItem({
   rodape,
   semDados,
   medalha,
+  chaveiros = true,
 }: {
+  chaveiros?: boolean;
   semDados?: string;
   medalha: TipoMedalha;
   rotulo: string;
@@ -91,7 +93,7 @@ function TerminalItem({
       </Link>
       {/* Chaveiros do jogo e do tipo do item. Só com os quatro terminais lado a lado: em colunas
           empilhadas eles cairiam por cima do terminal de baixo. */}
-      <ChaveirosDoItem item={item} parede={card} direita="1rem" className="hidden lg:block" />
+      {chaveiros && <ChaveirosDoItem item={item} parede={card} direita="1rem" className="hidden lg:block" />}
     </div>
   ) : (
     <div data-poleiro className={`${classe} w-[82%] shrink-0 snap-start sm:w-auto`}>
@@ -101,23 +103,111 @@ function TerminalItem({
   );
 }
 
-/** Seção de destaques: quatro terminais com os itens que mais se destacaram na semana. */
-export function DestaquesDaSemana() {
+/**
+ * Os destaques da semana (maior alta, maior queda, mais negociado e a melhor oportunidade que não repete
+ * nenhum deles), calculados sobre o catálogo inteiro. Usa o mesmo pedido da landing e do Explorar.
+ */
+export function useDestaquesDaSemana() {
   const itens = useItens({ por_pagina: 100 }).data?.itens ?? [];
   const ranking = useOportunidades(7, 1).data;
   const negociados = itens.filter((item) => item.variacao_7d != null && (item.volume_7d ?? 0) >= VOLUME_MINIMO);
   const porVariacao = [...negociados].sort((a, b) => b.variacao_7d! - a.variacao_7d!);
   const alta: ItemResumo | undefined = porVariacao[0];
   const queda: ItemResumo | undefined = porVariacao.at(-1);
-  const maisNegociado = [...itens].sort((a, b) => (b.volume_7d ?? 0) - (a.volume_7d ?? 0))[0];
-  // A melhor oportunidade que ainda não aparece nos outros terminais, para não repetir item.
+  const maisNegociado: ItemResumo | undefined = [...itens].sort((a, b) => (b.volume_7d ?? 0) - (a.volume_7d ?? 0))[0];
   const jaMostrados = new Set([alta?.id, queda?.id, maisNegociado?.id]);
   const oportunidade = ranking?.itens.find((o) => !jaMostrados.has(o.item_id)) ?? ranking?.itens[0];
   const itemOportunidade = oportunidade && itens.find((item) => item.id === oportunidade.item_id);
 
+  // A medalha de cada item em destaque, para os cards e linhas do Explorar e o detalhe do item.
+  const medalhas = new Map<number, TipoMedalha>();
+  if (oportunidade) medalhas.set(oportunidade.item_id, "margem");
+  if (maisNegociado) medalhas.set(maisNegociado.id, "volume");
+  if (queda) medalhas.set(queda.id, "queda");
+  if (alta) medalhas.set(alta.id, "alta");
+
+  return { itens, ranking, alta, queda, maisNegociado, oportunidade, itemOportunidade, medalhas };
+}
+
+/**
+ * Os quatro terminais de destaque. No celular, um carrossel horizontal (empilhados passariam de 1600 px);
+ * a partir do sm, grade. Sem `chaveiros`, nada pende embaixo dos cards (no Explorar, cairiam nos filtros).
+ */
+export function TerminaisDestaque({ chaveiros = true, tour }: { chaveiros?: boolean; tour?: string }) {
+  const { alta, queda, maisNegociado, ranking, oportunidade, itemOportunidade } = useDestaquesDaSemana();
+
   const vendas = (item: ItemResumo | undefined) =>
     item?.volume_7d != null ? t(`${formatarInteiro(item.volume_7d)} vendas em 7 dias`, `${formatarInteiro(item.volume_7d)} sales in 7 days`) : t("Sem vendas registradas", "No recorded sales");
 
+  return (
+    <div data-tour={tour} className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+      <TerminalItem
+        chaveiros={chaveiros}
+        rotulo={t("Maior alta em 7 dias", "Biggest 7-day rise")}
+        medalha="alta"
+        item={alta}
+        preco={alta?.preco_atual}
+        detalhe={<Variacao valor={alta?.variacao_7d} />}
+        rodape={vendas(alta)}
+      />
+      <TerminalItem
+        chaveiros={chaveiros}
+        rotulo={t("Maior queda em 7 dias", "Biggest 7-day drop")}
+        medalha="queda"
+        item={queda}
+        preco={queda?.preco_atual}
+        detalhe={<Variacao valor={queda?.variacao_7d} />}
+        rodape={vendas(queda)}
+      />
+      <TerminalItem
+        chaveiros={chaveiros}
+        rotulo={t("Mais negociado", "Most traded")}
+        medalha="volume"
+        item={maisNegociado}
+        preco={maisNegociado?.preco_atual}
+        detalhe={<Variacao valor={maisNegociado?.variacao_7d} />}
+        rodape={vendas(maisNegociado)}
+      />
+      <TerminalItem
+        chaveiros={chaveiros}
+        rotulo={t("Maior margem prevista", "Best forecast margin")}
+        medalha="margem"
+        semDados={ranking && !oportunidade ? t("Nenhum item com margem positiva prevista agora.", "No item with a positive forecast margin right now.") : undefined}
+        item={
+          oportunidade && {
+            id: oportunidade.item_id,
+            appid: itemOportunidade?.appid ?? 0,
+            nome: oportunidade.nome,
+            tipo: oportunidade.tipo,
+            icon_url: oportunidade.icon_url,
+            data_preco: itemOportunidade?.data_preco,
+          }
+        }
+        preco={oportunidade?.preco_atual}
+        detalhe={
+          oportunidade && (
+            <span>
+              <span className="text-destaque">{formatarVariacao(oportunidade.margem_estimada)}</span>{" "}
+              <span className="text-apagado">até {formatarPreco(oportunidade.preco_previsto)} em 7 dias</span>
+            </span>
+          )
+        }
+        rodape={
+          oportunidade ? (
+            <span>
+              {t("Risco", "Risk")} <span className={COR_RISCO[oportunidade.risco]}>{t(oportunidade.risco, RISCO_EN[oportunidade.risco])}</span>
+            </span>
+          ) : (
+            t("Sem oportunidade com margem positiva", "No opportunity with a positive margin")
+          )
+        }
+      />
+    </div>
+  );
+}
+
+/** Seção de destaques: quatro terminais com os itens que mais se destacaram na semana. */
+export function DestaquesDaSemana() {
   return (
     <section data-tv={t("Destaques da semana", "Weekly highlights")} data-tv-chave="destaques" className="py-14 sm:py-28">
       <Container className="space-y-10">
@@ -126,66 +216,7 @@ export function DestaquesDaSemana() {
           titulo={t("Quem mais se mexeu nos últimos 7 dias.", "What moved most in the last 7 days.")}
           texto={t("Atualizado a cada coleta, com os preços do Mercado da Steam. Clique num terminal para abrir o item.", "Updated every collection, with Steam Market prices. Click a terminal to open the item.")}
         />
-        {/* No celular, um carrossel horizontal (empilhados passariam de 1600 px); a partir do sm, grade. */}
-        <div data-tour="destaques" className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-          <TerminalItem
-            rotulo={t("Maior alta em 7 dias", "Biggest 7-day rise")}
-            medalha="alta"
-            item={alta}
-            preco={alta?.preco_atual}
-            detalhe={<Variacao valor={alta?.variacao_7d} />}
-            rodape={vendas(alta)}
-          />
-          <TerminalItem
-            rotulo={t("Maior queda em 7 dias", "Biggest 7-day drop")}
-            medalha="queda"
-            item={queda}
-            preco={queda?.preco_atual}
-            detalhe={<Variacao valor={queda?.variacao_7d} />}
-            rodape={vendas(queda)}
-          />
-          <TerminalItem
-            rotulo={t("Mais negociado", "Most traded")}
-            medalha="volume"
-            item={maisNegociado}
-            preco={maisNegociado?.preco_atual}
-            detalhe={<Variacao valor={maisNegociado?.variacao_7d} />}
-            rodape={vendas(maisNegociado)}
-          />
-          <TerminalItem
-            rotulo={t("Maior margem prevista", "Best forecast margin")}
-            medalha="margem"
-            semDados={ranking && !oportunidade ? t("Nenhum item com margem positiva prevista agora.", "No item with a positive forecast margin right now.") : undefined}
-            item={
-              oportunidade && {
-                id: oportunidade.item_id,
-                appid: itemOportunidade?.appid ?? 0,
-                nome: oportunidade.nome,
-                tipo: oportunidade.tipo,
-                icon_url: oportunidade.icon_url,
-                data_preco: itemOportunidade?.data_preco,
-              }
-            }
-            preco={oportunidade?.preco_atual}
-            detalhe={
-              oportunidade && (
-                <span>
-                  <span className="text-destaque">{formatarVariacao(oportunidade.margem_estimada)}</span>{" "}
-                  <span className="text-apagado">até {formatarPreco(oportunidade.preco_previsto)} em 7 dias</span>
-                </span>
-              )
-            }
-            rodape={
-              oportunidade ? (
-                <span>
-                  {t("Risco", "Risk")} <span className={COR_RISCO[oportunidade.risco]}>{t(oportunidade.risco, RISCO_EN[oportunidade.risco])}</span>
-                </span>
-              ) : (
-                t("Sem oportunidade com margem positiva", "No opportunity with a positive margin")
-              )
-            }
-          />
-        </div>
+        <TerminaisDestaque tour="destaques" />
       </Container>
     </section>
   );

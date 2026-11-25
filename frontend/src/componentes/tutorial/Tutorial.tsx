@@ -4,12 +4,14 @@ import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
 
 import { avisar, EVENTO_TUTORIAL } from "../mascote/eventos";
-import { falasDoPasso, type Passo, TUTORIAIS } from "./passos";
+import { falasDoPasso, type Passo, tutorialDaRota } from "./passos";
 
 type Caixa = { x: number; y: number; w: number; h: number };
 
 const FOLGA = 8;
 const MARGEM = 16;
+// Altura que os mascotes de plantão ocupam no canto com as duas falas abertas.
+const ALTURA_CANTO = 330;
 
 /** Área (na tela) que cobre todos os elementos visíveis do seletor. */
 function caixaDo(seletor: string): Caixa | null {
@@ -24,35 +26,46 @@ function caixaDo(seletor: string): Caixa | null {
   return { x: x - FOLGA, y: y - FOLGA, w: w + FOLGA * 2, h: h + FOLGA * 2 };
 }
 
-/** Rola a página até o alvo ficar abaixo do header, com espaço para o balão de explicação. */
+// Acima do alvo: os mascotes pousam na borda de cima dele e falam em balões por cima da cabeça.
+const ESPACO_MASCOTES = 150;
+
+/**
+ * Rola a página até o alvo ficar abaixo do header, com espaço em cima para os mascotes e os balões
+ * deles e embaixo para o balão de explicação. Alvo mais alto que a tela fica com o topo à vista.
+ */
 function rolarAte(seletor: string) {
   const el = document.querySelector(seletor);
-  if (!el || el.closest("header")) return;
+  // O header e o canto fixo dos mascotes ficam sempre à vista: não há o que rolar.
+  if (!el || el.closest("header, [data-fixo]")) return;
   const r = el.getBoundingClientRect();
-  const topoLivre = document.querySelector("header")?.getBoundingClientRect().bottom ?? 0;
+  // O header é fixo no topo; se um dia não for e tiver rolado para fora, o topo livre é o da tela.
+  const topoLivre = Math.max(0, document.querySelector("header")?.getBoundingClientRect().bottom ?? 0);
   const alturaLivre = window.innerHeight - topoLivre;
   const sobra = alturaLivre - r.height - 220;
-  const destino = window.scrollY + r.top - topoLivre - Math.max(24, sobra / 2);
+  const destino = window.scrollY + r.top - topoLivre - Math.max(ESPACO_MASCOTES, sobra / 2);
   window.scrollTo({ top: Math.max(0, destino), behavior: "smooth" });
 }
 
 /** Botão redondo t("Como usar", "How to use"): uma bolinha com um ponto de interrogação que de tempos em tempos pula e gira. */
 export function BotaoComoUsar() {
   const { pathname } = useLocation();
-  const passos = TUTORIAIS[pathname];
+  const tutorial = tutorialDaRota(pathname);
+  const passos = tutorial?.passos;
+  const chave = tutorial?.chave ?? pathname;
   const [aberto, setAberto] = useState(false);
 
-  // Na primeira visita a uma página com tutorial, ele abre sozinho (depois de a página carregar os dados).
+  // Na primeira visita a uma página de tutorial automático (a landing), ele abre sozinho, depois de a
+  // página carregar os dados. Nas demais, só quando a pessoa pede.
   useEffect(() => {
-    if (!passos || jaViu(pathname)) return;
+    if (!passos || !tutorial?.automatico || jaViu(chave)) return;
     const espera = window.setTimeout(() => setAberto(true), 1500);
     return () => window.clearTimeout(espera);
-  }, [passos, pathname]);
+  }, [passos, chave, tutorial?.automatico]);
 
   if (!passos) return null;
 
   const fechar = () => {
-    marcarVisto(pathname);
+    marcarVisto(chave);
     setAberto(false);
   };
 
@@ -178,6 +191,14 @@ function Tutorial({ passos, aoFechar }: { passos: Passo[]; aoFechar: () => void 
     if (caixa.y + caixa.h + 12 + alturaBalao < vh - MARGEM) balaoY = caixa.y + caixa.h + 12;
     else if (caixa.y - 12 - alturaBalao > MARGEM) balaoY = caixa.y - 12 - alturaBalao;
     else balaoX = vw - larguraBalao - MARGEM;
+  }
+  // Não cobre os mascotes de plantão no canto (nem as falas deles): passa para a esquerda deles ou acima.
+  // As falas surgem depois de trocar o passo, então a área delas acima dos mascotes já fica reservada.
+  const canto = typeof document === "undefined" ? null : document.querySelector("[data-fixo]")?.getBoundingClientRect();
+  const fixo = canto && { left: canto.left, right: canto.right, bottom: canto.bottom, top: Math.min(canto.top, canto.bottom - ALTURA_CANTO) };
+  if (fixo && balaoX < fixo.right && balaoX + larguraBalao > fixo.left && balaoY < fixo.bottom && balaoY + alturaBalao > fixo.top) {
+    if (fixo.left - 12 - larguraBalao >= MARGEM) balaoX = fixo.left - 12 - larguraBalao;
+    else balaoY = Math.max(MARGEM, fixo.top - 12 - alturaBalao);
   }
 
   // Quatro faixas transparentes em volta do buraco bloqueiam cliques no resto da página.
