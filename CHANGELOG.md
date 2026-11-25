@@ -28,7 +28,9 @@
 
 - Leitura do modelo no estilo touro e urso (`lib/sinal.ts`, `componentes/SinalModelo.tsx`): cinco
   níveis tirados da previsão e da faixa de 80% (alta forte quando até o pior caso fica acima do preço
-  de hoje), sem leitura com pouco volume ou faixa larga demais. Medidor no detalhe do item, selo nos
+  de hoje), sem leitura com pouco volume, faixa larga demais ou item no piso de US$ 0,03 (no teste,
+  99,6% das "altas fortes" eram itens no piso, que não caem mas também não pagam a taxa da Steam).
+  O medidor lembra que a alta precisa passar de uns 15% para cobrir a taxa. Medidor no detalhe do item, selo nos
   cards do Explorar, falas do Muninn e da Glaux sobre a leitura e passo no "Como usar". É uma leitura
   do modelo, não recomendação de investimento.
 

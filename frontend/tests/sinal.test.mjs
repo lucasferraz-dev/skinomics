@@ -29,6 +29,11 @@ test("sem leitura com dados frágeis", () => {
   assert.deepEqual(sinalDoModelo(previsao(1.1, 0.7, 1.5), 500), { tipo: "sem", motivo: "incerteza_alta" });
 });
 
+test("item no piso de preço da Steam fica sem leitura, mesmo com o pior caso acima", () => {
+  const piso = { disponivel: true, preco_base: 0.03, preco_previsto: 0.032, intervalo_inferior: 0.0305, intervalo_superior: 0.035 };
+  assert.deepEqual(sinalDoModelo(piso, 5000), { tipo: "sem", motivo: "piso" });
+});
+
 test("previsão desatualizada ainda dá leitura, marcada como tal", () => {
   const sinal = sinalDoModelo(previsao(1.1, 1.02, 1.2, { desatualizada: true }), 500);
   assert.equal(sinal.tipo, "leitura");
