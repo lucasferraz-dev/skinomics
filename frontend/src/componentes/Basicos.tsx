@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
 import { formatarVariacao } from "../lib/formato";
 
@@ -45,8 +45,12 @@ export function IconeItem({ url, nome, tamanho = 40 }: { url: string | null; nom
   );
 }
 
-export function Painel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-borda bg-painel ${className}`}>{children}</section>;
+export function Painel({ children, className = "", ...resto }: { children: ReactNode; className?: string } & HTMLAttributes<HTMLElement>) {
+  return (
+    <section className={`rounded-xl border border-borda bg-painel ${className}`} {...resto}>
+      {children}
+    </section>
+  );
 }
 
 export function Carregando({ texto = "Carregando…" }: { texto?: string }) {

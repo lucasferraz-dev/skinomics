@@ -87,8 +87,10 @@ export function BotaoSecundario({
     );
   }
   if (href) {
+    // Link de fora do site abre em outra aba, para não perder a página atual.
+    const externo = /^https?:/.test(href);
     return (
-      <a href={href} className={classe}>
+      <a href={href} className={classe} {...(externo && { target: "_blank", rel: "noopener noreferrer" })}>
         {conteudo}
       </a>
     );
@@ -106,18 +108,22 @@ export function CabecalhoSecao({
   titulo,
   texto,
   selo,
+  nivel = 2,
 }: {
+  /** 1 quando o cabeçalho é o título da página (fora da landing). */
+  nivel?: 1 | 2;
   rotulo: string;
   titulo: ReactNode;
   texto: string;
   selo?: string;
 }) {
+  const Titulo = nivel === 1 ? "h1" : "h2";
   return (
     // Grade, não flex-wrap: título comprido quebra dentro da coluna em vez de empurrar o texto para baixo.
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:gap-16">
       <div className="max-w-2xl space-y-4">
         <Rotulo destaque>{rotulo}</Rotulo>
-        <h2 data-poleiro="texto" className="text-4xl leading-[1.08] titulo sm:text-5xl">{titulo}</h2>
+        <Titulo data-poleiro="texto" className="text-4xl leading-[1.08] titulo sm:text-5xl">{titulo}</Titulo>
       </div>
       <div className="space-y-3">
         <p className="text-suave">{texto}</p>
