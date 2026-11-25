@@ -14,6 +14,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Acentos do Python chegam inteiros no log (sem isso, "não" vira "nÒo").
+$env:PYTHONIOENCODING = "utf-8"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $raiz = Split-Path -Parent $PSScriptRoot
 $pastaLogs = Join-Path $env:LOCALAPPDATA "Skinomics\logs"
 New-Item -ItemType Directory -Force $pastaLogs | Out-Null
@@ -21,6 +24,19 @@ $log = Join-Path $pastaLogs ("coleta-{0:yyyy-MM-dd}.log" -f (Get-Date))
 
 function Escrever-Log([string]$texto) {
     "{0:HH:mm:ss} {1}" -f (Get-Date), $texto | Out-File -Append -Encoding utf8 $log
+}
+
+# Roda um programa e devolve a saída como texto. O Python escreve o log em stderr; com
+# $ErrorActionPreference = "Stop", o PowerShell 5.1 tomaria a primeira linha dele como erro fatal.
+function Rodar([string]$programa, [string[]]$argumentos) {
+    $antes = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $saida = & $programa @argumentos 2>&1 | ForEach-Object { "$_" }
+        return @{ Saida = $saida; Codigo = $LASTEXITCODE }
+    } finally {
+        $ErrorActionPreference = $antes
+    }
 }
 
 function Mostrar-Aviso([string]$titulo, [string]$texto) {
@@ -53,10 +69,10 @@ try {
 
     Push-Location (Join-Path $raiz "backend")
     try {
-        $saida = & $uv run python -m app.coleta.historico_steam `
-            --arquivo app/coleta/itens_tf2.txt --moeda USD --pendentes `
-            --intervalo $Intervalo --variacao $Variacao 2>&1
-        $codigo = $LASTEXITCODE
+        $resultado = Rodar $uv @("run", "python", "-m", "app.coleta.historico_steam",
+            "--arquivo", "app/coleta/itens_tf2.txt", "--moeda", "USD", "--pendentes",
+            "--intervalo", "$Intervalo", "--variacao", "$Variacao")
+        $saida, $codigo = $resultado.Saida, $resultado.Codigo
     } finally {
         Pop-Location
     }
@@ -75,8 +91,9 @@ try {
         Escrever-Log "publicando previsões"
         Push-Location $raiz
         try {
-            $saidaMl = & $uv run --project ml --env-file backend/.env python -m ml.worker --once 2>&1
-            $codigoMl = $LASTEXITCODE
+            $resultado = Rodar $uv @("run", "--project", "ml", "--env-file", "backend/.env",
+                "python", "-m", "ml.worker", "--once")
+            $saidaMl, $codigoMl = $resultado.Saida, $resultado.Codigo
         } finally {
             Pop-Location
         }

@@ -57,6 +57,9 @@ modelos e diagnóstico entre ambientes: [docs/deploy.md](docs/deploy.md).
   retomada na próxima vez; depois `ml.worker --once` publica as previsões. Log por dia em
   `%LOCALAPPDATA%\Skinomics\logs`; notificação do Windows quando o cookie vence ou algo falha.
   Roda do IP de casa de propósito: IPs de nuvem (GitHub Actions, Render) levam 429 da Steam.
+  **Guia para o Lucas** (como funciona, como saber que o cookie venceu e trocá-lo, rodar, pausar e
+  remover): [docs/coleta-diaria.md](docs/coleta-diaria.md). Quando ele perguntar da coleta, explique a
+  partir desse guia.
 - `python -m app.coleta.historico_steam --arquivo app/coleta/itens_tf2.txt` regrava a série diária de
   cada item a partir do `pricehistory` da Steam (exige o cookie `SKINOMICS_STEAM_LOGIN_SECURE`).
   Confere a moeda da conta (`--moeda`); a série é em **USD** (já houve bug de gravar em BRL).
@@ -122,7 +125,7 @@ ml/notebooks/       protótipo original do modelo (previsao_precos.ipynb)
 ml/data/            CSVs (fora do git; tf2_historico.csv tem 51 MB e é compartilhado à parte)
 ml/artifacts/       modelos treinados (fora do git)
 scripts/            check_deployment.py (diagnóstico do deploy)
-docs/               architecture.md, deploy.md, ml-integracao.md, oportunidades.md
+docs/               architecture.md, deploy.md, ml-integracao.md, oportunidades.md, coleta-diaria.md
 .github/            templates de issue/PR, CONTRIBUTING, workflows de CI (backend, frontend, ml)
 docker-compose.yml  PostgreSQL local (porta 55432) + API (porta 8080)
 CHANGELOG.md        mantido a cada PR, na seção [Não lançado]
