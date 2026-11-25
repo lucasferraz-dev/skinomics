@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, gravar_precos
-from app.coleta.historico_steam import baixar_historico, ler_lista, serie_diaria
+from app.coleta.historico_steam import baixar_historico, itens_pendentes, ler_lista, serie_diaria
 from app.coleta.steam import (
     LimiteDaSteamError,
     LoginSteamError,
@@ -130,6 +130,20 @@ def test_le_o_historico_e_espera_entre_as_requisicoes() -> None:
     assert esperas == [20]  # só entre a primeira e a segunda
 
 
+def test_variacao_sorteia_segundos_a_mais_em_cada_espera() -> None:
+    esperas: list[float] = []
+    sorteios = iter([0.5, 0.0])
+    cliente = httpx.Client(transport=httpx.MockTransport(lambda _: _resposta([])))
+    mercado = MercadoSteam(
+        cliente, intervalo=30, variacao=10, esperar=esperas.append, sortear=lambda: next(sorteios)
+    )
+
+    for _ in range(3):
+        mercado.historico(440, KEY)
+
+    assert esperas == [35, 30]
+
+
 @pytest.mark.parametrize(
     ("resposta", "erro"),
     [
@@ -164,6 +178,20 @@ def _serie(sessao: Session, item_id: int) -> dict[date, Decimal]:
 
 def _ultima_execucao(sessao: Session) -> ExecucaoColeta:
     return sessao.scalars(select(ExecucaoColeta).order_by(ExecucaoColeta.id.desc())).first()
+
+
+def test_pendentes_sao_os_itens_cuja_serie_nao_chega_a_ontem(sessao: Session) -> None:
+    ids = _catalogo(sessao)
+    ontem = date(2026, 11, 2)
+    gravar_precos(sessao, [PrecoDia(ids[KEY], ontem, Decimal("2.2"), 5, False, AGORA)])
+    gravar_precos(
+        sessao, [PrecoDia(ids[CAIXA], date(2026, 10, 30), Decimal("0.03"), 5, False, AGORA)]
+    )
+
+    assert itens_pendentes(sessao, ontem) == [CAIXA]
+    # Com uma lista, um nome fora do catálogo também é pendente (a coleta o cria).
+    assert itens_pendentes(sessao, ontem, [KEY, "Item Novo"]) == ["Item Novo"]
+    assert itens_pendentes(sessao, date(2026, 10, 30)) == []
 
 
 def test_troca_a_serie_inteira_do_item(sessao: Session) -> None:

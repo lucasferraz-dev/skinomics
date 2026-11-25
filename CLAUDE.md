@@ -50,7 +50,16 @@ modelos e diagnóstico entre ambientes: [docs/deploy.md](docs/deploy.md).
 | #23 US013 | Ranking de oportunidades (margem + risco) | `api/oportunidades.py`, `servicos/risco_oportunidade.py`, `paginas/Oportunidades.tsx`, [docs/oportunidades.md](docs/oportunidades.md) |
 | #25 US020 | Desconectar a conta | fechada pelo Ricardo; **conferir** se a remoção dos dados do usuário existe de fato (no back-end só há logout em `api/auth.py`) |
 
-**Coletor (módulo 16) — pronto, mas roda à mão:**
+**Coletor (módulo 16) — agendado no PC do Lucas (#12):**
+- A coleta diária roda pelo Agendador de Tarefas do Windows (`scripts/agendar_coleta.ps1` registra;
+  `-Remover` tira): 3 min depois do logon e às 3h, com `historico_steam --pendentes` (só itens cuja
+  série não chega a ontem), um pedido a cada 30 s + até 15 s sorteados, parada no primeiro 429 e
+  retomada na próxima vez; depois `ml.worker --once` publica as previsões. Log por dia em
+  `%LOCALAPPDATA%\Skinomics\logs`; notificação do Windows quando o cookie vence ou algo falha.
+  Roda do IP de casa de propósito: IPs de nuvem (GitHub Actions, Render) levam 429 da Steam.
+  **Guia para o Lucas** (como funciona, como saber que o cookie venceu e trocá-lo, rodar, pausar e
+  remover): [docs/coleta-diaria.md](docs/coleta-diaria.md). Quando ele perguntar da coleta, explique a
+  partir desse guia.
 - `python -m app.coleta.historico_steam --arquivo app/coleta/itens_tf2.txt` regrava a série diária de
   cada item a partir do `pricehistory` da Steam (exige o cookie `SKINOMICS_STEAM_LOGIN_SECURE`).
   Confere a moeda da conta (`--moeda`); a série é em **USD** (já houve bug de gravar em BRL).
@@ -67,7 +76,7 @@ nenhum na nuvem** hoje. Passo a passo: [docs/ml-integracao.md](docs/ml-integraca
 
 | Issue | Estória | Situação |
 |---|---|---|
-| **#12 US015** | Agendar a coleta diária | **Não feito.** Não há cron. Proposta: workflow agendado no GitHub Actions (`.github/workflows/`, `on: schedule`) rodando `historico_steam --arquivo ...` contra o Neon, com `SKINOMICS_DATABASE_URL` e o cookie da Steam em *secrets*. O Render Free não tem cron. Depois da coleta, rodar `ml.predict` (ou o worker) no mesmo job para atualizar as previsões. |
+| **#12 US015** | Agendar a coleta diária | **Feito no PC do Lucas** (ver "Coletor" na §2): tarefa do Windows ao logon e às 3h, com retomada após 429 e previsões em seguida. Só roda com o PC ligado; um Raspberry Pi em casa seria o próximo passo. A nuvem foi descartada porque os IPs dela levam 429 da Steam. |
 | **#14 US017** | Cobertura da base histórica | **Não feito.** O escopo cortado pede só uma **consulta SQL** (itens por quantidade de dias de histórico, itens abaixo do mínimo para treino — o ML usa `MIN_HISTORY = 30`), sem tela. Backup é manual. Dá para fazer como módulo `app.coleta.cobertura` no estilo de `execucoes.py`. |
 | **#16 US005** | Filtrar por atributos | **Metade.** A API já aceita `tipo`, `preco_min`, `preco_max`, `ordenar`, `direcao` (`schemas/item.py`, `consultas/itens.py`); **falta a UI** em `ExplorarItens.tsx` (hoje só tem a busca por nome). Líder: Pedro. |
 | **#24 US012** | Alerta por preço absoluto | **Não feito.** Escopo: regra "preço abaixo de X", motor periódico sem disparo duplicado, notificação só por e-mail. Precisa de tabela nova (migração Alembic), rotas, tela e o motor (pode ir no mesmo job agendado da #12). Líder: Riscala. A branch local `feat/alertas` está vazia. |
@@ -116,7 +125,7 @@ ml/notebooks/       protótipo original do modelo (previsao_precos.ipynb)
 ml/data/            CSVs (fora do git; tf2_historico.csv tem 51 MB e é compartilhado à parte)
 ml/artifacts/       modelos treinados (fora do git)
 scripts/            check_deployment.py (diagnóstico do deploy)
-docs/               architecture.md, deploy.md, ml-integracao.md, oportunidades.md
+docs/               architecture.md, deploy.md, ml-integracao.md, oportunidades.md, coleta-diaria.md
 .github/            templates de issue/PR, CONTRIBUTING, workflows de CI (backend, frontend, ml)
 docker-compose.yml  PostgreSQL local (porta 55432) + API (porta 8080)
 CHANGELOG.md        mantido a cada PR, na seção [Não lançado]
