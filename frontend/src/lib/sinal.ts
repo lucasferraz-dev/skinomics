@@ -6,12 +6,16 @@
  * Baixa forte: até o limite de cima fica abaixo (o melhor caso ainda cai).
  * Alta e baixa: o centro da previsão sobe ou cai mais que MARGEM_NEUTRA, mas a faixa cruza o preço.
  * Neutro: o centro fica perto do preço-base.
- * Sem leitura: sem previsão com faixa, pouco volume (o preço de item pouco negociado engana) ou faixa
- * larga demais (o mesmo limite de "incerteza elevada" do risco das oportunidades).
+ * Sem leitura: sem previsão com faixa, item no piso de preço da Steam, pouco volume (o preço de item pouco
+ * negociado engana) ou faixa larga demais (o mesmo limite de "incerteza elevada" do risco das oportunidades).
+ *
+ * O piso: no teste do modelo de 7 dias, 99,6% das "altas fortes" eram itens a US$ 0,03, o menor preço do
+ * mercado. Dali o preço não tem como cair, então o pior caso "sobe" quase por definição, mas um centavo a
+ * mais não paga a taxa da Steam. Sem essa regra, o medidor mostraria isso como oportunidade.
  */
 
 export type NivelSinal = "baixa_forte" | "baixa" | "neutro" | "alta" | "alta_forte";
-export type MotivoSemSinal = "sem_previsao" | "pouco_volume" | "incerteza_alta";
+export type MotivoSemSinal = "sem_previsao" | "piso" | "pouco_volume" | "incerteza_alta";
 
 export type Sinal =
   | {
@@ -42,6 +46,10 @@ export const VOLUME_MINIMO_SINAL = 70;
 export const MARGEM_NEUTRA = 0.01;
 // Faixa mais larga que metade do preço previsto.
 export const LARGURA_MAXIMA = 0.5;
+// O menor preço do Mercado da Steam é US$ 0,03; até meio centavo acima ainda conta como piso.
+export const PRECO_PISO = 0.035;
+// O comprador paga cerca de 15% a mais do que o vendedor recebe (taxas da Steam e do jogo).
+export const TAXA_STEAM = 0.15;
 
 const CENTRO_DO_NIVEL: Record<NivelSinal, number> = { baixa_forte: -0.8, baixa: -0.4, neutro: 0, alta: 0.4, alta_forte: 0.8 };
 
@@ -53,6 +61,7 @@ export function sinalDoModelo(previsao: PrevisaoParaSinal | undefined, volume7d:
   if (!previsao?.disponivel || base == null || previsto == null || inferior == null || superior == null || base <= 0 || previsto <= 0) {
     return { tipo: "sem", motivo: "sem_previsao" };
   }
+  if (base <= PRECO_PISO) return { tipo: "sem", motivo: "piso" };
   if ((volume7d ?? 0) < VOLUME_MINIMO_SINAL) return { tipo: "sem", motivo: "pouco_volume" };
   if ((superior - inferior) / previsto > LARGURA_MAXIMA) return { tipo: "sem", motivo: "incerteza_alta" };
 

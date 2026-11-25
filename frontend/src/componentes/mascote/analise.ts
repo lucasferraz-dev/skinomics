@@ -78,6 +78,8 @@ export function analiseDoItem({ item, sinal, previsao, previsaoCarregando, horiz
       `Leitura de ${horizonte} dias: ${rotuloDoNivel(sinal.nivel).toLowerCase()}. ${LEITURA_CURTA[sinal.nivel]()}${sinal.desatualizado ? " Leitura antiga. Desconfie." : ""}`,
       `${horizonte}-day reading: ${rotuloDoNivel(sinal.nivel).toLowerCase()}. ${LEITURA_CURTA[sinal.nivel]()}${sinal.desatualizado ? " An old reading. Be wary." : ""}`,
     );
+  } else if (sinal?.tipo === "sem" && sinal.motivo === "piso") {
+    coruja.abertura = t("No piso do mercado. Não cai. Também não paga a taxa se subir um centavo.", "At the market floor. It won't fall. Nor will a one-cent rise pay the fee.");
   } else if (sinal?.tipo === "sem" && sinal.motivo === "pouco_volume") {
     coruja.linhas.push(t("Sem leitura: pouca venda. Não confio nesse preço.", "No reading: few sales. I don't trust that price."));
   }
