@@ -54,7 +54,11 @@ function Dica({ active, payload, previsao }: TooltipContentProps<TooltipValueTyp
   );
 }
 
-export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
+/**
+ * Sem `altura`, o gráfico ocupa a altura que o pai der (no mínimo 320 px): no detalhe do item, ele
+ * acompanha a coluna do lado em vez de deixar um vão embaixo.
+ */
+export function GraficoHistorico({ pontos, previsao, altura }: {
   pontos: PontoHistorico[];
   previsao?: PrevisaoItem;
   altura?: number;
@@ -63,7 +67,7 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
   const dataDoEixo = (instante: number) => formatarDiaMes(new Date(instante).toISOString().slice(0, 10));
 
   return (
-    <div>
+    <div className={altura ? undefined : "flex h-full flex-col"}>
       {futuro && (
         <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-suave" aria-label="Legenda do gráfico">
           <span className="inline-flex items-center gap-2">
@@ -80,7 +84,8 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
           )}
         </div>
       )}
-      <ResponsiveContainer width="100%" height={altura}>
+      <div className={altura ? undefined : "min-h-80 flex-1"}>
+      <ResponsiveContainer width="100%" height={altura ?? "100%"}>
         <LineChart data={dados} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--color-borda)" />
           <XAxis
@@ -170,6 +175,7 @@ export function GraficoHistorico({ pontos, previsao, altura = 320 }: {
           )}
         </LineChart>
       </ResponsiveContainer>
+      </div>
       {futuro && (
         <p className="mt-3 text-xs leading-relaxed text-suave">
           {futuro.inicio === futuro.fim

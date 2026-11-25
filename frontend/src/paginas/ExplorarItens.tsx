@@ -10,7 +10,7 @@ import { categoriaDoItem, type TemaChaveiro } from "../componentes/chaveiro/tema
 import { analiseDoExplorar } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { Sparkline } from "../componentes/Sparkline";
-import { useIdioma } from "../lib/idioma";
+import { t, useIdioma } from "../lib/idioma";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
 import { jogoDoItem } from "../lib/jogos";
 import { sinalDoModelo } from "../lib/sinal";
@@ -151,13 +151,13 @@ export function ExplorarItens() {
       {/* Sem filtro, a página abre com o que mais se mexeu na semana, como na landing. */}
       {!filtrando && filtros.pagina === 1 && (
         // lg:pb: espaço para os chaveiros dos terminais, que pendem embaixo deles (só aparecem do lg em diante).
-        <section className="space-y-4 lg:pb-16">
+        <section data-tv={t("Destaques da semana", "Weekly highlights")} className="space-y-4 lg:pb-16">
           <Rotulo destaque>Destaques da semana</Rotulo>
           <TerminaisDestaque tour="destaques-explorar" />
         </section>
       )}
 
-      <section className="space-y-4">
+      <section data-tv={t("Itens", "Items")} className="space-y-4">
         <BarraFiltros
           limpezas={limpezas}
           filtros={filtros}

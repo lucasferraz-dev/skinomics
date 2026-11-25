@@ -14,7 +14,7 @@ import { analiseDoItem } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { PrevisaoPreco } from "../componentes/PrevisaoPreco";
 import { MedidorSinal } from "../componentes/SinalModelo";
-import { useIdioma } from "../lib/idioma";
+import { t, useIdioma } from "../lib/idioma";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
 import { jogoDoItem } from "../lib/jogos";
 import { sinalDoModelo } from "../lib/sinal";
@@ -110,8 +110,9 @@ function Conteudo({ item }: { item: ItemResumo }) {
 
       <Indicadores item={item} />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        <Painel data-tour="item-grafico" className="rounded-2xl p-4 sm:p-6">
+      <div data-tv={t("Gráfico e previsão", "Chart and forecast")} className="grid gap-4 lg:grid-cols-[1fr_300px]">
+        {/* flex-col: o gráfico cresce até a altura da coluna do lado, sem vão embaixo. */}
+        <Painel data-tour="item-grafico" className="flex flex-col rounded-2xl p-4 sm:p-6">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-1">
               <Rotulo destaque>Histórico de preço</Rotulo>
@@ -133,15 +134,19 @@ function Conteudo({ item }: { item: ItemResumo }) {
             </div>
           </div>
 
-          {item.data_preco === null ? (
-            <MensagemErro titulo="Este item ainda não tem preços coletados." />
-          ) : historico.isPending ? (
-            <div className="h-80"><Carregando texto="Carregando histórico…" /></div>
-          ) : historico.isError ? (
-            <MensagemErro titulo="Não foi possível carregar o histórico." />
-          ) : (
-            <GraficoHistorico pontos={historico.data} previsao={previsao.data} />
-          )}
+          <div className="flex min-h-80 flex-1 flex-col">
+            {item.data_preco === null ? (
+              <MensagemErro titulo="Este item ainda não tem preços coletados." />
+            ) : historico.isPending ? (
+              <Carregando texto="Carregando histórico…" />
+            ) : historico.isError ? (
+              <MensagemErro titulo="Não foi possível carregar o histórico." />
+            ) : (
+              <GraficoHistorico pontos={historico.data} previsao={previsao.data} />
+            )}
+          </div>
+
+          {historico.data && historico.data.length > 0 && <ResumoPeriodo pontos={historico.data} />}
         </Painel>
 
         <aside className="space-y-4">
@@ -152,12 +157,11 @@ function Conteudo({ item }: { item: ItemResumo }) {
               aoMudarHorizonte={(valor) => alterarParametro("horizonte", String(valor))}
             />
           </div>
-          {historico.data && historico.data.length > 0 && <ResumoPeriodo pontos={historico.data} />}
         </aside>
       </div>
 
       {categoria && parecidos.length > 0 && (
-        <section data-tour="item-parecidos" className="space-y-6 pt-4">
+        <section data-tour="item-parecidos" data-tv={t("Itens parecidos", "Similar items")} className="space-y-6 pt-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-3">
               <Rotulo destaque>Mesma categoria</Rotulo>
@@ -201,7 +205,7 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
   const urlSteam = `https://steamcommunity.com/market/listings/${item.appid}/${encodeURIComponent(item.market_hash_name)}`;
 
   return (
-    <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+    <section data-tv={t("O item", "The item")} className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
       <div data-tour="item-topo" className="min-w-0 space-y-6">
         <div className="space-y-4">
           <Rotulo destaque>
@@ -334,7 +338,7 @@ function Indicadores({ item }: { item: ItemResumo }) {
 
   return (
     // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
-    <section data-tour="item-numeros" className="grid grid-cols-1 gap-3 overflow-x-clip py-1 sm:grid-cols-2 lg:grid-cols-4">
+    <section data-tour="item-numeros" data-tv={t("Números", "Numbers")} className="grid grid-cols-1 gap-3 overflow-x-clip py-1 sm:grid-cols-2 lg:grid-cols-4">
       {indicadores.map((indicador, i) => (
         <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
       ))}
@@ -355,20 +359,20 @@ function ResumoPeriodo({ pontos }: { pontos: PontoHistorico[] }) {
     ["Volume médio / dia", formatarInteiro(Math.round(volumeTotal / pontos.length))],
   ];
 
+  // Faixa no rodapé do gráfico: os números mudam junto com o período escolhido em cima dele.
   return (
-    <Painel className="p-5">
-      <Rotulo>No período</Rotulo>
-      <p className="mt-1 font-mono text-[11px] text-apagado">
-        {formatarData(primeiro.data)} – {formatarData(ultimo.data)}
+    <div className="mt-6 border-t border-borda pt-4">
+      <p className="font-mono text-[11px] text-apagado">
+        No período: {formatarData(primeiro.data)} a {formatarData(ultimo.data)}
       </p>
-      <dl className="mt-4 space-y-2.5 text-sm">
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         {linhas.map(([rotulo, valor]) => (
-          <div key={rotulo} className="flex justify-between gap-4">
-            <dt className="text-suave">{rotulo}</dt>
-            <dd className="font-mono">{valor}</dd>
+          <div key={rotulo}>
+            <dt className="text-xs text-suave">{rotulo}</dt>
+            <dd className="mt-0.5 font-mono text-sm">{valor}</dd>
           </div>
         ))}
       </dl>
-    </Painel>
+    </div>
   );
 }

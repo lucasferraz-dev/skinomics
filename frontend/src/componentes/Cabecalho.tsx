@@ -10,8 +10,8 @@ import { BotaoComoUsar } from "./tutorial/Tutorial";
 
 /**
  * O header do site, igual na landing e no Terminal: alto, translúcido e fixo no topo, com o logo na ponta
- * esquerda e os botões redondos na direita. O modo TV só existe na landing (passeia pelas seções dela);
- * fora dela, o FAQ leva para a seção da landing.
+ * esquerda e os botões redondos na direita. O modo TV passeia pelas seções da página aberta; fora da
+ * landing, o FAQ leva para a seção da landing.
  */
 export function Cabecalho({ landing = false }: { landing?: boolean }) {
   return (
@@ -30,7 +30,7 @@ export function Cabecalho({ landing = false }: { landing?: boolean }) {
           >
             <IconeFaq />
           </a>
-          {landing && <BotaoModoTv />}
+          <BotaoModoTv />
           <BotaoTelaCheia />
           <span data-tour="menu-analise">
             <AcessoAnalise redondo />

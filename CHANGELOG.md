@@ -41,7 +41,12 @@
 ### Alterado
 
 - O Terminal usa o mesmo header da landing (`componentes/Cabecalho.tsx`): alto, translúcido e fixo,
-  com os mesmos botões; o modo TV fica só na landing.
+  com os mesmos botões.
+- Modo TV em todas as páginas, não só na landing: no Explorar passa pelos destaques e pela lista;
+  no detalhe do item, pelo item, pelos números, pelo gráfico com a previsão e pelos itens parecidos.
+  Página sem seções marcadas é descida inteira, e trocar de página desliga o modo TV.
+- Detalhe do item: o gráfico cresce até a altura da coluna da leitura do modelo, sem o vão que
+  ficava embaixo dele, e o resumo "No período" virou uma faixa no rodapé do gráfico.
 - Tutorial: ao rolar até uma parte, deixa espaço em cima para os mascotes e os balões deles (antes
   ficavam fora da tela em partes altas) e não erra a conta quando o header rolou para fora; o balão
   de explicação não cobre os mascotes de plantão.
