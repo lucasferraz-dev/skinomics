@@ -40,6 +40,12 @@
 
 ### Alterado
 
+- Oportunidades no visual do resto do site: cabeçalho e seletor de cenário como no Explorar,
+  adesivos com os números do cenário, pódio com as três maiores margens em vitrines (o primeiro
+  lugar leva a medalha "Maior margem"), o resto do ranking no estilo da lista do Explorar, selo de
+  risco com medidor de três barras e os motivos ao clicar, e "Como ler o ranking" em cartões. Cada
+  vitrine mostra a margem depois da taxa da Steam. Muninn e Glaux de plantão comentam o ranking
+  (`analiseDasOportunidades`), e o modo TV passa pelo pódio, pelo ranking e pela explicação.
 - O Terminal usa o mesmo header da landing (`componentes/Cabecalho.tsx`): alto, translúcido e fixo,
   com os mesmos botões.
 - Modo TV em todas as páginas, não só na landing: no Explorar passa pelos destaques e pela lista;
