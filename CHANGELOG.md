@@ -49,8 +49,7 @@
 
 ### Alterado
 
-- Aba Alertas no visual do resto do site: adesivos com os números (vigiando, disparados, o mais
-  perto do alvo e quantos a conta tem), "Novo alerta" em dois terminais (busca à esquerda, o item
+- Aba Alertas no visual do resto do site: "Novo alerta" em dois terminais (busca à esquerda, o item
   escolhido numa vitrine com o formulário à direita), os alertas vigiando em cards de terminal com
   a pista até o alvo e os disparados com o item na vitrine e a medalha do movimento. O balão
   "Criar alerta" do item ganhou a faixa de título dos terminais.

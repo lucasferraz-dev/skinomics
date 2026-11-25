@@ -11,11 +11,9 @@ import { analiseDosAlertas } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { t, useIdioma } from "../lib/idioma";
 import { formatarDiaMes, formatarInstante, formatarPreco, formatarVariacao } from "../lib/formato";
-import { ADESIVOS, CardIndicador, type Indicador } from "./inicio/CardIndicador";
 import { Medalha } from "./inicio/Medalha";
 import { CabecalhoSecao } from "./inicio/ui";
 
-const LIMITE_ALERTAS = 50;
 const semSinal = (fracao: number) => formatarVariacao(Math.abs(fracao)).replace(/^[+-]/, "");
 
 export function Alertas() {
@@ -41,7 +39,6 @@ export function Alertas() {
             "Pick a target price and Skinomics lets you know on the bell up top when the item gets there. Alerts are checked once a day, right after prices are collected.",
           )}
         />
-        {alertas && alertas.length > 0 && <Numeros alertas={alertas} />}
       </section>
 
       {carregandoUsuario ? (
@@ -115,58 +112,6 @@ function Titulo({ rotulo, titulo, extra }: { rotulo: string; titulo: string; ext
         <h2 className="text-3xl leading-tight titulo sm:text-4xl">{titulo}</h2>
       </div>
       {extra && <span className="font-mono text-xs text-apagado">{extra}</span>}
-    </div>
-  );
-}
-
-/** Adesivos com os números dos alertas, os mesmos da landing, do item e das oportunidades. */
-function Numeros({ alertas }: { alertas: Alerta[] }) {
-  const vigiando = alertas.filter((alerta) => alerta.estado === "aguardando");
-  const pausados = alertas.filter((alerta) => alerta.estado === "pausado").length;
-  const disparados = alertas.filter((alerta) => alerta.estado === "disparado");
-  const novos = disparados.filter((alerta) => !alerta.visto).length;
-  const maisPerto = vigiando
-    .map((alerta) => ({ alerta, falta: quantoFalta(alerta, alerta.item.preco_atual) }))
-    .filter((par): par is { alerta: Alerta; falta: number } => par.falta !== null)
-    .sort((a, b) => a.falta - b.falta)[0];
-
-  const indicadores: Indicador[] = [
-    {
-      rotulo: t("Vigiando", "Watching"),
-      valor: String(vigiando.length),
-      detalhe: t("conferidos todo dia", "checked every day"),
-      icone: "horizonte",
-      verso: { rotulo: t("Pausados", "Paused"), valor: String(pausados) },
-    },
-    {
-      rotulo: t("Disparados", "Triggered"),
-      valor: String(disparados.length),
-      detalhe: t("chegaram no preço", "hit the price"),
-      icone: "oportunidade",
-      verso: { rotulo: t("Novos no sino", "New on the bell"), valor: String(novos) },
-    },
-    {
-      rotulo: t("Mais perto", "Closest"),
-      valor: maisPerto ? semSinal(maisPerto.falta) : "—",
-      detalhe: maisPerto ? maisPerto.alerta.item.nome : t("nenhum vigiando", "none watching"),
-      icone: "variacao",
-      verso: { rotulo: t("Alvo", "Target"), valor: maisPerto ? formatarPreco(maisPerto.alerta.preco_alvo) : "—" },
-    },
-    {
-      rotulo: t("Na conta", "On your account"),
-      valor: `${alertas.length} / ${LIMITE_ALERTAS}`,
-      detalhe: t("alertas criados", "alerts created"),
-      icone: "itens",
-      verso: { rotulo: t("Limite por conta", "Per-account limit"), valor: String(LIMITE_ALERTAS) },
-    },
-  ];
-
-  return (
-    // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
-    <div className="grid grid-cols-1 gap-3 overflow-x-clip py-1 sm:grid-cols-2 lg:grid-cols-4">
-      {indicadores.map((indicador, i) => (
-        <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
-      ))}
     </div>
   );
 }
