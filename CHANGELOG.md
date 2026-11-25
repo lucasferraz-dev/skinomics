@@ -73,6 +73,11 @@
 - `finalizada_em` das execuções de coleta guardava a hora do início da transação (`now()`), e
   toda execução aparecia com duração zero; agora é a hora real do fim.
 - Coleta interrompida no meio (HTTP 429 no catálogo) ficava como sucesso; agora fica parcial.
+- Coleta diária (`scripts/coleta_diaria.ps1`): a janela ficava preta até o fim, porque a saída do
+  Python só ia para o log quando ele terminava. Agora cada item aparece na janela e no log na hora,
+  com título e aviso para não fechar; o fim ganha uma linha "resultado:" em português simples; as
+  notificações trazem o motivo da falha e avisam também quando deu certo; e o Windows não suspende
+  no meio da coleta.
 
 ## [0.3.1] - 2026-11-02
 
