@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { t } from "../lib/idioma";
 import { formatarData } from "../lib/formato";
-import { type MotivoSemSinal, type NivelSinal, NIVEIS, type Sinal } from "../lib/sinal";
+import { type MotivoSemSinal, type NivelSinal, NIVEIS, type Sinal, TAXA_STEAM } from "../lib/sinal";
 import { Painel, Rotulo, Variacao } from "./Basicos";
 
 const ROTULO: Record<NivelSinal, () => string> = {
@@ -23,6 +23,7 @@ const EXPLICACAO: Record<NivelSinal, () => string> = {
 
 const SEM_LEITURA: Record<MotivoSemSinal, () => string> = {
   sem_previsao: () => t("Ainda não há previsão com faixa para este horizonte.", "There's no forecast with a range for this horizon yet."),
+  piso: () => t("O item está no menor preço do mercado. Dali não cai, mas um centavo a mais não paga a taxa da Steam.", "The item sits at the market's lowest price. It can't fall, but one more cent won't pay Steam's fee."),
   pouco_volume: () => t("Pouca venda na semana: o preço de item pouco negociado engana.", "Few sales this week: a thinly traded price is misleading."),
   incerteza_alta: () => t("A faixa da previsão está larga demais para uma leitura.", "The forecast range is too wide for a reading."),
 };
@@ -166,7 +167,10 @@ export function MedidorSinal({ sinal, horizonte, dataBase, carregando }: { sinal
         {leitura?.desatualizado && dataBase
           ? t(`Leitura de ${formatarData(dataBase)}, aguardando previsão nova. `, `Reading from ${formatarData(dataBase)}, awaiting a new forecast. `)
           : ""}
-        {t("É o que o modelo lê na faixa de 80%, não uma recomendação de investimento.", "It's what the model reads from the 80% range, not investment advice.")}
+        {t(
+          `É o que o modelo lê na faixa de 80%, não uma recomendação de investimento. A Steam fica com parte de cada venda: para lucrar, a alta precisa passar de uns ${Math.round(TAXA_STEAM * 100)}%.`,
+          `It's what the model reads from the 80% range, not investment advice. Steam keeps part of every sale: to profit, the rise must beat about ${Math.round(TAXA_STEAM * 100)}%.`,
+        )}
       </p>
     </Painel>
   );
