@@ -1,7 +1,8 @@
 import type { ItemResumo, PontoHistorico, PrevisaoItem } from "../../api/itens";
+import type { RankingOportunidades } from "../../api/oportunidades";
 import { t } from "../../lib/idioma";
 import { formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
-import type { NivelSinal, Sinal } from "../../lib/sinal";
+import { type NivelSinal, type Sinal, TAXA_STEAM } from "../../lib/sinal";
 import type { TipoMedalha } from "../../paginas/inicio/Medalha";
 import { rotuloDoNivel } from "../SinalModelo";
 
@@ -260,6 +261,82 @@ export function analiseDoExplorar({ sinais, catalogo, resultado, total, categori
     t("Ordena por Maiores quedas! Às vezes tem pechincha! Às vezes tem armadilha!", "Sort by Biggest drops! Sometimes a bargain! Sometimes a trap!"),
     t("Puxa os chaveiros dos cards! Eles balançam!", "Pull the keychains on the cards! They swing!"),
     t("Lista é pra comparar número. Grade é mais bonita. Eu prefiro a grade. Brilha!", "List is for comparing numbers. Grid is prettier. I prefer the grid. Shiny!"),
+  );
+
+  return { corvo, coruja };
+}
+
+/** Margem que sobra depois da taxa da Steam: quem vende recebe o preço dividido por 1 + taxa. */
+export const margemDepoisDaTaxa = (margem: number) => (1 + margem) / (1 + TAXA_STEAM) - 1;
+
+type DadosOportunidades = {
+  ranking: RankingOportunidades | undefined;
+  horizonte: number;
+  pagina: number;
+};
+
+export function analiseDasOportunidades({ ranking, horizonte, pagina }: DadosOportunidades): FalasDaPagina {
+  const corvo: Falas = { linhas: [] };
+  const coruja: Falas = { linhas: [] };
+  if (!ranking) return { corvo, coruja };
+  const itens = ranking.itens;
+  const primeiro = itens[0];
+
+  if (ranking.motivo === "sem_margem_positiva") {
+    corvo.abertura = t("Nada barato hoje! Tudo no preço! Tenta outro horizonte!", "Nothing cheap today! All fairly priced! Try another horizon!");
+    coruja.abertura = t(`Em ${horizonte} dias, nenhum item fica acima do preço de hoje. Isso também é informação.`, `In ${horizonte} days, no item ends above today's price. That's information too.`);
+  } else if (ranking.motivo) {
+    corvo.abertura = t("Os números ainda estão chegando! Espera! Espera!", "The numbers are still coming! Wait! Wait!");
+    coruja.abertura = t("Sem previsão para este horizonte ainda. Sem previsão, sem ranking.", "No forecast for this horizon yet. No forecast, no ranking.");
+  } else if (primeiro) {
+    corvo.abertura = pagina === 1
+      ? t(`${ranking.total} oportunidades! A maior: ${primeiro.nome}, ${formatarVariacao(primeiro.margem_estimada)}! Brilha!`, `${ranking.total} opportunities! The biggest: ${primeiro.nome}, ${formatarVariacao(primeiro.margem_estimada)}! Shiny!`)
+      : t(`Página ${pagina}! As margens aqui são menores! Mas eu guardei todas!`, `Page ${pagina}! Smaller margins here! But I kept them all!`);
+    const altos = itens.filter((item) => item.risco === "alto").length;
+    const baixos = itens.filter((item) => item.risco === "baixo").length;
+    coruja.abertura = t(
+      `Nesta página: ${baixos} com risco baixo, ${altos} com risco alto, de ${itens.length}. Margem não é retorno.`,
+      `On this page: ${baixos} low risk, ${altos} high risk, out of ${itens.length}. Margin isn't return.`,
+    );
+  }
+
+  if (primeiro && !ranking.motivo) {
+    const liquida = margemDepoisDaTaxa(primeiro.margem_estimada);
+    coruja.linhas.push(
+      liquida > 0
+        ? t(`${primeiro.nome}: ${formatarVariacao(primeiro.margem_estimada)} de margem. Depois da taxa da Steam, ${formatarVariacao(liquida)}.`, `${primeiro.nome}: ${formatarVariacao(primeiro.margem_estimada)} margin. After the Steam fee, ${formatarVariacao(liquida)}.`)
+        : t(`${primeiro.nome}: ${formatarVariacao(primeiro.margem_estimada)} de margem. A taxa da Steam come tudo.`, `${primeiro.nome}: ${formatarVariacao(primeiro.margem_estimada)} margin. The Steam fee eats all of it.`),
+    );
+    // Margem alta com risco alto: o caso que mais engana no topo do ranking.
+    const armadilha = itens.slice(0, 5).find((item) => item.risco === "alto");
+    if (armadilha) {
+      coruja.linhas.push(t(
+        `${armadilha.nome} está no topo com risco alto. Pouca venda ou oscilação grande. Abra os motivos.`,
+        `${armadilha.nome} is near the top with high risk. Thin volume or big swings. Open the reasons.`,
+      ));
+    }
+    const seguro = itens.find((item) => item.risco === "baixo");
+    if (seguro) {
+      corvo.linhas.push(t(
+        `A melhor com risco baixo: ${seguro.nome}, ${formatarVariacao(seguro.margem_estimada)}! Essa a coruja aprova! Quase!`,
+        `Best low-risk one: ${seguro.nome}, ${formatarVariacao(seguro.margem_estimada)}! The owl approves! Almost!`,
+      ));
+    }
+  }
+  if (ranking.itens_desatualizados > 0) {
+    coruja.linhas.push(t(
+      `${formatarInteiro(ranking.itens_desatualizados)} usam preços antigos. Confira a data-base antes de agir.`,
+      `${formatarInteiro(ranking.itens_desatualizados)} use old prices. Check the base date before acting.`,
+    ));
+  }
+  coruja.linhas.push(
+    t("A margem é sobre a média prevista da janela, não sobre um dia só.", "The margin is on the window's predicted average, not on a single day."),
+    t("Risco baixo não é risco zero. É o critério de referência.", "Low risk isn't zero risk. It's the reference criterion."),
+  );
+  corvo.linhas.push(
+    t("Clica no risco de um item! Ele conta o porquê! Eu já sei de cor!", "Click an item's risk! It tells you why! I know it by heart!"),
+    t("Troca pra 30 dias! As margens ficam maiores! A faixa também! A coruja reclama!", "Switch to 30 days! Margins get bigger! So does the range! The owl complains!"),
+    t("O primeiro lugar ganha medalha! Eu queria uma! Ninguém me dá!", "First place gets a medal! I want one! Nobody gives me one!"),
   );
 
   return { corvo, coruja };
