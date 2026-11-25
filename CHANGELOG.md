@@ -49,6 +49,11 @@
 
 ### Alterado
 
+- Aba Alertas no visual do resto do site: adesivos com os números (vigiando, disparados, o mais
+  perto do alvo e quantos a conta tem), "Novo alerta" em dois terminais (busca à esquerda, o item
+  escolhido numa vitrine com o formulário à direita), os alertas vigiando em cards de terminal com
+  a pista até o alvo e os disparados com o item na vitrine e a medalha do movimento. O balão
+  "Criar alerta" do item ganhou a faixa de título dos terminais.
 - Oportunidades no visual do resto do site: cabeçalho e seletor de cenário como no Explorar,
   adesivos com os números do cenário, pódio com as três maiores margens em vitrines (o primeiro
   lugar leva a medalha "Maior margem"), o resto do ranking no estilo da lista do Explorar, selo de

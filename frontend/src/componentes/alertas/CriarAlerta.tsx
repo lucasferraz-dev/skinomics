@@ -6,6 +6,7 @@ import { useUsuario } from "../../api/auth";
 import type { ItemResumo } from "../../api/itens";
 import { t } from "../../lib/idioma";
 import { formatarPreco, formatarVariacao } from "../../lib/formato";
+import { Rotulo } from "../Basicos";
 
 export function IconeSino({ tamanho = 15, cheio = false }: { tamanho?: number; cheio?: boolean }) {
   return (
@@ -197,7 +198,13 @@ export function BotaoCriarAlerta({ item, faixa }: { item: ItemResumo; faixa?: { 
         {doItem ? t(`${doItem} ${doItem === 1 ? "alerta" : "alertas"}`, `${doItem} ${doItem === 1 ? "alert" : "alerts"}`) : t("Criar alerta", "Create alert")}
       </button>
       {aberto && (
-        <div className="absolute top-full left-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-borda bg-painel p-4 shadow-[0_18px_50px_rgba(0,0,0,0.6)] starting:translate-y-1 starting:opacity-0 transition-[opacity,translate] duration-200">
+        <div className="absolute top-full left-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-borda bg-painel shadow-[0_18px_50px_rgba(0,0,0,0.6)] starting:translate-y-1 starting:opacity-0 transition-[opacity,translate] duration-200">
+          {/* Faixa de cima no formato dos terminais do site. */}
+          <div className="flex h-10 items-center justify-between border-b border-borda px-4">
+            <Rotulo destaque>{t("Novo alerta", "New alert")}</Rotulo>
+            <span className="text-destaque"><IconeSino cheio /></span>
+          </div>
+          <div className="p-4">
           {criado ? (
             <div className="space-y-3 text-center">
               <p className="text-sm">{t("Alerta criado.", "Alert created.")}</p>
@@ -214,6 +221,7 @@ export function BotaoCriarAlerta({ item, faixa }: { item: ItemResumo; faixa?: { 
           ) : (
             <FormAlerta item={item} faixa={faixa} aoCriar={() => setCriado(true)} />
           )}
+          </div>
         </div>
       )}
     </div>
