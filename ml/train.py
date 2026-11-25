@@ -54,6 +54,9 @@ class TrainingConfig:
     target_half_window: int = 2
     target_clip: float = 0.7
     ema_weight: float = 0.5
+    # Meia-vida (anos) do peso de cada linha no treino: um dado dessa idade vale metade
+    # de um de hoje. None treina com todas as linhas valendo o mesmo.
+    recency_half_life: float | None = None
     test_days: int = 180
     calibration_days: int = 90
     cv_folds: int = 4
@@ -79,6 +82,10 @@ class TrainingConfig:
             raise ValueError("target_clip deve ser finito e positivo.")
         if not 0 <= self.ema_weight <= 1:
             raise ValueError("ema_weight deve estar entre 0 e 1.")
+        if self.recency_half_life is not None and not (
+            np.isfinite(self.recency_half_life) and self.recency_half_life > 0
+        ):
+            raise ValueError("recency_half_life deve ser positivo (ou None para desligar).")
         if self.n_jobs == 0:
             raise ValueError("n_jobs não pode ser zero.")
         if self.start_date is not None and pd.isna(pd.Timestamp(self.start_date)):
@@ -267,6 +274,14 @@ def percentage_gain(error, baseline):
     return 100 * (1 - error / baseline) if baseline > 0 else np.nan
 
 
+def recency_weights(dates: pd.Series, half_life: float | None):
+    """Peso de cada linha pela idade em relação à data mais recente do próprio treino."""
+    if half_life is None:
+        return None
+    age_years = (dates.max() - dates).dt.days.to_numpy() / 365.25
+    return 0.5 ** (age_years / half_life)
+
+
 def eval_models(train, features, config, models):
     rows = []
     # Verifica todos os folds antes de começar os treinos mais demorados.
@@ -276,8 +291,11 @@ def eval_models(train, features, config, models):
         items = train.loc[eval_mask, "market_hash_name"].to_numpy()
         for name, candidate in models.items():
             print(f"Validação: {label} | {name}", flush=True)
+            fit = train.loc[fit_mask]
             model = clone(candidate).fit(
-                train.loc[fit_mask, features], train.loc[fit_mask, "target_logret"]
+                fit[features],
+                fit["target_logret"],
+                sample_weight=recency_weights(fit["observation_date"], config.recency_half_life),
             )
             prediction = model.predict(train.loc[eval_mask, features])
             error, naive_error = np.abs(actual - prediction), np.abs(actual)
@@ -351,11 +369,12 @@ def evaluation_metadata(test: pd.DataFrame) -> dict:
     }
 
 
-def eval_final(train, test, features, models):
+def eval_final(train, test, features, models, recency_half_life=None):
     predictions, rows, fitted = {}, {}, {}
+    weights = recency_weights(train["observation_date"], recency_half_life)
     for name, candidate in models.items():
         print(f"Teste: {name}", flush=True)
-        model = clone(candidate).fit(train[features], train["target_logret"])
+        model = clone(candidate).fit(train[features], train["target_logret"], sample_weight=weights)
         fitted[name] = model
         predictions[name] = model.predict(test[features])
         rows[name] = price_metrics(test["target_logret"], predictions[name], test["price"])
@@ -427,7 +446,9 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
     cv_details, cv_summary = eval_models(train, features, config, models)
     best_name = cv_summary.iloc[0]["model"]
     print(f"\n{cv_summary.to_string(index=False)}\nModelo escolhido no CV: {best_name}")
-    test_metrics, predictions, fitted = eval_final(train, test, features, models)
+    test_metrics, predictions, fitted = eval_final(
+        train, test, features, models, config.recency_half_life
+    )
     final_model = fitted[best_name]
     interval = calibrate(
         calibration["target_logret"].to_numpy(), final_model.predict(calibration[features])
@@ -563,6 +584,11 @@ def main():
     parser.add_argument("--target-clip", type=float, default=defaults.target_clip)
     parser.add_argument("--ema-weight", type=float, default=defaults.ema_weight)
     parser.add_argument(
+        "--recency-half-life",
+        default=defaults.recency_half_life,
+        help="Meia-vida, em anos, do peso dos dados no treino; use 'none' para pesos iguais.",
+    )
+    parser.add_argument(
         "--start-date",
         default=defaults.start_date,
         help="Data inicial (AAAA-MM-DD); use 'none' para todo o histórico.",
@@ -584,6 +610,12 @@ def main():
     }
     if args["start_date"].lower() == "none":
         args["start_date"] = None
+    half_life = args["recency_half_life"]
+    if half_life is not None and not isinstance(half_life, float):
+        try:
+            args["recency_half_life"] = None if half_life.lower() == "none" else float(half_life)
+        except ValueError:
+            parser.error("--recency-half-life deve ser um número de anos ou 'none'.")
     try:
         config = TrainingConfig(**args)
         if run_sarima:

@@ -18,7 +18,7 @@ class RatioBaseline(RegressorMixin, BaseEstimator):
     def __init__(self, col="ema_10_rel"):
         self.col = col
 
-    def fit(self, X, y=None):  # noqa: N803 - interface do scikit-learn
+    def fit(self, X, y=None, sample_weight=None):  # noqa: N803 - interface do scikit-learn
         self.n_features_in_ = X.shape[1]
         self.feature_names_in_ = np.asarray(X.columns, dtype=object)
         return self
@@ -35,12 +35,14 @@ class EMABlend(RegressorMixin, BaseEstimator):
         self.ema_weight = ema_weight
         self.clip = clip
 
-    def fit(self, X, y):  # noqa: N803
+    def fit(self, X, y, sample_weight=None):  # noqa: N803
         if not 0 <= self.ema_weight <= 1:
             raise ValueError("ema_weight deve estar entre 0 e 1.")
         if not np.isfinite(self.clip) or self.clip <= 0:
             raise ValueError("clip deve ser finito e positivo.")
-        self.model_ = clone(self.estimator).fit(X, np.clip(y, -self.clip, self.clip))
+        self.model_ = clone(self.estimator).fit(
+            X, np.clip(y, -self.clip, self.clip), sample_weight=sample_weight
+        )
         self.n_features_in_ = X.shape[1]
         self.feature_names_in_ = np.asarray(X.columns, dtype=object)
         return self

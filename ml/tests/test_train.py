@@ -23,6 +23,7 @@ from ml.train import (
     load_data,
     prepare_data,
     price_metrics,
+    recency_weights,
     temporal_split,
     walk_forward_folds,
 )
@@ -151,6 +152,9 @@ def test_short_history_fails_with_actionable_error():
         {"test_days": 0},
         {"calibration_days": 0},
         {"n_jobs": 0},
+        {"recency_half_life": 0},
+        {"recency_half_life": -1},
+        {"recency_half_life": np.inf},
     ],
 )
 def test_invalid_config(kwargs):
@@ -170,6 +174,21 @@ def test_blend_clips_training_target_and_is_cloneable(tmp_path):
     restored = joblib.load(path)
     np.testing.assert_allclose(restored.predict(features), fitted.predict(features))
     assert not hasattr(model, "model_")
+
+
+def test_recency_weights_halve_each_half_life():
+    dates = pd.Series(pd.to_datetime(["2024-01-01", "2025-01-01", "2026-01-01"]))
+    assert recency_weights(dates, None) is None
+    weights = recency_weights(dates, 1.0)
+    np.testing.assert_allclose(weights, [0.25, 0.5, 1.0], rtol=1e-2)
+    assert weights[-1] == 1.0
+
+
+def test_blend_passes_sample_weight_to_the_estimator():
+    features = pd.DataFrame({"ema_10_rel": [0.0, 0.0, 0.0]})
+    model = EMABlend(DummyRegressor(strategy="mean"), ema_weight=0.0, clip=1.0)
+    fitted = model.fit(features, [0.0, 0.0, 0.3], sample_weight=[0.0, 0.0, 1.0])
+    np.testing.assert_allclose(fitted.predict(features), 0.3)
 
 
 def test_constant_prices_have_defined_errors_and_no_direction():
