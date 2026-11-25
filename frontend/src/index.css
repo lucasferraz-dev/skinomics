@@ -60,6 +60,14 @@ html[data-tv-ocioso] * {
   .conta-cabeca { animation: conta-cabeca 4.2s ease-in-out infinite; }
   .globo-meridiano { animation: globo 3.8s ease-in-out infinite; }
 }
+/* Sino dos alertas balançando quando algum disparou (preso pelo topo, como um sino de verdade). */
+@keyframes balancar {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-4deg); }
+}
 @keyframes tv-play {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.72); opacity: 0.55; }

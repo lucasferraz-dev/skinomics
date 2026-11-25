@@ -79,7 +79,7 @@ nenhum na nuvem** hoje. Passo a passo: [docs/ml-integracao.md](docs/ml-integraca
 | **#12 US015** | Agendar a coleta diária | **Feito no PC do Lucas** (ver "Coletor" na §2): tarefa do Windows ao logon e às 3h, com retomada após 429 e previsões em seguida. Só roda com o PC ligado; um Raspberry Pi em casa seria o próximo passo. A nuvem foi descartada porque os IPs dela levam 429 da Steam. |
 | **#14 US017** | Cobertura da base histórica | **Não feito.** O escopo cortado pede só uma **consulta SQL** (itens por quantidade de dias de histórico, itens abaixo do mínimo para treino — o ML usa `MIN_HISTORY = 30`), sem tela. Backup é manual. Dá para fazer como módulo `app.coleta.cobertura` no estilo de `execucoes.py`. |
 | **#16 US005** | Filtrar por atributos | **Metade.** A API já aceita `tipo`, `preco_min`, `preco_max`, `ordenar`, `direcao` (`schemas/item.py`, `consultas/itens.py`); **falta a UI** em `ExplorarItens.tsx` (hoje só tem a busca por nome). Líder: Pedro. |
-| **#24 US012** | Alerta por preço absoluto | **Não feito.** Escopo: regra "preço abaixo de X", motor periódico sem disparo duplicado, notificação só por e-mail. Precisa de tabela nova (migração Alembic), rotas, tela e o motor (pode ir no mesmo job agendado da #12). Líder: Riscala. A branch local `feat/alertas` está vazia. |
+| **#24 US012** | Alerta por preço absoluto | **Feito (26/11/2026).** Alerta "cair até" e "subir até" um preço (`api/alertas.py`, tabela `alerta`), conferido depois de cada coleta diária (`app.servicos.alertas`, chamado pelo `coleta_diaria.ps1`), disparando uma vez só. Aviso **só dentro do site**, no sino do header (`SinoAlertas.tsx`), como o da Steam: o e-mail foi descartado de propósito. Tela em `paginas/Alertas.tsx`; botão "Criar alerta" no detalhe do item. |
 
 Outras pendências conhecidas:
 - **Buraco no histórico** depois de 15/10/2026 (fim do CSV piloto) até a coleta rodar de novo — rodar o
@@ -197,7 +197,7 @@ um pico e vai voltar". Itens com histórico curto não são confiáveis.
 | 10 | Comparação de itens | 3 | não feito |
 | 11 | Inventário do usuário | 4 | não feito |
 | 12 | Itens acompanhados | 2 | feito |
-| 13 | Alertas de preço | 4 | não feito (#24) |
+| 13 | Alertas de preço | 4 | feito (#24), aviso no sino do site |
 | 14 | Ranking de oportunidades | 3 | feito |
 | 15 | Movimentos atípicos | 3 | não feito |
 | 16 | Coletores de dados | 1 | feito, falta agendar (#12) |

@@ -1,7 +1,8 @@
 # Coleta diária automática
 
 A coleta baixa da Steam os preços dos itens acompanhados (`backend/app/coleta/itens_tf2.txt`) e, logo
-depois, publica as previsões novas. Ela roda sozinha no PC do Lucas, pelo Agendador de Tarefas do
+depois, publica as previsões novas e confere os alertas de preço dos usuários (quem tiver um alerta
+disparado vê o sino do site ficar verde). Ela roda sozinha no PC do Lucas, pelo Agendador de Tarefas do
 Windows, e não precisa de ninguém no dia a dia: só quando o cookie da Steam vence.
 
 ## Quando ela roda
@@ -40,6 +41,7 @@ notificação, está tudo certo.
 | atualize o cookie da Steam | O `steamLoginSecure` venceu, ou a conta não está em dólar | Trocar o cookie (abaixo) |
 | a coleta falhou | Erro inesperado | Ler o log do dia |
 | as previsões falharam | Os preços entraram, a previsão não | Ler o log do dia; rodar `ml.worker --once` à mão |
+| os alertas falharam | Os preços entraram, os alertas não foram conferidos | Ler o log do dia; rodar `uv run python -m app.servicos.alertas` em `backend` |
 
 ## Como trocar o cookie da Steam
 

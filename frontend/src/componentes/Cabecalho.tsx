@@ -3,6 +3,7 @@ import { BotaoIdioma } from "./BotaoIdioma";
 import { MenuConta } from "./Conta";
 import { IconeFaq } from "./IconesAnimados";
 import { Logo } from "./Logo";
+import { SinoAlertas } from "./alertas/SinoAlertas";
 import { AcessoAnalise } from "./MenuAnalise";
 import { BotaoModoTv, classeBotaoRedondo } from "./modoTv/ModoTv";
 import { BotaoTelaCheia } from "./modoTv/TelaCheia";
@@ -36,6 +37,7 @@ export function Cabecalho({ landing = false }: { landing?: boolean }) {
             <AcessoAnalise redondo />
           </span>
           <BotaoIdioma />
+          <SinoAlertas />
           <span data-tour="conta">
             <MenuConta redondo />
           </span>

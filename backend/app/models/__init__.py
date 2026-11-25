@@ -1,3 +1,4 @@
+from app.models.alerta import Alerta, CondicaoAlerta
 from app.models.execucao_coleta import ExecucaoColeta, FalhaColeta, StatusExecucao, TipoColeta
 from app.models.item import Item
 from app.models.item_acompanhado import ItemAcompanhado
@@ -12,7 +13,9 @@ from app.models.previsao import (
 from app.models.usuario import SessaoLogin, Usuario
 
 __all__ = [
+    "Alerta",
     "AtivacaoModelo",
+    "CondicaoAlerta",
     "ExecucaoColeta",
     "ExecucaoPrevisao",
     "FalhaColeta",

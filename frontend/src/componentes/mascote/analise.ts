@@ -1,3 +1,4 @@
+import { type Alerta, quantoFalta } from "../../api/alertas";
 import type { ItemResumo, PontoHistorico, PrevisaoItem } from "../../api/itens";
 import type { RankingOportunidades } from "../../api/oportunidades";
 import { t } from "../../lib/idioma";
@@ -337,6 +338,73 @@ export function analiseDasOportunidades({ ranking, horizonte, pagina }: DadosOpo
     t("Clica no risco de um item! Ele conta o porquê! Eu já sei de cor!", "Click an item's risk! It tells you why! I know it by heart!"),
     t("Troca pra 30 dias! As margens ficam maiores! A faixa também! A coruja reclama!", "Switch to 30 days! Margins get bigger! So does the range! The owl complains!"),
     t("O primeiro lugar ganha medalha! Eu queria uma! Ninguém me dá!", "First place gets a medal! I want one! Nobody gives me one!"),
+  );
+
+  return { corvo, coruja };
+}
+
+type DadosAlertas = { logado: boolean; alertas: Alerta[] | undefined };
+
+export function analiseDosAlertas({ logado, alertas }: DadosAlertas): FalasDaPagina {
+  const corvo: Falas = { linhas: [] };
+  const coruja: Falas = { linhas: [] };
+
+  if (!logado) {
+    corvo.abertura = t("Entra com a Steam! Aí eu vigio os preços pra você! De graça!", "Sign in with Steam! Then I'll watch prices for you! For free!");
+    coruja.abertura = t("Sem conta, sem alerta. O alerta fica guardado nela.", "No account, no alerts. They're saved to it.");
+    return { corvo, coruja };
+  }
+  if (!alertas) return { corvo, coruja };
+
+  if (alertas.length === 0) {
+    corvo.abertura = t("Nenhum alerta! Escolhe um item ali em cima! Eu vigio! Eu não durmo!", "No alerts! Pick an item up there! I'll watch! I never sleep!");
+    coruja.abertura = t("Escolha um alvo realista. A faixa da previsão ajuda.", "Pick a realistic target. The forecast range helps.");
+  } else {
+    const disparados = alertas.filter((alerta) => alerta.estado === "disparado");
+    const vigiando = alertas.filter((alerta) => alerta.estado === "aguardando");
+    const pausados = alertas.length - disparados.length - vigiando.length;
+    const novo = disparados.find((alerta) => !alerta.visto) ?? disparados[0];
+
+    corvo.abertura = novo
+      ? t(`${novo.item.nome} chegou no preço! Eu avisei! Eu sempre aviso!`, `${novo.item.nome} hit the price! I told you! I always tell you!`)
+      : t(`${vigiando.length} ${vigiando.length === 1 ? "alerta" : "alertas"} de vigia! Eu fico de olho! Os dois olhos!`, `${vigiando.length} ${vigiando.length === 1 ? "alert" : "alerts"} on watch! I'm keeping an eye out! Both eyes!`);
+
+    const distancias = vigiando
+      .map((alerta) => ({ alerta, falta: quantoFalta(alerta, alerta.item.preco_atual) }))
+      .filter((par): par is { alerta: Alerta; falta: number } => par.falta !== null)
+      .sort((a, b) => a.falta - b.falta);
+    const maisPerto = distancias[0];
+    if (maisPerto) {
+      coruja.abertura = t(
+        `O mais perto: ${maisPerto.alerta.item.nome}, a ${semSinal(maisPerto.falta)} do alvo.`,
+        `Closest: ${maisPerto.alerta.item.nome}, ${semSinal(maisPerto.falta)} from target.`,
+      );
+    } else if (disparados.length) {
+      coruja.abertura = t("Disparado não vigia mais. Troque o alvo para vigiar de novo.", "A triggered alert stops watching. Change the target to watch again.");
+    }
+    const maisLonge = distancias.at(-1);
+    if (maisLonge && maisLonge !== maisPerto && maisLonge.falta > 0.3) {
+      coruja.linhas.push(t(
+        `${maisLonge.alerta.item.nome} precisa andar ${semSinal(maisLonge.falta)}. Pode demorar. Pode não vir.`,
+        `${maisLonge.alerta.item.nome} needs to move ${semSinal(maisLonge.falta)}. It may take a while. It may not come.`,
+      ));
+    }
+    if (pausados) {
+      coruja.linhas.push(t(`${pausados} ${pausados === 1 ? "pausado" : "pausados"}. Pausado não dispara.`, `${pausados} paused. Paused ones don't trigger.`));
+    }
+    if (disparados.length) {
+      corvo.linhas.push(t("Disparou? Muda o alvo que ele vigia de novo!", "Triggered? Change the target and it watches again!"));
+    }
+  }
+
+  coruja.linhas.push(
+    t("Confiro uma vez por dia, depois da coleta. Preço de minuto não existe aqui.", "I check once a day, after the collection. There are no minute prices here."),
+    t("Alvo que o preço de hoje já passou é recusado. Dispararia na hora.", "A target today's price already passed is refused. It would trigger at once."),
+    t("Lembre da taxa da Steam ao vender. Uns 15%.", "Remember the Steam fee when selling. About 15%."),
+  );
+  corvo.linhas.push(
+    t("Alerta de queda é pra comprar! De alta é pra vender! Eu sei tudo!", "A drop alert is for buying! A rise alert is for selling! I know everything!"),
+    t("Quando dispara, o sino lá em cima fica verde! Igual na Steam! Brilha!", "When one triggers, the bell up top turns green! Just like Steam! Shiny!"),
   );
 
   return { corvo, coruja };
