@@ -1,8 +1,16 @@
 """Baixa da Steam o histórico completo de preços dos itens ativos e regrava a série diária.
 
 Uso, dentro de backend/:
-    uv run python -m app.coleta.historico_steam [--moeda BRL] [--intervalo 20] [--itens NOME ...]
-        [--arquivo app/coleta/itens_tf2.txt]
+    uv run python -m app.coleta.historico_steam [--moeda BRL] [--intervalo 20] [--variacao 0]
+        [--itens NOME ...] [--arquivo app/coleta/itens_tf2.txt] [--pendentes]
+
+Com `--pendentes`, só os itens cuja série ainda não chega a ontem: rodar de novo no mesmo dia não
+pede nada à Steam, e uma coleta interrompida (429) continua de onde parou na próxima vez. É o modo
+da coleta diária agendada (scripts/coleta_diaria.ps1).
+
+Código de saída: 0 coletou tudo (ou nada a coletar); 1 erro inesperado; 10 a Steam pediu uma pausa
+(429), o resto fica para a próxima vez; 11 precisa de alguém: cookie vencido ou conta em outra
+moeda. (O 2 fica com o argparse, para opção inválida.)
 
 Serve para tapar lacunas e corrigir a série: a de cada item é trocada inteira pela que a
 Steam devolve. Precisa do cookie de login em `SKINOMICS_STEAM_LOGIN_SECURE` (ver config.py);
@@ -11,6 +19,7 @@ são uma requisição por item, espaçadas pelo intervalo, e a coleta para no pr
 
 import argparse
 import logging
+import sys
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -19,7 +28,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import httpx2 as httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.coleta.execucao import anotar_falha, registrar_execucao
@@ -34,12 +43,13 @@ from app.coleta.steam import (
     FORMATO_DA_MOEDA,
     TF2,
     ColetaInterrompidaError,
+    LimiteDaSteamError,
     MercadoSteam,
     PontoHistorico,
 )
 from app.core.config import get_settings
 from app.db.session import SessionLocal
-from app.models import Item, TipoColeta
+from app.models import Item, PrecoDiario, TipoColeta
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +63,7 @@ class ResumoHistorico:
     precos: int = 0
     falhas: dict[str, str] = field(default_factory=dict)
     interrompida_por: str | None = None
+    interrupcao: ColetaInterrompidaError | None = None
 
 
 def baixar_historico(
@@ -90,6 +101,7 @@ def baixar_historico(
                     # Nada gravado: a execução fica como falha, não como parcial.
                     raise
                 resumo.interrompida_por = str(erro)
+                resumo.interrupcao = erro
                 resumo.falhas.update((i.market_hash_name, "não coletado") for i in itens[posicao:])
                 break
             except (httpx.HTTPError, ValueError) as erro:
@@ -130,6 +142,33 @@ def baixar_historico(
         execucao.erro = resumo.interrompida_por
 
     return resumo
+
+
+def itens_pendentes(sessao: Session, ultimo_dia: date, nomes: Sequence[str] = ()) -> list[str]:
+    """Itens ativos (ou os de `nomes`) cuja série não chega a `ultimo_dia`, na ordem do catálogo.
+
+    Um nome de `nomes` que ainda não está no catálogo também é pendente: a coleta o cria.
+    """
+    ultima_data = (
+        select(PrecoDiario.item_id, func.max(PrecoDiario.data).label("ate"))
+        .group_by(PrecoDiario.item_id)
+        .subquery()
+    )
+    consulta = (
+        select(Item.market_hash_name, ultima_data.c.ate)
+        .outerjoin(ultima_data, ultima_data.c.item_id == Item.id)
+        .where(Item.appid == TF2)
+        .order_by(Item.id)
+    )
+    consulta = (
+        consulta.where(Item.market_hash_name.in_(nomes)) if nomes else consulta.where(Item.ativo)
+    )
+    em_dia = {
+        nome for nome, ate in sessao.execute(consulta) if ate is not None and ate >= ultimo_dia
+    }
+    if nomes:
+        return [nome for nome in dict.fromkeys(nomes) if nome not in em_dia]
+    return [nome for nome, _ in sessao.execute(consulta) if nome not in em_dia]
 
 
 def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
@@ -227,6 +266,17 @@ def main() -> None:
         "--intervalo", type=float, default=20.0, help="segundos entre requisições (padrão: 20)"
     )
     parser.add_argument(
+        "--variacao",
+        type=float,
+        default=0.0,
+        help="até quantos segundos a mais, sorteados a cada requisição (padrão: 0)",
+    )
+    parser.add_argument(
+        "--pendentes",
+        action="store_true",
+        help="só os itens cuja série ainda não chega a ontem (coleta diária e retomada)",
+    )
+    parser.add_argument(
         "--moeda",
         choices=sorted(FORMATO_DA_MOEDA),
         default="BRL",
@@ -255,14 +305,33 @@ def main() -> None:
     # Cabeçalho pronto em vez de `cookies=`: o valor já vem codificado (%7C) do navegador.
     cabecalho = {"Cookie": f"steamLoginSecure={cookie}"}
     with httpx.Client(timeout=30, headers=cabecalho) as cliente, SessionLocal() as sessao:
-        mercado = MercadoSteam(cliente, moeda=args.moeda, intervalo=args.intervalo)
-        resumo = baixar_historico(sessao, mercado, somente=somente)
+        if args.pendentes:
+            ontem = datetime.now(UTC).date() - timedelta(days=1)
+            somente = itens_pendentes(sessao, ontem, somente)
+            if not somente:
+                print("Nada a coletar: todos os itens já estão em dia.")
+                return
+            print(f"{len(somente)} itens pendentes.", flush=True)
+        mercado = MercadoSteam(
+            cliente, moeda=args.moeda, intervalo=args.intervalo, variacao=args.variacao
+        )
+        try:
+            resumo = baixar_historico(sessao, mercado, somente=somente)
+        except ColetaInterrompidaError as erro:
+            print(f"Coleta interrompida antes do primeiro item: {erro}")
+            sys.exit(_codigo_de_saida(erro))
 
     print(f"{resumo.itens_ok} itens e {resumo.precos} preços diários gravados.")
-    if resumo.interrompida_por:
-        print(f"Coleta interrompida: {resumo.interrompida_por}")
     for nome, motivo in resumo.falhas.items():
         print(f"  falhou ({motivo}): {nome}")
+    if resumo.interrupcao:
+        print(f"Coleta interrompida: {resumo.interrompida_por}")
+        sys.exit(_codigo_de_saida(resumo.interrupcao))
+
+
+def _codigo_de_saida(erro: ColetaInterrompidaError) -> int:
+    """10: é só esperar (429); 11: alguém precisa agir (cookie vencido, conta em outra moeda)."""
+    return 10 if isinstance(erro, LimiteDaSteamError) else 11
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ algumas horas, e o bloqueio se estende se o cliente insistir. Por isso o cliente
 intervalo fixo entre as chamadas e, no 429, desiste em vez de tentar de novo.
 """
 
+import random
 import re
 import time
 from collections.abc import Callable
@@ -74,11 +75,16 @@ class MercadoSteam:
         moeda: str = "BRL",
         intervalo: float = 20.0,
         esperar: Callable[[float], None] = time.sleep,
+        variacao: float = 0.0,
+        sortear: Callable[[], float] = random.random,
     ) -> None:
         self._cliente = cliente
         self._moeda = moeda
         self._intervalo = intervalo
         self._esperar = esperar
+        # Até `variacao` segundos a mais, sorteados a cada pedido: um ritmo exato denuncia robô.
+        self._variacao = variacao
+        self._sortear = sortear
         self._primeira = True
 
     def historico(self, appid: int, market_hash_name: str) -> list[PontoHistorico]:
@@ -139,7 +145,7 @@ class MercadoSteam:
         self, url: str, parametros: dict[str, str | int] | None = None
     ) -> httpx.Response:
         if not self._primeira:
-            self._esperar(self._intervalo)
+            self._esperar(self._intervalo + self._variacao * self._sortear())
         self._primeira = False
 
         resposta = self._cliente.get(url, params=parametros)

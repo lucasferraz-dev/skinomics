@@ -4,6 +4,15 @@
 
 ### Adicionado
 
+- Coleta diária agendada no Windows (#12): `scripts/coleta_diaria.ps1` baixa só os itens
+  pendentes, publica as previsões (`ml.worker --once`), grava log por dia e avisa por notificação
+  quando o cookie da Steam vence ou algo falha; `scripts/agendar_coleta.ps1` registra a tarefa
+  (3 min após o logon e às 3h, acordando o PC da suspensão).
+- `historico_steam --pendentes`: só os itens cuja série ainda não chega a ontem, o que retoma uma
+  coleta interrompida e não pede nada à Steam se o dia já foi coletado. `--variacao` sorteia até
+  N segundos a mais entre os pedidos. Códigos de saída: 10 (429, tentar depois) e 11 (cookie
+  vencido ou conta em outra moeda).
+
 - Coletor do mercado da Steam (`app.coleta.steam`): requisições espaçadas e parada no primeiro
   HTTP 429, sem novas tentativas que estenderiam o bloqueio do IP.
 - `app.coleta.historico_steam`: regrava a série diária completa de cada item ativo a partir do
