@@ -1,13 +1,14 @@
 import { t } from "../../lib/idioma";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router";
 
 import { IconeTv } from "../IconesAnimados";
 import { avisar, EVENTO_TV } from "../mascote/eventos";
 
 /**
  * Modo TV: passa sozinho pelas seções da página marcadas com `data-tv="Nome"` (em `main`), na ordem em
- * que aparecem. Seção que cabe na tela fica parada um tempo; seção mais alta que a tela para no topo,
+ * que aparecem; sem nenhuma marcada, desce o `main` inteiro. Seção que cabe na tela fica parada um tempo; seção mais alta que a tela para no topo,
  * desce devagar até o fim e para de novo. Depois da última, volta para a primeira.
  */
 
@@ -31,7 +32,13 @@ export const icone = (d: string, tamanho = 18) => (
 );
 
 function lerEstacoes(): Estacao[] {
-  return [...document.querySelectorAll<HTMLElement>("main [data-tv]")].map((el) => ({ el, nome: el.dataset.tv ?? "" }));
+  const marcadas = [...document.querySelectorAll<HTMLElement>("main [data-tv]")];
+  if (marcadas.length) return marcadas.map((el) => ({ el, nome: el.dataset.tv ?? "" }));
+  // Página sem seções marcadas: a página inteira vira uma estação, que ele desce devagar e recomeça.
+  const main = document.querySelector<HTMLElement>("main");
+  if (!main) return [];
+  const titulo = main.querySelector("h1")?.textContent?.trim();
+  return [{ el: main, nome: titulo || t("Página", "Page") }];
 }
 
 function topoLivre() {
@@ -57,11 +64,20 @@ const suave = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 
 
 export function BotaoModoTv() {
   const [ligado, setLigado] = useState(false);
+  const { pathname } = useLocation();
   // Estável: o laço do modo TV depende dela e recomeçaria do início se mudasse a cada render.
   const sair = useCallback(() => {
     setLigado(false);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   }, []);
+
+  // Trocou de página (clicou num item, por exemplo): as seções lidas eram da página anterior.
+  const paginaAnterior = useRef(pathname);
+  useEffect(() => {
+    if (paginaAnterior.current === pathname) return;
+    paginaAnterior.current = pathname;
+    sair();
+  }, [pathname, sair]);
 
   // O modo TV é em tela cheia: entra nela ao ligar (precisa ser no clique) e, se a pessoa sair da tela
   // cheia (Esc ou F11, que o navegador trata antes da página), o modo TV acaba junto.
