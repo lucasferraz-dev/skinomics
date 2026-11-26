@@ -17,6 +17,7 @@ from urllib.parse import quote
 import httpx2 as httpx
 
 TF2 = 440
+CS2 = 730
 
 _HISTORICO = "https://steamcommunity.com/market/pricehistory/"
 _BUSCA = "https://steamcommunity.com/market/search/render/"
