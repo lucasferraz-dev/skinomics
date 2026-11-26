@@ -509,7 +509,7 @@ export function LinhaItem({ item, chaveiros = false, medalha }: { item: ItemResu
  * Mini gráfico de 30 dias com a variação do mês ao lado. Sem o número, um item que subiu
  * na semana (Var. 7d verde) mas caiu no mês (gráfico vermelho) parecia um erro.
  */
-function Tendencia({ pontos }: { pontos: PontoHistorico[] | undefined }) {
+export function Tendencia({ pontos }: { pontos: PontoHistorico[] | undefined }) {
   const primeiro = pontos?.[0];
   const ultimo = pontos?.at(-1);
   if (!pontos || !primeiro || !ultimo || pontos.length < 2) {

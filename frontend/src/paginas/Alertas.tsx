@@ -76,7 +76,7 @@ export function Alertas() {
               {disparados.length > 0 && (
                 <section data-tv={t("Disparados", "Triggered")} className="space-y-6">
                   <Titulo rotulo={t("Chegaram no preço", "Hit the price")} titulo={t("Disparados", "Triggered")} />
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div data-tour="alerta-disparados" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {disparados.map((alerta) => <CardDisparado key={alerta.id} alerta={alerta} />)}
                   </div>
                 </section>
@@ -88,7 +88,7 @@ export function Alertas() {
                     titulo={t("Vigiando", "Watching")}
                     extra={t(`${vigiando.length} de ${alertas!.length}`, `${vigiando.length} of ${alertas!.length}`)}
                   />
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div data-tour="alerta-vigiando" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {vigiando.map((alerta) => <CardVigiando key={alerta.id} alerta={alerta} />)}
                   </div>
                 </section>
@@ -177,7 +177,7 @@ function NovoAlerta() {
 
   return (
     // pb: com um item escolhido, os chaveiros dele pendem embaixo do card do preço-alvo.
-    <div className={`grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] ${escolhido ? "pb-24" : ""}`}>
+    <div data-tour="alerta-novo" className={`grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] ${escolhido ? "pb-24" : ""}`}>
       <Terminal rotulo={<Rotulo destaque>{busca.trim() ? t("Resultado da busca", "Search results") : t("Mais negociados", "Most traded")}</Rotulo>}>
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-2 rounded-lg border border-borda bg-fundo px-3 focus-within:border-destaque/60">
@@ -197,7 +197,9 @@ function NovoAlerta() {
             {(data?.itens ?? []).map((item) => {
               const ativo = escolhido?.id === item.id;
               return (
-                <li key={item.id}>
+                <li key={item.id} className="relative">
+                  {/* Os chaveiros mini ficam fora do botão: arrastar um deles não escolhe o item. */}
+                  <ChaveirosDoItem item={item} tamanho="mini" direita="0.75rem" className="z-10" />
                   <button
                     type="button"
                     aria-pressed={ativo}
@@ -205,7 +207,7 @@ function NovoAlerta() {
                       setEscolhido(item);
                       setCriado(null);
                     }}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-xl border py-2.5 pr-24 pl-3 text-left transition-colors ${
                       ativo ? "border-destaque/60 bg-destaque-fundo" : "border-borda/60 bg-fundo/40 hover:border-destaque/30"
                     }`}
                   >
@@ -214,7 +216,6 @@ function NovoAlerta() {
                       <span className="block truncate text-sm">{item.nome}</span>
                       <span className="font-mono text-[11px] text-apagado">{item.preco_atual !== null ? formatarPreco(item.preco_atual) : "—"}</span>
                     </span>
-                    {ativo && <span className="text-destaque" aria-hidden>●</span>}
                   </button>
                 </li>
               );
@@ -527,7 +528,7 @@ function ComoFunciona() {
 
 function Vazio({ titulo, texto, acao }: { titulo: string; texto: string; acao: ReactNode }) {
   return (
-    <Painel className="flex flex-col items-center gap-3 rounded-2xl px-6 py-14 text-center">
+    <Painel data-tour="alerta-vazio" className="flex flex-col items-center gap-3 rounded-2xl px-6 py-14 text-center">
       <span className="grid size-12 place-items-center rounded-full border border-borda text-apagado"><IconeSino tamanho={22} /></span>
       <p className="text-texto">{titulo}</p>
       <p className="max-w-sm text-sm text-suave">{texto}</p>

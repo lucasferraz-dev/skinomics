@@ -1,5 +1,6 @@
 import { type Alerta, quantoFalta } from "../../api/alertas";
 import type { ItemResumo, PontoHistorico, PrevisaoItem } from "../../api/itens";
+import type { ItemAcompanhado } from "../../api/minhaLista";
 import type { RankingOportunidades } from "../../api/oportunidades";
 import { t } from "../../lib/idioma";
 import { formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../../lib/formato";
@@ -405,6 +406,63 @@ export function analiseDosAlertas({ logado, alertas }: DadosAlertas): FalasDaPag
   corvo.linhas.push(
     t("Alerta de queda é pra comprar! De alta é pra vender! Eu sei tudo!", "A drop alert is for buying! A rise alert is for selling! I know everything!"),
     t("Quando dispara, o sino lá em cima fica verde! Igual na Steam! Brilha!", "When one triggers, the bell up top turns green! Just like Steam! Shiny!"),
+  );
+
+  return { corvo, coruja };
+}
+
+type DadosMinhaLista = { logado: boolean; itens: ItemAcompanhado[] | undefined };
+
+export function analiseDaMinhaLista({ logado, itens }: DadosMinhaLista): FalasDaPagina {
+  const corvo: Falas = { linhas: [] };
+  const coruja: Falas = { linhas: [] };
+
+  if (!logado) {
+    corvo.abertura = t("Entra com a Steam! Aí eu guardo a sua lista! Eu guardo tudo!", "Sign in with Steam! Then I'll keep your list! I keep everything!");
+    coruja.abertura = t("A lista fica na sua conta. Sem conta, sem lista.", "The list lives in your account. No account, no list.");
+    return { corvo, coruja };
+  }
+  if (!itens) return { corvo, coruja };
+
+  if (itens.length === 0) {
+    corvo.abertura = t("Lista vazia! Abre um item e clica em Acompanhar! Eu espero! Rápido!", "Empty list! Open an item and click Follow! I'll wait! Quick!");
+    coruja.abertura = t("Acompanhar não é comprar. É medir.", "Following isn't buying. It's measuring.");
+  } else {
+    const comVariacao = itens
+      .filter((item): item is ItemAcompanhado & { variacao_desde_inclusao: number } => item.variacao_desde_inclusao !== null)
+      .sort((a, b) => b.variacao_desde_inclusao - a.variacao_desde_inclusao);
+    const melhor = comVariacao[0];
+    const pior = comVariacao.at(-1);
+    const subiram = comVariacao.filter((item) => item.variacao_desde_inclusao > 0).length;
+
+    corvo.abertura = melhor && melhor.variacao_desde_inclusao > 0
+      ? t(`${melhor.nome} subiu ${formatarVariacao(melhor.variacao_desde_inclusao)} desde que entrou! Eu sabia! Eu sempre sei!`, `${melhor.nome} is up ${formatarVariacao(melhor.variacao_desde_inclusao)} since it joined! I knew it! I always know!`)
+      : t(`${itens.length} ${itens.length === 1 ? "item" : "itens"} na lista! Eu decorei todos! Os preços também!`, `${itens.length} ${itens.length === 1 ? "item" : "items"} on the list! I memorized them all! Prices too!`);
+
+    if (comVariacao.length > 1) {
+      coruja.abertura = t(
+        `${subiram} de ${comVariacao.length} subiram desde que entraram.`,
+        `${subiram} of ${comVariacao.length} rose since they joined.`,
+      );
+    }
+    if (pior && pior !== melhor && pior.variacao_desde_inclusao < -0.1) {
+      coruja.linhas.push(t(
+        `${pior.nome} caiu ${semSinal(pior.variacao_desde_inclusao)}. Confira a previsão antes de decidir.`,
+        `${pior.nome} fell ${semSinal(pior.variacao_desde_inclusao)}. Check the forecast before deciding.`,
+      ));
+    }
+    if (comVariacao.length < itens.length) {
+      coruja.linhas.push(t("Item novo na lista ainda não tem variação. Espere a próxima coleta.", "A new item on the list has no change yet. Wait for the next collection."));
+    }
+  }
+
+  coruja.linhas.push(
+    t("A variação é contra o preço do dia em que o item entrou, não contra o que você pagou.", "The change is against the price on the day it joined, not what you paid."),
+    t("Lembre da taxa da Steam ao vender. Uns 15%.", "Remember the Steam fee when selling. About 15%."),
+  );
+  corvo.linhas.push(
+    t("Quer aviso quando chegar num preço? Cria um alerta! O sino fica verde!", "Want a heads-up at a price? Create an alert! The bell turns green!"),
+    t("Puxa os chaveiros! Eles balançam! Eu adoro!", "Pull the keychains! They swing! I love it!"),
   );
 
   return { corvo, coruja };
