@@ -1,3 +1,4 @@
+import { t } from "../lib/idioma";
 import { Link } from "react-router";
 
 import { type ItemResumo, useHistorico, usePrevisao } from "../api/itens";
@@ -78,7 +79,7 @@ export function CardItem({ item, medalha }: { item: ItemResumo; medalha?: TipoMe
           </div>
           <div className="mt-auto flex min-h-[2.1rem] items-center justify-between gap-2 border-t border-borda pt-3">
             <p className="truncate font-mono text-[11px] text-apagado">
-              {item.volume_7d !== null ? `${formatarInteiro(item.volume_7d)} vendas em 7 dias` : "Sem vendas registradas"}
+              {item.volume_7d !== null ? t(`${formatarInteiro(item.volume_7d)} vendas em 7 dias`, `${formatarInteiro(item.volume_7d)} sales in 7 days`) : t("Sem vendas registradas", "No recorded sales")}
             </p>
             <SeloSinal sinal={sinalDoModelo(previsao, item.volume_7d)} />
           </div>

@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { t } from "../lib/idioma";
 import type { PontoHistorico, PrevisaoItem } from "../api/itens";
 import { formatarData, formatarDiaMes, formatarInteiro, formatarPreco } from "../lib/formato";
 import { intervaloValido, type PontoGrafico, prepararGrafico } from "../lib/grafico";
@@ -31,23 +32,23 @@ function Dica({ active, payload, previsao }: TooltipContentProps<TooltipValueTyp
       <p className="mt-1 font-mono text-sm">{formatarPreco(futuro ? ponto.precoPrevisto! : ponto.preco!)}</p>
       {futuro ? (
         <>
-          <p className="mt-1 font-mono text-[11px] text-destaque">Média prevista</p>
+          <p className="mt-1 font-mono text-[11px] text-destaque">{t("Média prevista", "Predicted average")}</p>
           {previsao?.janela_inicio && previsao.janela_fim && (
             <p className="mt-1 text-xs text-suave">
-              De {formatarData(previsao.janela_inicio)} a {formatarData(previsao.janela_fim)}.
+              {t(`De ${formatarData(previsao.janela_inicio)} a ${formatarData(previsao.janela_fim)}.`, `From ${formatarData(previsao.janela_inicio)} to ${formatarData(previsao.janela_fim)}.`)}
             </p>
           )}
-          {previsao?.desatualizada && <p className="mt-1 text-xs text-suave">Previsão desatualizada.</p>}
+          {previsao?.desatualizada && <p className="mt-1 text-xs text-suave">{t("Previsão desatualizada.", "Outdated forecast.")}</p>}
           {intervalo && (
             <p className="mt-1 font-mono text-[11px] text-suave">
-              Faixa de 80%: {formatarPreco(intervalo.inferior)} – {formatarPreco(intervalo.superior)}
+              {t("Faixa de 80%", "80% range")}: {formatarPreco(intervalo.inferior)} – {formatarPreco(intervalo.superior)}
             </p>
           )}
-          {previsao?.incerteza_elevada && <p className="mt-1 text-xs text-destaque">Incerteza elevada</p>}
+          {previsao?.incerteza_elevada && <p className="mt-1 text-xs text-destaque">{t("Incerteza elevada", "High uncertainty")}</p>}
         </>
       ) : (
         <p className="font-mono text-[11px] text-apagado">
-          {ponto.preenchido ? "sem negociação no dia" : `${formatarInteiro(ponto.volume ?? 0)} vendidos`}
+          {ponto.preenchido ? t("sem negociação no dia", "no trades that day") : t(`${formatarInteiro(ponto.volume ?? 0)} vendidos`, `${formatarInteiro(ponto.volume ?? 0)} sold`)}
         </p>
       )}
     </div>
@@ -69,17 +70,17 @@ export function GraficoHistorico({ pontos, previsao, altura }: {
   return (
     <div className={altura ? undefined : "flex h-full flex-col"}>
       {futuro && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-suave" aria-label="Legenda do gráfico">
+        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-suave" aria-label={t("Legenda do gráfico", "Chart legend")}>
           <span className="inline-flex items-center gap-2">
-            <span className="w-5 border-t-2 border-destaque" aria-hidden="true" />Histórico
+            <span className="w-5 border-t-2 border-destaque" aria-hidden="true" />{t("Histórico", "History")}
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="w-5 border-t-2 border-dashed border-destaque" aria-hidden="true" />Previsão
+            <span className="w-5 border-t-2 border-dashed border-destaque" aria-hidden="true" />{t("Previsão", "Forecast")}
           </span>
-          {futuro.previsao.desatualizada && <span className="text-apagado">Previsão desatualizada</span>}
+          {futuro.previsao.desatualizada && <span className="text-apagado">{t("Previsão desatualizada", "Outdated forecast")}</span>}
           {futuro.intervalo && (
             <span className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-5 rounded-sm bg-destaque/15 ring-1 ring-destaque/40" aria-hidden="true" />Intervalo de confiança (80%)
+              <span className="h-2.5 w-5 rounded-sm bg-destaque/15 ring-1 ring-destaque/40" aria-hidden="true" />{t("Intervalo de confiança (80%)", "Confidence interval (80%)")}
             </span>
           )}
         </div>
@@ -179,13 +180,17 @@ export function GraficoHistorico({ pontos, previsao, altura }: {
       {futuro && (
         <p className="mt-3 text-xs leading-relaxed text-suave">
           {futuro.inicio === futuro.fim
-            ? `Ponto previsto para ${formatarData(futuro.previsao.data_alvo!)}.`
-            : `O ponto representa a média prevista entre ${formatarData(futuro.previsao.janela_inicio!)} e ${formatarData(futuro.previsao.janela_fim!)}.`}
-          {" "}O tracejado liga o preço-base à estimativa, sem prever os preços de cada dia.
+            ? t(`Ponto previsto para ${formatarData(futuro.previsao.data_alvo!)}.`, `Point forecast for ${formatarData(futuro.previsao.data_alvo!)}.`)
+            : t(
+                `O ponto representa a média prevista entre ${formatarData(futuro.previsao.janela_inicio!)} e ${formatarData(futuro.previsao.janela_fim!)}.`,
+                `The point is the predicted average between ${formatarData(futuro.previsao.janela_inicio!)} and ${formatarData(futuro.previsao.janela_fim!)}.`,
+              )}
+          {" "}
+          {t("O tracejado liga o preço-base à estimativa, sem prever os preços de cada dia.", "The dashed line joins the base price to the estimate, without predicting each day's price.")}
         </p>
       )}
       {!futuro && previsao?.disponivel && (
-        <p className="mt-3 text-xs text-suave">Aguardando uma previsão alinhada ao histórico exibido.</p>
+        <p className="mt-3 text-xs text-suave">{t("Aguardando uma previsão alinhada ao histórico exibido.", "Waiting for a forecast aligned with the history shown.")}</p>
       )}
     </div>
   );

@@ -12,6 +12,7 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 
 import { MensagemErro } from "./componentes/Basicos";
+import { t, useIdioma } from "./lib/idioma";
 import { Terminal } from "./componentes/Terminal";
 import { DetalheItem } from "./paginas/DetalheItem";
 import { Entrar } from "./paginas/Entrar";
@@ -25,6 +26,11 @@ const clienteDeConsultas = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
+function PaginaNaoEncontrada() {
+  useIdioma();
+  return <MensagemErro titulo={t("Página não encontrada.", "Page not found.")} />;
+}
+
 const rotas = createBrowserRouter([
   { path: "/", element: <Inicio /> },
   { path: "/entrar", element: <Entrar /> },
@@ -36,7 +42,7 @@ const rotas = createBrowserRouter([
       { path: "minha-lista", element: <MinhaLista /> },
       { path: "alertas", element: <Alertas /> },
       { path: "oportunidades", element: <Oportunidades /> },
-      { path: "*", element: <MensagemErro titulo="Página não encontrada." /> },
+      { path: "*", element: <PaginaNaoEncontrada /> },
     ],
   },
 ]);

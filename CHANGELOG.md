@@ -75,6 +75,10 @@
 - "Como usar" em Oportunidades, Alertas e Minha lista, que não tinham. O guia pula as partes que não
   estão na tela (sem login, por exemplo, só explica o convite para entrar).
 - Chaveiros mini também nas linhas de item do "Novo alerta".
+- O site inteiro em inglês: página do item (adesivos e o verso deles, gráfico, períodos, resumo,
+  itens parecidos), card de previsão, legenda e dica do gráfico, botão Acompanhar, página de entrar,
+  página não encontrada e textos de carregando. Uma varredura procurou texto fora do `t()` em todos
+  os componentes.
 - Explorar em inglês de verdade: título, filtros (jogo, categoria, preço, ordem), tabela, paginação e
   mensagens seguem o idioma escolhido. Os nomes das categorias (Caixa, Rifle, Chapéu...) passam a ser
   traduzidos em todas as páginas, não só nos chaveiros.

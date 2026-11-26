@@ -1,3 +1,4 @@
+import { t } from "../lib/idioma";
 import type { PrevisaoItem } from "../api/itens";
 import { intervaloValido } from "../lib/grafico";
 
@@ -13,13 +14,13 @@ export function ConfiancaPrevisao({ previsao, carregando = false, erro = false }
 
   return (
     <section
-      aria-label="Confiança da previsão"
+      aria-label={t("Confiança da previsão", "Forecast confidence")}
       aria-busy={carregando}
       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destaque/30 bg-painel-alto px-3 py-2"
     >
-      <span className="text-sm text-suave">Confiança nominal</span>
+      <span className="text-sm text-suave">{t("Confiança nominal", "Nominal confidence")}</span>
       <span className={`font-mono ${confianca ? "text-lg text-destaque" : "text-xs text-suave"}`}>
-        {carregando ? "Carregando…" : confianca ?? "Indisponível"}
+        {carregando ? t("Carregando…", "Loading…") : confianca ?? t("Indisponível", "Unavailable")}
       </span>
     </section>
   );

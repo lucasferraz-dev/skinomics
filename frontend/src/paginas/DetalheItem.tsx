@@ -43,8 +43,8 @@ export function DetalheItem() {
     const naoExiste = error instanceof ErroApi && error.status === 404;
     return (
       <MensagemErro
-        titulo={naoExiste ? "Item não encontrado." : "Não foi possível carregar o item."}
-        detalhe={naoExiste ? "Ele pode ter saído do catálogo." : "Confira se a API está no ar."}
+        titulo={naoExiste ? t("Item não encontrado.", "Item not found.") : t("Não foi possível carregar o item.", "Couldn't load the item.")}
+        detalhe={naoExiste ? t("Ele pode ter saído do catálogo.", "It may have left the catalog.") : t("Confira se a API está no ar.", "Check that the API is up.")}
       />
     );
   }
@@ -93,9 +93,9 @@ function Conteudo({ item }: { item: ItemResumo }) {
   return (
     // pb: o fim da página não fica escondido atrás dos mascotes de plantão no canto.
     <div className="mx-auto max-w-6xl space-y-10 pb-44">
-      <nav aria-label="Trilha" className="flex flex-wrap items-center gap-2 font-mono text-xs text-apagado">
+      <nav aria-label={t("Trilha", "Breadcrumb")} className="flex flex-wrap items-center gap-2 font-mono text-xs text-apagado">
         <Link to="/itens" className="text-suave transition-colors hover:text-destaque">
-          ← Explorar itens
+          ← {t("Explorar itens", "Explore items")}
         </Link>
         {categoria && (
           <>
@@ -116,9 +116,9 @@ function Conteudo({ item }: { item: ItemResumo }) {
         <Painel data-tour="item-grafico" className="flex flex-col rounded-2xl p-4 sm:p-6">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-1">
-              <Rotulo destaque>Histórico de preço</Rotulo>
+              <Rotulo destaque>{t("Histórico de preço", "Price history")}</Rotulo>
             </div>
-            <div className="flex gap-1" role="group" aria-label="Período do gráfico">
+            <div className="flex gap-1" role="group" aria-label={t("Período do gráfico", "Chart period")}>
               {(Object.keys(PERIODOS) as Periodo[]).map((opcao) => (
                 <button
                   key={opcao}
@@ -129,7 +129,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
                     opcao === periodo ? "bg-painel-alto text-destaque ring-1 ring-borda" : "text-apagado hover:text-texto"
                   }`}
                 >
-                  {opcao}
+                  {opcao === "1a" ? t("1a", "1y") : opcao === "tudo" ? t("tudo", "all") : opcao}
                 </button>
               ))}
             </div>
@@ -137,11 +137,11 @@ function Conteudo({ item }: { item: ItemResumo }) {
 
           <div className="flex min-h-80 flex-1 flex-col">
             {item.data_preco === null ? (
-              <MensagemErro titulo="Este item ainda não tem preços coletados." />
+              <MensagemErro titulo={t("Este item ainda não tem preços coletados.", "This item has no collected prices yet.")} />
             ) : historico.isPending ? (
-              <Carregando texto="Carregando histórico…" />
+              <Carregando texto={t("Carregando histórico…", "Loading history…")} />
             ) : historico.isError ? (
-              <MensagemErro titulo="Não foi possível carregar o histórico." />
+              <MensagemErro titulo={t("Não foi possível carregar o histórico.", "Couldn't load the history.")} />
             ) : (
               <GraficoHistorico pontos={historico.data} previsao={previsao.data} />
             )}
@@ -165,8 +165,8 @@ function Conteudo({ item }: { item: ItemResumo }) {
         <section data-tour="item-parecidos" data-tv={t("Itens parecidos", "Similar items")} className="space-y-6 pt-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-3">
-              <Rotulo destaque>Mesma categoria</Rotulo>
-              <h2 className="text-3xl leading-tight titulo sm:text-4xl">Itens parecidos</h2>
+              <Rotulo destaque>{t("Mesma categoria", "Same category")}</Rotulo>
+              <h2 className="text-3xl leading-tight titulo sm:text-4xl">{t("Itens parecidos", "Similar items")}</h2>
             </div>
             <Link
               to={`/itens?categoria=${encodeURIComponent(categoria.nome)}`}
@@ -187,8 +187,10 @@ function Conteudo({ item }: { item: ItemResumo }) {
       )}
 
       <p className="text-xs text-apagado">
-        Preços em dólar (US$) do Mercado da Comunidade Steam, um ponto por dia. Dias sem negociação repetem o
-        último preço. Previsões são estimativas, não recomendação de investimento.
+        {t(
+          "Preços em dólar (US$) do Mercado da Comunidade Steam, um ponto por dia. Dias sem negociação repetem o último preço. Previsões são estimativas, não recomendação de investimento.",
+          "Prices in US dollars from the Steam Community Market, one point per day. Days without trades repeat the last price. Forecasts are estimates, not investment advice.",
+        )}
       </p>
 
       <MascotesFixos falas={falas} />
@@ -248,7 +250,7 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
             <Variacao valor={item.variacao_7d} sufixo="7d" />
           </div>
           {item.data_preco && (
-            <p className="font-mono text-[11px] text-apagado">Cotação de {formatarData(item.data_preco)} no Mercado da Steam</p>
+            <p className="font-mono text-[11px] text-apagado">{t(`Cotação de ${formatarData(item.data_preco)} no Mercado da Steam`, `Quote from ${formatarData(item.data_preco)} on the Steam Market`)}</p>
           )}
         </div>
 
@@ -256,7 +258,7 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
           <BotaoAcompanhar itemId={item.id} />
           <BotaoCriarAlerta item={item} faixa={faixa} />
           <BotaoSecundario href={urlSteam} icone={<span aria-hidden>↗</span>}>
-            Ver no Mercado da Steam
+            {t("Ver no Mercado da Steam", "View on the Steam Market")}
           </BotaoSecundario>
         </div>
       </div>
@@ -306,31 +308,31 @@ function Indicadores({ item }: { item: ItemResumo }) {
 
   const indicadores: Indicador[] = [
     {
-      rotulo: "Preço atual",
+      rotulo: t("Preço atual", "Current price"),
       valor: item.preco_atual !== null ? formatarPreco(item.preco_atual) : "—",
-      detalhe: item.data_preco ? `Cotação de ${formatarData(item.data_preco)}` : "Sem cotação ainda",
+      detalhe: item.data_preco ? t(`Cotação de ${formatarData(item.data_preco)}`, `Quote from ${formatarData(item.data_preco)}`) : t("Sem cotação ainda", "No quote yet"),
       icone: "preco",
-      verso: { rotulo: "Moeda", valor: "US$", extra: "Mercado da Comunidade Steam" },
+      verso: { rotulo: t("Moeda", "Currency"), valor: "US$", extra: t("Mercado da Comunidade Steam", "Steam Community Market") },
     },
     {
-      rotulo: "Variação em 7 dias",
+      rotulo: t("Variação em 7 dias", "7-day change"),
       valor: item.variacao_7d !== null ? formatarVariacao(item.variacao_7d) : "—",
-      detalhe: "contra o preço de uma semana atrás",
+      detalhe: t("contra o preço de uma semana atrás", "against the price a week ago"),
       icone: "variacao",
-      verso: { rotulo: "Conta só dias com preço", valor: "7 dias" },
+      verso: { rotulo: t("Conta só dias com preço", "Counts only days with a price"), valor: t("7 dias", "7 days") },
     },
     {
-      rotulo: "Previsão em 7 dias",
+      rotulo: t("Previsão em 7 dias", "7-day forecast"),
       valor: prevista?.preco_previsto != null ? formatarPreco(prevista.preco_previsto) : "—",
       detalhe:
         prevista?.variacao_prevista != null
-          ? `${formatarVariacao(prevista.variacao_prevista)} sobre o preço-base`
+          ? t(`${formatarVariacao(prevista.variacao_prevista)} sobre o preço-base`, `${formatarVariacao(prevista.variacao_prevista)} over the base price`)
           : previsao.isPending
-            ? "Carregando previsão…"
-            : "Previsão indisponível",
+            ? t("Carregando previsão…", "Loading forecast…")
+            : t("Previsão indisponível", "Forecast unavailable"),
       icone: "horizonte",
       verso: {
-        rotulo: "Faixa de 80%",
+        rotulo: t("Faixa de 80%", "80% range"),
         valor:
           prevista?.intervalo_inferior != null && prevista.intervalo_superior != null
             ? `${formatarPreco(prevista.intervalo_inferior)} – ${formatarPreco(prevista.intervalo_superior)}`
@@ -338,11 +340,11 @@ function Indicadores({ item }: { item: ItemResumo }) {
       },
     },
     {
-      rotulo: "Vendas em 7 dias",
+      rotulo: t("Vendas em 7 dias", "Sales in 7 days"),
       valor: volume !== null ? formatarInteiro(volume) : "—",
-      detalhe: "liquidez no Mercado da Steam",
+      detalhe: t("liquidez no Mercado da Steam", "liquidity on the Steam Market"),
       icone: "volume",
-      verso: { rotulo: "Média por dia", valor: volume !== null ? formatarInteiro(Math.round(volume / 7)) : "—" },
+      verso: { rotulo: t("Média por dia", "Daily average"), valor: volume !== null ? formatarInteiro(Math.round(volume / 7)) : "—" },
     },
   ];
 
@@ -363,17 +365,17 @@ function ResumoPeriodo({ pontos }: { pontos: PontoHistorico[] }) {
   const volumeTotal = pontos.reduce((soma, ponto) => soma + ponto.volume, 0);
 
   const linhas: [string, ReactNode][] = [
-    ["Variação", <Variacao valor={ultimo.preco / primeiro.preco - 1} />],
-    ["Mínimo", formatarPreco(Math.min(...precos))],
-    ["Máximo", formatarPreco(Math.max(...precos))],
-    ["Volume médio / dia", formatarInteiro(Math.round(volumeTotal / pontos.length))],
+    [t("Variação", "Change"), <Variacao valor={ultimo.preco / primeiro.preco - 1} />],
+    [t("Mínimo", "Low"), formatarPreco(Math.min(...precos))],
+    [t("Máximo", "High"), formatarPreco(Math.max(...precos))],
+    [t("Volume médio / dia", "Avg. volume / day"), formatarInteiro(Math.round(volumeTotal / pontos.length))],
   ];
 
   // Faixa no rodapé do gráfico: os números mudam junto com o período escolhido em cima dele.
   return (
     <div className="mt-6 border-t border-borda pt-4">
       <p className="font-mono text-[11px] text-apagado">
-        No período: {formatarData(primeiro.data)} a {formatarData(ultimo.data)}
+        {t(`No período: ${formatarData(primeiro.data)} a ${formatarData(ultimo.data)}`, `In the period: ${formatarData(primeiro.data)} to ${formatarData(ultimo.data)}`)}
       </p>
       <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         {linhas.map(([rotulo, valor]) => (

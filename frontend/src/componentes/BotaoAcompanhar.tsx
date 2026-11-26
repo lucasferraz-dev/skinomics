@@ -1,3 +1,4 @@
+import { t } from "../lib/idioma";
 import { Link } from "react-router";
 
 import { useUsuario } from "../api/auth";
@@ -26,7 +27,7 @@ export function BotaoAcompanhar({ itemId }: { itemId: number }) {
     return (
       <Link to="/entrar" className={`${base} border-borda text-suave hover:border-suave hover:text-texto`}>
         <IconeMarcador cheio={false} />
-        Acompanhar
+        {t("Acompanhar", "Follow")}
       </Link>
     );
   }
@@ -49,11 +50,11 @@ export function BotaoAcompanhar({ itemId }: { itemId: number }) {
         }`}
       >
         <IconeMarcador cheio={acompanhando} />
-        {acompanhando ? "Acompanhando" : "Acompanhar"}
+        {acompanhando ? t("Acompanhando", "Following") : t("Acompanhar", "Follow")}
       </button>
       {alternar.isError && (
         <span role="alert" className="text-xs text-queda">
-          {listaCheia ? "Sua lista está cheia." : "Não deu certo. Tente de novo."}
+          {listaCheia ? t("Sua lista está cheia.", "Your list is full.") : t("Não deu certo. Tente de novo.", "That didn't work. Try again.")}
         </span>
       )}
     </div>
