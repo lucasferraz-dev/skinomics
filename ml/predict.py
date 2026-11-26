@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from ml.database import artifact_root, closed_day, database_engine, latest_collection, load_history
 from ml.intervals import add_intervals, validate_interval
-from ml.registry import active_model, resolve_artifact
+from ml.registry import active_model, lock_key, resolve_artifact
 from ml.train import TrainingConfig, build_features, clean_history, make_forecast
 
 
@@ -52,7 +52,7 @@ def predict_history(artifact, history):
 
 def run_batch(engine, *, horizon=7, appid=440, root=None, only_pending=False, version_id=None):
     """Publica o lote de um jogo numa transação; com erro, o lote anterior continua valendo."""
-    lock = appid * 1000 + horizon
+    lock = lock_key(appid, horizon)
     with engine.connect() as connection:
         locked = connection.scalar(text("SELECT pg_try_advisory_lock(442, :k)"), {"k": lock})
         connection.commit()

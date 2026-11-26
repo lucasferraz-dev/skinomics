@@ -33,7 +33,8 @@ def prepare(engine, paths):
     appid = games.pop()
     expected = HORIZONTES.get(appid)
     if set(artifacts) != expected:
-        dias = ", ".join(str(h) for h in sorted(expected or ()))
+        dias = sorted(expected or ())
+        dias = ", ".join(str(h) for h in dias[:-1]) + f" e {dias[-1]}" if dias else "?"
         raise ValueError(f"Informe exatamente um artefato para cada horizonte: {dias} dias.")
     with engine.connect() as connection:
         history = load_history(connection, appid=appid)

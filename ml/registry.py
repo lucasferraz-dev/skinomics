@@ -13,6 +13,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from ml.database import artifact_root, database_engine
 
 
+def lock_key(appid, horizon):
+    """Chave das travas por jogo e horizonte. A do TF2 continua só o horizonte, como antes dos
+    modelos por jogo: um worker antigo e um novo rodando juntos ainda se enxergam."""
+    return horizon if appid == 440 else appid * 1000 + horizon
+
+
 def sha256(path):
     with Path(path).open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -124,7 +130,9 @@ def _activate_model(
             raise ValueError("Versão não cadastrada.")
         appid, horizon = found
     # Serializa as mudanças no mesmo jogo e horizonte, inclusive a leitura do anterior.
-    connection.execute(text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": appid * 1000 + horizon})
+    connection.execute(
+        text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": lock_key(appid, horizon)}
+    )
     previous = active_model(connection, horizon, appid)
     if rollback:
         version_id = connection.scalar(
@@ -172,7 +180,7 @@ def activate_models(engine, versions, *, expected, reason, appid=440, root=None)
     with engine.begin() as connection:
         for horizon in sorted(versions):
             connection.execute(
-                text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": appid * 1000 + horizon}
+                text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": lock_key(appid, horizon)}
             )
         for horizon, version_id in sorted(versions.items()):
             current = active_model(connection, horizon, appid)
