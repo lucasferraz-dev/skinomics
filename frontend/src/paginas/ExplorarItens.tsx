@@ -12,7 +12,7 @@ import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { Sparkline } from "../componentes/Sparkline";
 import { t, useIdioma } from "../lib/idioma";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
-import { jogoDoItem } from "../lib/jogos";
+import { JOGOS, jogoDoItem } from "../lib/jogos";
 import { sinalDoModelo } from "../lib/sinal";
 import { TerminaisDestaque, useDestaquesDaSemana } from "./inicio/Destaques";
 import { Medalha, type TipoMedalha } from "./inicio/Medalha";
@@ -45,6 +45,8 @@ const ORDENS: { rotulo: string; ordenar: Ordenacao; direcao: Direcao }[] = [
 
 type Filtros = {
   busca?: string;
+  /** appid do jogo escolhido (440 TF2, 730 CS2); sem ele, todos. */
+  jogo?: number;
   categoria?: string;
   faixa?: Faixa;
   ordenar: Ordenacao;
@@ -52,14 +54,18 @@ type Filtros = {
   pagina: number;
   visao: Visao;
 };
-type Mudancas = Partial<Record<"busca" | "categoria" | "faixa" | "ordenar" | "direcao" | "pagina" | "visao", string>>;
+type Mudancas = Partial<Record<"busca" | "jogo" | "categoria" | "faixa" | "ordenar" | "direcao" | "pagina" | "visao", string>>;
 
 /** Os filtros moram na URL: dá para compartilhar o link e o "voltar" do navegador funciona. */
 function useFiltrosDaUrl() {
   const [parametros, setParametros] = useSearchParams();
   const faixa = parametros.get("faixa");
+  // Na URL vai a sigla do jogo (?jogo=cs2), mais legível que o appid.
+  const sigla = parametros.get("jogo")?.toUpperCase();
+  const jogo = Object.entries(JOGOS).find(([, dados]) => dados.sigla === sigla)?.[0];
   const filtros: Filtros = {
     busca: parametros.get("busca") ?? undefined,
+    jogo: jogo ? Number(jogo) : undefined,
     categoria: parametros.get("categoria") ?? undefined,
     faixa: faixa && faixa in FAIXAS ? (faixa as Faixa) : undefined,
     ordenar: (parametros.get("ordenar") as Ordenacao | null) ?? "volume_7d",
@@ -95,6 +101,7 @@ function useResultado(filtros: Filtros) {
   const faixa = filtros.faixa ? FAIXAS[filtros.faixa] : undefined;
   const base: FiltrosItens = {
     busca: filtros.busca,
+    appid: filtros.jogo,
     ordenar: filtros.ordenar,
     direcao: filtros.direcao,
     preco_min: faixa && "min" in faixa ? faixa.min : undefined,
@@ -123,7 +130,7 @@ export function ExplorarItens() {
   const { filtros, atualizar } = useFiltrosDaUrl();
   const { itens, total, pagina, isPending, isError, isPlaceholderData } = useResultado(filtros);
   const { itens: catalogo, medalhas } = useDestaquesDaSemana();
-  const filtrando = Boolean(filtros.busca || filtros.categoria || filtros.faixa);
+  const filtrando = Boolean(filtros.busca || filtros.jogo || filtros.categoria || filtros.faixa);
   // Muda a cada "Limpar filtros", para o campo de busca recomeçar vazio (sem remontar a cada tecla).
   const [limpezas, setLimpezas] = useState(0);
   // As mesmas previsões que os cards pedem (cache dividido): os mascotes contam touros e ursos da página.
@@ -134,7 +141,7 @@ export function ExplorarItens() {
   });
   const falas = analiseDoExplorar({ sinais, catalogo, resultado: itens, total, categoria: filtros.categoria, filtrando });
   const limpar = () => {
-    atualizar({ busca: "", categoria: "", faixa: "" });
+    atualizar({ busca: "", jogo: "", categoria: "", faixa: "" });
     setLimpezas((n) => n + 1);
   };
 
@@ -145,7 +152,7 @@ export function ExplorarItens() {
         nivel={1}
         rotulo="Mercado da Steam"
         titulo="Explorar itens"
-        texto="Compare preço, movimento da semana e liquidez. Filtre por categoria e faixa de preço, e clique num item para ver o histórico e a previsão."
+        texto="Compare preço, movimento da semana e liquidez. Filtre por jogo, categoria e faixa de preço, e clique num item para ver o histórico e a previsão."
       />
 
       {/* Sem filtro, a página abre com o que mais se mexeu na semana, como na landing. */}
@@ -243,9 +250,14 @@ function BarraFiltros({
   filtrando: boolean;
   aoLimpar: () => void;
 }) {
-  // Só as categorias que existem no catálogo, das mais comuns para as mais raras.
+  // Os jogos que existem no catálogo, com quantos itens cada um tem.
+  const jogos = new Map<number, number>();
+  for (const item of catalogo) jogos.set(item.appid, (jogos.get(item.appid) ?? 0) + 1);
+
+  // Só as categorias que existem no catálogo (do jogo escolhido), das mais comuns para as mais raras.
   const contagem = new Map<string, { tema: TemaChaveiro; quantos: number }>();
   for (const item of catalogo) {
+    if (filtros.jogo && item.appid !== filtros.jogo) continue;
     const tema = categoriaDoItem(item);
     if (!tema) continue;
     const atual = contagem.get(tema.nome);
@@ -267,6 +279,21 @@ function BarraFiltros({
       </div>
 
       <div data-tour="filtros" className="space-y-3 p-3 sm:p-4">
+        <GrupoFiltro rotulo="Jogo">
+          {[...jogos.entries()].map(([appid, quantos]) => {
+            const dados = JOGOS[appid];
+            if (!dados) return null;
+            const ativo = filtros.jogo === appid;
+            return (
+              // As categorias mudam de um jogo para o outro: trocar de jogo tira a categoria.
+              <Chip key={appid} ativo={ativo} aoClicar={() => atualizar({ jogo: ativo ? "" : dados.sigla.toLowerCase(), categoria: "" })}>
+                <SeloJogo sigla={dados.sigla} cor={ativo ? "currentColor" : dados.cor} />
+                {dados.nome}
+                <span className={`font-mono text-[10px] ${ativo ? "opacity-70" : "text-apagado"}`}>{quantos}</span>
+              </Chip>
+            );
+          })}
+        </GrupoFiltro>
         <GrupoFiltro rotulo="Categoria">
           {categorias.map(({ tema, quantos }) => {
             const ativo = filtros.categoria === tema.nome;
@@ -302,6 +329,18 @@ function BarraFiltros({
         </GrupoFiltro>
       </div>
     </Painel>
+  );
+}
+
+/** A sigla do jogo numa bolinha com o contorno na cor dele, como o chaveiro do jogo. */
+function SeloJogo({ sigla, cor }: { sigla: string; cor: string }) {
+  return (
+    <span
+      className="grid size-[18px] place-items-center rounded-full border font-mono text-[7px] leading-none font-semibold"
+      style={{ borderColor: cor, color: cor }}
+    >
+      {sigla}
+    </span>
   );
 }
 

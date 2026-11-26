@@ -81,6 +81,8 @@ def listar_itens(sessao: Session, filtros: FiltrosItens) -> tuple[Sequence[Row],
                 resumo.c.market_hash_name.icontains(filtros.busca, autoescape=True),
             )
         )
+    if filtros.appid is not None:
+        consulta = consulta.where(resumo.c.appid == filtros.appid)
     if filtros.tipo:
         consulta = consulta.where(resumo.c.tipo == filtros.tipo)
     if filtros.preco_min is not None:

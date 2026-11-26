@@ -205,7 +205,7 @@ const EXPLORAR: Passo[] = [
       return t("Filtros", "Filters");
     },
     get texto() {
-      return t("Categoria (a mesma dos chaveiros), faixa de preço e ordem. Clique de novo num chip para tirar o filtro. Tudo fica no link, dá para compartilhar.", "Category (the same as the keychains), price range and order. Click a chip again to remove it. Everything goes in the link, so you can share it.");
+      return t("Jogo (TF2 ou CS2), categoria (a mesma dos chaveiros), faixa de preço e ordem. Clique de novo num chip para tirar o filtro. Tudo fica no link, dá para compartilhar.", "Game (TF2 or CS2), category (the same as the keychains), price range and order. Click a chip again to remove it. Everything goes in the link, so you can share it.");
     },
   },
   {

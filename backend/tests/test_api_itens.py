@@ -125,6 +125,21 @@ def test_item_inativo_fica_fora_da_lista_mas_abre_pelo_id(
     assert cliente.get(f"/itens/{treino.id}").status_code == 200
 
 
+def test_filtra_por_jogo(cliente: TestClient, sessao: Session, itens: dict[str, Item]) -> None:
+    skin = Item(appid=730, market_hash_name="AK-47 | Slate (Factory New)", nome="AK-47 | Slate")
+    sessao.add(skin)
+    sessao.flush()
+
+    so_cs2 = cliente.get("/itens", params={"appid": 730}).json()
+    sem_filtro = cliente.get("/itens").json()
+
+    assert _nomes(so_cs2) == ["AK-47 | Slate"]
+    assert so_cs2["total"] == 1
+    assert "AK-47 | Slate" in _nomes(sem_filtro)
+    so_tf2 = cliente.get("/itens", params={"appid": 440}).json()["itens"]
+    assert {item["appid"] for item in so_tf2} == {440}
+
+
 def test_paginacao(cliente: TestClient, itens: dict[str, Item]) -> None:
     resposta = cliente.get("/itens", params={"por_pagina": 3, "pagina": 2}).json()
 
