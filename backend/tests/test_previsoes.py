@@ -96,7 +96,7 @@ def test_nao_publica_previsao_de_versao_inativa(cliente, sessao, previsao):
     )
     sessao.add(model)
     sessao.flush()
-    sessao.get(ModeloAtivo, 7).modelo_id = model.id
+    sessao.get(ModeloAtivo, (440, 7)).modelo_id = model.id
     sessao.flush()
     data = cliente.get(f"/itens/{item.id}/previsao").json()
     assert data["disponivel"] is False
@@ -116,7 +116,7 @@ def test_horizonte_sem_modelo_e_item_inexistente(cliente, previsao):
 @pytest.mark.parametrize("horizon", [7, 15, 30])
 def test_horizontes_independentes_com_intervalo(cliente, sessao, previsao, horizon):
     item, forecast = previsao
-    active = sessao.get(ModeloAtivo, 7)
+    active = sessao.get(ModeloAtivo, (440, 7))
     model = sessao.get(ModeloVersao, forecast.modelo_id)
     active.horizonte = model.horizonte = horizon
     model.metadados = {"metrics": {"interval_test": {"coverage": 0.75}}}
@@ -220,3 +220,55 @@ def test_banco_rejeita_intervalos_invalidos(sessao, previsao, low, high, level):
         forecast.intervalo_superior = high
         forecast.nivel_confianca = level
         sessao.flush()
+
+
+def test_cada_jogo_usa_o_seu_modelo(cliente, sessao, previsao):
+    """O modelo ativo do CS2 não vale para o item de TF2, e vice-versa."""
+    item_tf2, forecast = previsao
+    skin = Item(appid=730, market_hash_name="AK-47 | Slate (Factory New)", nome="AK-47 | Slate")
+    cs2 = ModeloVersao(
+        id=str(uuid4()),
+        appid=730,
+        nome="hgb_ema",
+        horizonte=7,
+        meia_janela=2,
+        artefato="teste/cs2.joblib",
+        sha256="c" * 64,
+        metadados={},
+    )
+    sessao.add_all([skin, cs2])
+    sessao.flush()
+    execution = ExecucaoPrevisao(
+        id=str(uuid4()), modelo_id=cs2.id, data_limite=datetime.now(UTC).date(), status="sucesso"
+    )
+    sessao.add(execution)
+    sessao.flush()
+    sessao.add(ModeloAtivo(appid=730, horizonte=7, modelo_id=cs2.id))
+    sessao.add(
+        Previsao(
+            item_id=skin.id,
+            modelo_id=cs2.id,
+            data_base=datetime.now(UTC).date() - timedelta(days=1),
+            preco_base=10,
+            preco_previsto=11,
+            historico_curto=False,
+            execucao_id=execution.id,
+        )
+    )
+    sessao.flush()
+
+    da_skin = cliente.get(f"/itens/{skin.id}/previsao").json()
+    do_tf2 = cliente.get(f"/itens/{item_tf2.id}/previsao").json()
+
+    assert da_skin["modelo_versao"] == cs2.id
+    assert da_skin["variacao_prevista"] == pytest.approx(0.1)
+    assert do_tf2["modelo_versao"] == forecast.modelo_id
+
+
+def test_item_de_cs2_sem_modelo_do_cs2(cliente, sessao, previsao):
+    """Com só o modelo do TF2 ativo, o item de CS2 fica sem previsão, sem pegar a do TF2."""
+    skin = Item(appid=730, market_hash_name="Kilowatt Case", nome="Kilowatt Case")
+    sessao.add(skin)
+    sessao.flush()
+
+    assert cliente.get(f"/itens/{skin.id}/previsao").json()["motivo"] == "sem_modelo_ativo"

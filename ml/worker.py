@@ -14,17 +14,20 @@ logger = logging.getLogger(__name__)
 
 def tick(engine):
     with engine.connect() as connection:
-        horizons = list(connection.scalars(text("SELECT horizonte FROM modelo_ativo")))
+        ativos = connection.execute(
+            text("SELECT appid, horizonte FROM modelo_ativo ORDER BY appid, horizonte")
+        ).all()
     failures = 0
-    for horizon in horizons:
+    for appid, horizon in ativos:
         try:
-            result = run_batch(engine, horizon=horizon, only_pending=True)
+            result = run_batch(engine, horizon=horizon, appid=appid, only_pending=True)
             if result:
                 logger.info("Previsões publicadas: %s", result)
         except Exception as error:
             failures += 1
             logger.error(
-                "Falha no horizonte %s: %s; nova tentativa no próximo ciclo.",
+                "Falha no jogo %s, horizonte %s: %s; nova tentativa no próximo ciclo.",
+                appid,
                 horizon,
                 type(error).__name__,
             )

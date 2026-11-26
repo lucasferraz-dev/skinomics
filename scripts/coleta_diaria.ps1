@@ -131,6 +131,26 @@ try {
     $itensGravados = if ($gravados) { [int]$gravados.Matches[0].Groups[1].Value } else { 0 }
     $emDia = ($saida | Select-String -Pattern "^Nada a coletar") -ne $null
 
+    # Depois o CS2, com a lista dele. Só se o TF2 terminou bem: com 429 ou cookie vencido, o CS2
+    # bateria no mesmo IP e no mesmo cookie.
+    if ($codigo -eq 0) {
+        Escrever-Log "coletando os itens de CS2"
+        Push-Location (Join-Path $raiz "backend")
+        try {
+            $resultado = Rodar $uv @("run", "python", "-m", "app.coleta.historico_steam",
+                "--appid", "730", "--arquivo", "app/coleta/itens_cs2.txt", "--moeda", "USD", "--pendentes",
+                "--intervalo", "$Intervalo", "--variacao", "$Variacao")
+        } finally {
+            Pop-Location
+        }
+        $saida = @($saida) + @($resultado.Saida)
+        $codigo = $resultado.Codigo
+        Escrever-Log "coleta do CS2 terminou com código $codigo"
+        $gravadosCs2 = $resultado.Saida | Select-String -Pattern "^(\d+) itens e (\d+) preços" | Select-Object -First 1
+        if ($gravadosCs2) { $itensGravados += [int]$gravadosCs2.Matches[0].Groups[1].Value }
+        $emDia = $emDia -and (($resultado.Saida | Select-String -Pattern "^Nada a coletar") -ne $null)
+    }
+
     switch ($codigo) {
         0 {
             if ($emDia) { Escrever-Log "resultado: os preços de ontem já estavam no banco, nada a fazer." }

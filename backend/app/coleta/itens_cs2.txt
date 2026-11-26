@@ -1,0 +1,37 @@
+# Itens de CS2 acompanhados pelo Skinomics, um market_hash_name por linha.
+#
+# No CS2 cada desgaste e o StatTrak são itens separados no mercado, com preço próprio. A regra
+# aqui é Factory New quando a skin tem esse desgaste; a Flashback é Minimal Wear de propósito
+# (é a que o Lucas tem). Caixas não têm desgaste.
+#
+# A cesta mistura caixas que ainda caem, caixas que já saíram do drop e skins de várias faixas de
+# preço: além de cada item, ela serve de termômetro do mercado de CS2 para o modelo.
+#
+# Uso, dentro de backend/:
+#     uv run python -m app.coleta.historico_steam --appid 730 --moeda USD --arquivo app/coleta/itens_cs2.txt
+
+# A skin do Lucas
+M4A1-S | Flashback (Minimal Wear)
+
+# Caixas
+Kilowatt Case
+Revolution Case
+Recoil Case
+Dreams & Nightmares Case
+Fracture Case
+Clutch Case
+Chroma 3 Case
+Operation Breakout Weapon Case
+
+# Skins
+AK-47 | Slate (Factory New)
+AK-47 | Neon Rider (Factory New)
+AK-47 | Bloodsport (Factory New)
+AK-47 | Asiimov (Factory New)
+AWP | Atheris (Factory New)
+AWP | Neo-Noir (Factory New)
+M4A1-S | Printstream (Factory New)
+M4A4 | The Emperor (Factory New)
+Desert Eagle | Printstream (Factory New)
+USP-S | Kill Confirmed (Factory New)
+Glock-18 | Water Elemental (Factory New)

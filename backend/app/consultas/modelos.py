@@ -15,12 +15,12 @@ def _numero(valor: Any) -> float | None:
 
 def listar_modelos_ativos(sessao: Session) -> list[ModeloAtivoResumo]:
     consulta = (
-        select(ModeloAtivo.horizonte, ModeloVersao)
+        select(ModeloAtivo.appid, ModeloAtivo.horizonte, ModeloVersao)
         .join(ModeloVersao, ModeloVersao.id == ModeloAtivo.modelo_id)
-        .order_by(ModeloAtivo.horizonte)
+        .order_by(ModeloAtivo.appid, ModeloAtivo.horizonte)
     )
     resumos = []
-    for horizonte, modelo in sessao.execute(consulta):
+    for appid, horizonte, modelo in sessao.execute(consulta):
         metricas = (modelo.metadados or {}).get("metrics", {})
         # O teste compara vários modelos; a linha que interessa é a do modelo desta versão.
         teste = next(
@@ -29,6 +29,7 @@ def listar_modelos_ativos(sessao: Session) -> list[ModeloAtivoResumo]:
         cobertura = _numero(metricas.get("interval_test", {}).get("coverage"))
         resumos.append(
             ModeloAtivoResumo(
+                appid=appid,
                 horizonte=horizonte,
                 versao=modelo.id,
                 nome=modelo.nome,

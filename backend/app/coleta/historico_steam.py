@@ -2,7 +2,10 @@
 
 Uso, dentro de backend/:
     uv run python -m app.coleta.historico_steam [--moeda BRL] [--intervalo 20] [--variacao 0]
-        [--itens NOME ...] [--arquivo app/coleta/itens_tf2.txt] [--pendentes]
+        [--itens NOME ...] [--arquivo app/coleta/itens_tf2.txt] [--pendentes] [--appid 730]
+
+Cada execução cuida de um jogo só (`--appid`, padrão TF2): para o CS2, passe `--appid 730` e a
+lista app/coleta/itens_cs2.txt.
 
 Com `--pendentes`, só os itens cuja série ainda não chega a ontem: rodar de novo no mesmo dia não
 pede nada à Steam, e uma coleta interrompida (429) continua de onde parou na próxima vez. É o modo
@@ -40,6 +43,7 @@ from app.coleta.gravacao import (
     substituir_serie,
 )
 from app.coleta.steam import (
+    CS2,
     FORMATO_DA_MOEDA,
     TF2,
     ColetaInterrompidaError,
@@ -71,6 +75,7 @@ def baixar_historico(
     mercado: MercadoSteam,
     agora: datetime | None = None,
     somente: Sequence[str] = (),
+    appid: int = TF2,
 ) -> ResumoHistorico:
     """Regrava a série de cada item ativo, ou só dos itens em `somente` (market_hash_name).
 
@@ -83,8 +88,8 @@ def baixar_historico(
     resumo = ResumoHistorico()
 
     with registrar_execucao(sessao, TipoColeta.PRECOS) as execucao:
-        novos = _criar_os_que_faltam(sessao, somente)
-        consulta = select(Item).where(Item.appid == TF2).order_by(Item.id)
+        novos = _criar_os_que_faltam(sessao, somente, appid)
+        consulta = select(Item).where(Item.appid == appid).order_by(Item.id)
         if somente:
             consulta = consulta.where(Item.market_hash_name.in_(somente))
         else:
@@ -138,13 +143,15 @@ def baixar_historico(
         execucao.itens_ok = resumo.itens_ok
         execucao.itens_novos = len(novos)
         for nome, motivo in resumo.falhas.items():
-            anotar_falha(execucao, TF2, nome, motivo)
+            anotar_falha(execucao, appid, nome, motivo)
         execucao.erro = resumo.interrompida_por
 
     return resumo
 
 
-def itens_pendentes(sessao: Session, ultimo_dia: date, nomes: Sequence[str] = ()) -> list[str]:
+def itens_pendentes(
+    sessao: Session, ultimo_dia: date, nomes: Sequence[str] = (), appid: int = TF2
+) -> list[str]:
     """Itens ativos (ou os de `nomes`) cuja série não chega a `ultimo_dia`, na ordem do catálogo.
 
     Um nome de `nomes` que ainda não está no catálogo também é pendente: a coleta o cria.
@@ -157,7 +164,7 @@ def itens_pendentes(sessao: Session, ultimo_dia: date, nomes: Sequence[str] = ()
     consulta = (
         select(Item.market_hash_name, ultima_data.c.ate)
         .outerjoin(ultima_data, ultima_data.c.item_id == Item.id)
-        .where(Item.appid == TF2)
+        .where(Item.appid == appid)
         .order_by(Item.id)
     )
     consulta = (
@@ -188,13 +195,13 @@ def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
             log.warning("%s: sem ícone (%s)", item.market_hash_name, erro)
 
 
-def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str]) -> set[int]:
+def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str], appid: int) -> set[int]:
     """Cria no catálogo os nomes que ainda não existem; devolve o id dos criados."""
-    chaves = {(TF2, nome): None for nome in nomes}  # dict: sem repetir, na ordem dada
+    chaves = {(appid, nome): None for nome in nomes}  # dict: sem repetir, na ordem dada
     existentes = ja_no_catalogo(sessao, chaves)
     # Sem nome de exibição melhor à mão, usa o do mercado; o catálogo pode trocá-lo depois.
     faltando = [
-        ItemCatalogo(TF2, nome, nome) for _, nome in chaves if (TF2, nome) not in existentes
+        ItemCatalogo(appid, nome, nome) for _, nome in chaves if (appid, nome) not in existentes
     ]
     return set(gravar_itens(sessao, faltando).values())
 
@@ -283,6 +290,13 @@ def main() -> None:
         help="moeda da carteira da conta do cookie (padrão: BRL, a moeda da base)",
     )
     parser.add_argument(
+        "--appid",
+        type=int,
+        choices=(TF2, CS2),
+        default=TF2,
+        help=f"jogo dos itens: {TF2} (TF2, padrão) ou {CS2} (CS2)",
+    )
+    parser.add_argument(
         "--itens",
         nargs="+",
         default=(),
@@ -307,7 +321,7 @@ def main() -> None:
     with httpx.Client(timeout=30, headers=cabecalho) as cliente, SessionLocal() as sessao:
         if args.pendentes:
             ontem = datetime.now(UTC).date() - timedelta(days=1)
-            somente = itens_pendentes(sessao, ontem, somente)
+            somente = itens_pendentes(sessao, ontem, somente, args.appid)
             if not somente:
                 print("Nada a coletar: todos os itens já estão em dia.")
                 return
@@ -316,7 +330,7 @@ def main() -> None:
             cliente, moeda=args.moeda, intervalo=args.intervalo, variacao=args.variacao
         )
         try:
-            resumo = baixar_historico(sessao, mercado, somente=somente)
+            resumo = baixar_historico(sessao, mercado, somente=somente, appid=args.appid)
         except ColetaInterrompidaError as erro:
             print(f"Coleta interrompida antes do primeiro item: {erro}")
             sys.exit(_codigo_de_saida(erro))

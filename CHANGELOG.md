@@ -4,6 +4,15 @@
 
 ### Adicionado
 
+- Previsão para os itens de CS2, com modelo próprio: cada jogo tem os seus modelos e o seu modelo
+  ativo por horizonte (migração `modelo_por_jogo`, `appid` no registro de modelos), e a previsão de
+  um item vem sempre do modelo do jogo dele. O CS2 usa a receita do TF2 sem a Key e publica só 7 e
+  15 dias (em 30 nenhum modelo ganhou do ingênuo). `--appid` no `ml.train`, `ml.predict` e
+  `ml.registry rollback`; o worker atualiza todos os jogos. Oportunidades continua só com TF2.
+- Coleta de itens de CS2: o `historico_steam` ganhou `--appid` (440 TF2, 730 CS2) e a lista
+  `app/coleta/itens_cs2.txt`, com 20 itens (a M4A1-S Flashback em Minimal Wear, caixas que ainda caem
+  e que já saíram do drop, e skins em Factory New de várias faixas de preço). A coleta diária roda o
+  CS2 depois do TF2, só quando o TF2 terminou bem. Ainda sem previsão: o modelo do CS2 vem no próximo PR.
 - Alertas de preço (US012, #24): "cair até" (para comprar) ou "subir até" (para vender) um
   preço-alvo, criados no detalhe do item (botão ao lado de Acompanhar, com atalhos de -5%, -10%,
   -20% e a faixa da previsão) ou na aba Alertas, que lista os disparados e os que estão vigiando,

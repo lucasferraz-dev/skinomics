@@ -130,7 +130,7 @@ def test_training_registration_options(monkeypatch, tmp_path, arguments, registe
     calls = []
     engine = SimpleNamespace(dispose=lambda: None, connect=lambda: nullcontext(None))
     monkeypatch.setattr(database, "database_engine", lambda: engine)
-    monkeypatch.setattr(database, "load_history", lambda connection: "history")
+    monkeypatch.setattr(database, "load_history", lambda connection, **_: "history")
     monkeypatch.setattr(train, "train_and_save", lambda *args: {"version_id": "a"})
     monkeypatch.setattr(registry, "register_model", lambda *args: calls.append(args) or "a")
     monkeypatch.setattr(sys, "argv", ["train", "--output-dir", str(tmp_path), *arguments])

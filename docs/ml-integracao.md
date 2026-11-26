@@ -75,6 +75,25 @@ foreach ($horizonte in 7, 15, 30) {
 Revise cada versão, ative seu UUID e execute `ml.predict --horizon <horizonte>`.
 Sem versão ativa, a tela informa que aquele horizonte está indisponível; não reutiliza outra previsão.
 
+### Um modelo por jogo (TF2 e CS2)
+
+Cada jogo tem os seus modelos e o seu modelo ativo por horizonte (`modelo_ativo` tem a chave
+`appid, horizonte`): o do CS2 nunca substitui o do TF2, e a previsão de um item vem sempre do
+modelo do jogo dele. `--appid` vale para `ml.train`, `ml.predict` e `ml.registry rollback`; sem
+ele, o jogo é o TF2 (440). O jogo fica gravado no artefato (`config.appid`) e o cadastro o lê de lá.
+
+O CS2 (730) usa a mesma receita do TF2 sem a feature da Key, que lá não existe: o termômetro do
+mercado é a mediana dos itens do próprio CS2. Publica só **7 e 15 dias**: em 30 dias nenhum modelo
+ganhou do ingênuo no teste. O `ml.publish` exige os horizontes de cada jogo (TF2: 7, 15 e 30;
+CS2: 7 e 15) e um jogo por vez. O `ml.worker` atualiza todos os pares jogo e horizonte ativos.
+
+```powershell
+foreach ($horizonte in 7, 15) {
+    uv run --project ml python -m ml.train --database --no-register --appid 730 --horizon $horizonte
+}
+uv run --project ml python -m ml.publish <artefato_7d> <artefato_15d> --apply --reason "..."
+```
+
 Também é possível cadastrar um artefato local existente:
 
 ```powershell
