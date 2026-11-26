@@ -54,7 +54,7 @@ export function SinoAlertas() {
     : t("Alertas", "Alerts");
 
   return (
-    <div ref={caixa} className="relative">
+    <div ref={caixa} data-tour="sino" className="relative">
       <button
         type="button"
         onClick={alternar}

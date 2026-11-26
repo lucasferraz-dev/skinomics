@@ -300,6 +300,126 @@ const DETALHE: Passo[] = [
   ...FINAL,
 ];
 
+const OPORTUNIDADES: Passo[] = [
+  {
+    alvo: "[data-tour='oport-cenario']",
+    get titulo() {
+      return t("Cenário", "Scenario");
+    },
+    get texto() {
+      return t("O horizonte da previsão: 7, 15 ou 30 dias. Trocar o cenário refaz o ranking inteiro, porque cada horizonte tem a sua previsão.", "The forecast horizon: 7, 15 or 30 days. Switching it rebuilds the whole ranking, since each horizon has its own forecast.");
+    },
+  },
+  {
+    alvo: "[data-tour='oport-numeros']",
+    get titulo() {
+      return t("Números do cenário", "Scenario numbers");
+    },
+    get texto() {
+      return t("Quantas oportunidades há, a maior margem, quantas têm risco baixo e de quando são os preços. Puxe a ponta de um adesivo para ver o verso.", "How many opportunities there are, the biggest margin, how many are low risk and how old the prices are. Pull a sticker's corner to see the back.");
+    },
+  },
+  {
+    alvo: "[data-tour='oport-podio']",
+    get titulo() {
+      return t("Pódio", "Podium");
+    },
+    get texto() {
+      return t("As três maiores margens, com o que sobra depois da taxa da Steam e o risco. Clique numa vitrine para abrir o item com a previsão desse cenário.", "The three biggest margins, with what's left after the Steam fee and the risk. Click a showcase to open the item with this scenario's forecast.");
+    },
+  },
+  {
+    alvo: "[data-tour='oport-ranking'] > div:first-child, [data-tour='oport-ranking'] li:nth-child(-n+3)",
+    get titulo() {
+      return t("Ranking", "Ranking");
+    },
+    get texto() {
+      return t("O resto, da maior margem para a menor. Clique no selo de risco de uma linha para ver os motivos: vendas por dia e quanto o preço oscila.", "The rest, from the biggest margin to the smallest. Click a row's risk badge to see why: sales per day and how much the price swings.");
+    },
+  },
+  ...FINAL,
+];
+
+const ALERTAS: Passo[] = [
+  {
+    alvo: "[data-tour='alerta-vazio']",
+    get titulo() {
+      return t("Entre primeiro", "Sign in first");
+    },
+    get texto() {
+      return t("Os alertas ficam guardados na sua conta Steam. Depois de entrar, esta página mostra a busca para criar alertas e os que você já tem.", "Alerts are saved to your Steam account. Once you sign in, this page shows the search to create alerts and the ones you have.");
+    },
+  },
+  {
+    alvo: "[data-tour='alerta-novo']",
+    get titulo() {
+      return t("Novo alerta", "New alert");
+    },
+    get texto() {
+      return t("Busque o item pelo nome (sem busca aparecem os mais negociados), escolha um e diga se quer o aviso quando o preço cair até um valor ou subir até um valor.", "Search the item by name (with no search you get the most traded), pick one and choose whether you want a notice when the price drops to a value or rises to one.");
+    },
+  },
+  {
+    alvo: "[data-tour='alerta-disparados']",
+    get titulo() {
+      return t("Disparados", "Triggered");
+    },
+    get texto() {
+      return t("Os alertas que chegaram no preço, com o valor que disparou. Um alerta dispara uma vez só; para vigiar de novo, troque o alvo.", "Alerts that hit the price, with the value that triggered them. An alert triggers only once; to watch again, change the target.");
+    },
+  },
+  {
+    alvo: "[data-tour='alerta-vigiando']",
+    get titulo() {
+      return t("Vigiando", "Watching");
+    },
+    get texto() {
+      return t("Os alertas armados, com o preço de hoje e o caminho até o alvo. Dá para trocar o alvo, pausar ou apagar ali mesmo.", "Armed alerts, with today's price and the way to the target. You can change the target, pause or delete right there.");
+    },
+  },
+  {
+    alvo: "[data-tour='sino']",
+    get titulo() {
+      return t("Sino", "Bell");
+    },
+    get texto() {
+      return t("Quando um alerta dispara, o sino fica verde em qualquer página do site. O aviso é só aqui dentro, sem e-mail.", "When an alert triggers, the bell turns green on any page of the site. The notice stays here, no e-mail.");
+    },
+  },
+  ...FINAL,
+];
+
+const MINHA_LISTA: Passo[] = [
+  {
+    alvo: "[data-tour='lista-vazia']",
+    get titulo() {
+      return t("Sua lista", "Your list");
+    },
+    get texto() {
+      return t("Para pôr um item aqui, entre com a Steam, abra o item e use Acompanhar. A lista fica guardada na sua conta.", "To add an item, sign in with Steam, open the item and use Follow. The list is saved to your account.");
+    },
+  },
+  {
+    alvo: "[data-tour='lista-destaques']",
+    get titulo() {
+      return t("Melhor e pior", "Best and worst");
+    },
+    get texto() {
+      return t("Quem mais subiu e quem mais caiu desde que entrou na lista, contra o preço do dia em que você acompanhou.", "What rose and fell the most since it joined the list, against the price on the day you followed it.");
+    },
+  },
+  {
+    alvo: "[data-tour='lista-tabela'] thead, [data-tour='lista-tabela'] tbody tr:nth-child(-n+3)",
+    get titulo() {
+      return t("Todos os itens", "All items");
+    },
+    get texto() {
+      return t("O preço de hoje, a barra de quanto mudou desde que entrou (a mesma escala para todos), a semana e os últimos 30 dias. Remover tira o item da lista.", "Today's price, a bar of how much it changed since it joined (same scale for all), the week and the last 30 days. Remove takes it off the list.");
+    },
+  },
+  ...FINAL,
+];
+
 /**
  * Tutorial de cada rota; páginas sem entrada não mostram o botão. `chave` é o que fica salvo como "já
  * visto". `automatico`: abre sozinho na primeira visita (só na landing; no Terminal, só quando pedirem).
@@ -308,6 +428,9 @@ const TUTORIAIS: { rota: RegExp; chave: string; passos: Passo[]; automatico: boo
   { rota: /^\/$/, chave: "/", passos: INICIO, automatico: true },
   { rota: /^\/itens\/?$/, chave: "/itens", passos: EXPLORAR, automatico: false },
   { rota: /^\/itens\/\d+\/?$/, chave: "/itens/:id", passos: DETALHE, automatico: false },
+  { rota: /^\/oportunidades\/?$/, chave: "/oportunidades", passos: OPORTUNIDADES, automatico: false },
+  { rota: /^\/alertas\/?$/, chave: "/alertas", passos: ALERTAS, automatico: false },
+  { rota: /^\/minha-lista\/?$/, chave: "/minha-lista", passos: MINHA_LISTA, automatico: false },
 ];
 
 export function tutorialDaRota(pathname: string) {
@@ -402,6 +525,54 @@ const FALAS: [string, { corvo: [string, string]; coruja: [string, string] }][] =
   ["data-coruja", {
     corvo: ["Essa aí? Lenta. Muito lenta. Pergunta pra ela, vai demorar.", "Her? Slow. Very slow. Ask her, it'll take a while."],
     coruja: ["Glaux. Coruja de Atena. Eu analiso.", "Glaux. Athena's owl. I analyze."],
+  }],
+  ["'oport-cenario'", {
+    corvo: ["Sete! Quinze! Trinta! Clica em todos! Eu quero ver tudo!", "Seven! Fifteen! Thirty! Click them all! I want to see everything!"],
+    coruja: ["Horizonte maior, faixa maior.", "Longer horizon, wider range."],
+  }],
+  ["'oport-numeros'", {
+    corvo: ["Descola! Tem número atrás! Eu já espiei!", "Peel it! There are numbers behind! I peeked!"],
+    coruja: ["Confira a data dos preços primeiro.", "Check the price date first."],
+  }],
+  ["'oport-podio'", {
+    corvo: ["Pódio! O primeiro ganha medalha! Eu nunca ganho!", "Podium! First place gets a medal! I never do!"],
+    coruja: ["Margem alta com risco alto não é pódio. É aviso.", "A high margin with high risk isn't a podium. It's a warning."],
+  }],
+  ["'oport-ranking'", {
+    corvo: ["Clica no risco! Ele conta tudo! Eu já sei de cor!", "Click the risk! It tells everything! I know it by heart!"],
+    coruja: ["Leia o risco antes da margem.", "Read the risk before the margin."],
+  }],
+  ["'alerta-vazio'", {
+    corvo: ["Entra! Entra! Aí eu vigio pra você!", "Sign in! Sign in! Then I'll watch for you!"],
+    coruja: ["Sem conta, sem alerta.", "No account, no alerts."],
+  }],
+  ["'alerta-novo'", {
+    corvo: ["Escolhe um item! Qualquer um! Eu vigio todos!", "Pick an item! Any one! I watch them all!"],
+    coruja: ["Um alvo que o preço já passou é recusado.", "A target the price already passed is refused."],
+  }],
+  ["'alerta-disparados'", {
+    corvo: ["Disparou! Eu avisei! Eu sempre aviso!", "Triggered! I told you! I always tell you!"],
+    coruja: ["Disparado não vigia mais.", "A triggered alert stops watching."],
+  }],
+  ["'alerta-vigiando'", {
+    corvo: ["A pista! Quando chega no fim, plim!", "The track! When it reaches the end, ding!"],
+    coruja: ["Pausado não dispara.", "Paused ones don't trigger."],
+  }],
+  ["'sino'", {
+    corvo: ["O sino! Fica verde e balança! Igual na Steam!", "The bell! It turns green and swings! Just like Steam!"],
+    coruja: ["Conferido uma vez por dia.", "Checked once a day."],
+  }],
+  ["'lista-vazia'", {
+    corvo: ["Lista vazia! Vai lá e acompanha um item! Rápido!", "Empty list! Go follow an item! Quick!"],
+    coruja: ["Acompanhar é medir, não comprar.", "Following is measuring, not buying."],
+  }],
+  ["'lista-destaques'", {
+    corvo: ["Quem subiu! Quem caiu! Eu lembro do preço de quando entrou!", "Who rose! Who fell! I remember the price when it joined!"],
+    coruja: ["A conta é contra o dia em que entrou, não contra o que você pagou.", "It's against the day it joined, not what you paid."],
+  }],
+  ["'lista-tabela'", {
+    corvo: ["Barra verde pra direita! Coral pra esquerda! Eu prefiro a verde!", "Green bar to the right! Coral to the left! I like the green one!"],
+    coruja: ["Mesma escala para todos. Dá para comparar.", "Same scale for all. You can compare."],
   }],
   ["'faq'", {
     corvo: ["Pergunta pra mim! Eu respondo mais rápido que esse FAQ!", "Ask me! I answer faster than this FAQ!"],

@@ -60,7 +60,7 @@ export function Oportunidades() {
 
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-suave">{t("Cenário", "Scenario")}</span>
-          <div className="flex gap-1 rounded-full border border-borda bg-painel p-1" role="group" aria-label={t("Horizonte da previsão", "Forecast horizon")}>
+          <div data-tour="oport-cenario" className="flex gap-1 rounded-full border border-borda bg-painel p-1" role="group" aria-label={t("Horizonte da previsão", "Forecast horizon")}>
             {HORIZONTES.map((h) => (
               <button
                 key={h}
@@ -111,7 +111,7 @@ export function Oportunidades() {
                 <h2 className="text-3xl leading-tight titulo sm:text-4xl">{t("As maiores margens", "The biggest margins")}</h2>
               </div>
               {/* md:pb: espaço para os chaveiros que pendem embaixo das vitrines (só com as três lado a lado). */}
-              <div className="grid gap-4 md:grid-cols-3 md:items-end md:pb-24">
+              <div data-tour="oport-podio" className="grid gap-4 md:grid-cols-3 md:items-end md:pb-24">
                 {podio.map((item) => (
                   <VitrineOportunidade key={item.item_id} item={item} horizonte={horizonte} />
                 ))}
@@ -199,7 +199,7 @@ function Numeros({ ranking, horizonte, pagina }: { ranking: RankingOportunidades
 
   return (
     // overflow-x-clip: a camada da aba dobrada dos adesivos é maior que eles e não pode alargar a página.
-    <div className="grid grid-cols-1 gap-3 overflow-x-clip py-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div data-tour="oport-numeros" className="grid grid-cols-1 gap-3 overflow-x-clip py-1 sm:grid-cols-2 lg:grid-cols-4">
       {indicadores.map((indicador, i) => (
         <CardIndicador key={indicador.rotulo} {...indicador} adesivo={ADESIVOS[i % ADESIVOS.length]!} />
       ))}
@@ -308,7 +308,7 @@ function SeloRisco({ risco, titulo }: { risco: NivelRisco; titulo?: string }) {
 /** Do quarto lugar em diante (ou a página toda, depois da primeira), no estilo da lista do Explorar. */
 function ListaRanking({ itens, horizonte }: { itens: Oportunidade[]; horizonte: HorizontePrevisao }) {
   return (
-    <Painel className="overflow-hidden rounded-2xl">
+    <Painel data-tour="oport-ranking" className="overflow-hidden rounded-2xl">
       <div className="hidden grid-cols-[3rem_minmax(0,1fr)_7rem_7rem_7rem_10rem] items-center gap-4 border-b border-borda px-4 py-3 md:grid">
         <Rotulo>#</Rotulo>
         <Rotulo>{t("Item", "Item")}</Rotulo>

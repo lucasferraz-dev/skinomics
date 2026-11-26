@@ -83,9 +83,18 @@ export function BotaoComoUsar() {
           ?
         </span>
       </button>
-      {aberto && <Tutorial passos={passos} aoFechar={fechar} />}
+      {aberto && <Tutorial passos={passosNaTela(passos)} aoFechar={fechar} />}
     </>
   );
+}
+
+/**
+ * Só os passos cuja parte está na página agora: sem login, por exemplo, Alertas e Minha lista mostram
+ * só o convite para entrar, e um passo apontando para o nada deixaria o balão solto no meio da tela.
+ */
+function passosNaTela(passos: Passo[]): Passo[] {
+  const visiveis = passos.filter((passo) => document.querySelector(passo.alvo));
+  return visiveis.length ? visiveis : passos;
 }
 
 const CHAVE_VISTO = "skinomics:tutorial-visto:";

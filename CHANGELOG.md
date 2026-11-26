@@ -53,6 +53,13 @@
   escolhido numa vitrine com o formulário à direita), os alertas vigiando em cards de terminal com
   a pista até o alvo e os disparados com o item na vitrine e a medalha do movimento. O balão
   "Criar alerta" do item ganhou a faixa de título dos terminais.
+- Minha lista (Acompanhar) no visual do site, que ainda era o antigo: vitrines com quem mais subiu e
+  quem mais caiu desde que entrou na lista (com os chaveiros pendurados), tabela com chaveiros mini,
+  barra de quanto cada item mudou desde que entrou (mesma escala para todos) e tendência de 30 dias,
+  mascotes comentando a lista, modo TV e a página em inglês também.
+- "Como usar" em Oportunidades, Alertas e Minha lista, que não tinham. O guia pula as partes que não
+  estão na tela (sem login, por exemplo, só explica o convite para entrar).
+- Chaveiros mini também nas linhas de item do "Novo alerta".
 - Chaveiros nas abas Alertas e Oportunidades, como no Explorar e no item: os grandes pendem do item
   escolhido em "Novo alerta" e das vitrines do pódio; os mini ficam nos cards dos alertas e nas
   linhas do ranking. A API de oportunidades passou a mandar o `appid` do item, para o chaveiro do
