@@ -126,6 +126,7 @@ def listar_oportunidades(
             Oportunidade(
                 posicao=posicao,
                 item_id=item.id,
+                appid=item.appid,
                 nome=item.nome,
                 tipo=item.tipo,
                 icon_url=item.icon_url,

@@ -53,6 +53,10 @@
   escolhido numa vitrine com o formulário à direita), os alertas vigiando em cards de terminal com
   a pista até o alvo e os disparados com o item na vitrine e a medalha do movimento. O balão
   "Criar alerta" do item ganhou a faixa de título dos terminais.
+- Chaveiros nas abas Alertas e Oportunidades, como no Explorar e no item: os grandes pendem do item
+  escolhido em "Novo alerta" e das vitrines do pódio; os mini ficam nos cards dos alertas e nas
+  linhas do ranking. A API de oportunidades passou a mandar o `appid` do item, para o chaveiro do
+  jogo sair certo quando o site tiver mais de um jogo.
 - Oportunidades no visual do resto do site: cabeçalho e seletor de cenário como no Explorar,
   adesivos com os números do cenário, pódio com as três maiores margens em vitrines (o primeiro
   lugar leva a medalha "Maior margem"), o resto do ranking no estilo da lista do Explorar, selo de

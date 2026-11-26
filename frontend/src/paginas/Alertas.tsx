@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, type RefObject, useRef, useState } from "react";
 import { Link } from "react-router";
 
 import { type Alerta, quantoFalta, useAlertas, useAtualizarAlerta, useRemoverAlerta } from "../api/alertas";
@@ -6,6 +6,7 @@ import { useUsuario } from "../api/auth";
 import { type ItemResumo, useItens } from "../api/itens";
 import { FormAlerta, IconeSino } from "../componentes/alertas/CriarAlerta";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo } from "../componentes/Basicos";
+import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 import { categoriaDoItem } from "../componentes/chaveiro/temas";
 import { analiseDosAlertas } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
@@ -137,15 +138,18 @@ function Vitrine({ item, proporcao = "aspect-[16/10]", children }: { item: Pick<
 }
 
 /** Card no formato dos terminais da landing: faixa de cima com o rótulo, conteúdo e rodapé. */
-function Terminal({ rotulo, canto, destaque = false, apagado = false, children }: {
+function Terminal({ rotulo, canto, destaque = false, apagado = false, caixa, children }: {
   rotulo: ReactNode;
   canto?: ReactNode;
   destaque?: boolean;
   apagado?: boolean;
+  /** O próprio card, para servir de parede aos chaveiros que pendem embaixo dele. */
+  caixa?: RefObject<HTMLDivElement | null>;
   children: ReactNode;
 }) {
   return (
     <div
+      ref={caixa}
       data-poleiro
       className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-painel transition-[border-color,opacity] ${
         destaque ? "border-destaque/50 shadow-[0_0_30px_rgba(198,243,107,0.12)]" : "border-borda hover:border-destaque/30"
@@ -165,13 +169,15 @@ function NovoAlerta() {
   const [busca, setBusca] = useState("");
   const [escolhido, setEscolhido] = useState<ItemResumo | null>(null);
   const [criado, setCriado] = useState<string | null>(null);
+  const cardEscolhido = useRef<HTMLDivElement>(null);
   // Sem busca, os mais negociados: são os que mais gente quer vigiar.
   const { data, isFetching } = useItens(
     busca.trim() ? { busca: busca.trim(), por_pagina: 8 } : { ordenar: "volume_7d", direcao: "desc", por_pagina: 8 },
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    // pb: com um item escolhido, os chaveiros dele pendem embaixo do card do preço-alvo.
+    <div className={`grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] ${escolhido ? "pb-24" : ""}`}>
       <Terminal rotulo={<Rotulo destaque>{busca.trim() ? t("Resultado da busca", "Search results") : t("Mais negociados", "Most traded")}</Rotulo>}>
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-2 rounded-lg border border-borda bg-fundo px-3 focus-within:border-destaque/60">
@@ -220,44 +226,48 @@ function NovoAlerta() {
         </div>
       </Terminal>
 
-      <Terminal
-        destaque={Boolean(escolhido) && !criado}
-        rotulo={<Rotulo destaque>{escolhido ? t("Preço-alvo", "Target price") : t("Nenhum item escolhido", "No item picked")}</Rotulo>}
-        canto={<span className="text-destaque"><IconeSino tamanho={15} cheio={Boolean(escolhido)} /></span>}
-      >
-        {escolhido ? (
-          <>
-            <Vitrine item={escolhido} proporcao="aspect-[16/9]">
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-painel via-painel/70 to-transparent px-4 pt-10 pb-3">
-                <p className="truncate text-sm">{escolhido.nome}</p>
-                <p className="font-mono text-xs text-suave">
-                  {t("hoje", "today")} {escolhido.preco_atual !== null ? formatarPreco(escolhido.preco_atual) : "—"}
-                </p>
-              </div>
-            </Vitrine>
-            <div className="p-4">
-              {criado ? (
-                <div className="space-y-3 py-4 text-center">
-                  <p className="text-sm">{t(`Alerta criado para ${criado}.`, `Alert created for ${criado}.`)}</p>
-                  <p className="text-xs text-suave">{t("Ele já aparece em Vigiando, logo abaixo.", "It already shows under Watching, below.")}</p>
-                  <button type="button" onClick={() => setCriado(null)} className="text-sm text-destaque hover:underline">
-                    {t("Criar outro", "Create another")}
-                  </button>
+      <div className="relative min-w-0">
+        <Terminal
+          caixa={cardEscolhido}
+          destaque={Boolean(escolhido) && !criado}
+          rotulo={<Rotulo destaque>{escolhido ? t("Preço-alvo", "Target price") : t("Nenhum item escolhido", "No item picked")}</Rotulo>}
+          canto={<span className="text-destaque"><IconeSino tamanho={15} cheio={Boolean(escolhido)} /></span>}
+        >
+          {escolhido ? (
+            <>
+              <Vitrine item={escolhido} proporcao="aspect-[16/9]">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-painel via-painel/70 to-transparent px-4 pt-10 pb-3">
+                  <p className="truncate text-sm">{escolhido.nome}</p>
+                  <p className="font-mono text-xs text-suave">
+                    {t("hoje", "today")} {escolhido.preco_atual !== null ? formatarPreco(escolhido.preco_atual) : "—"}
+                  </p>
                 </div>
-              ) : (
-                <FormAlerta key={escolhido.id} item={escolhido} aoCriar={() => setCriado(escolhido.nome)} />
-              )}
+              </Vitrine>
+              <div className="p-4">
+                {criado ? (
+                  <div className="space-y-3 py-4 text-center">
+                    <p className="text-sm">{t(`Alerta criado para ${criado}.`, `Alert created for ${criado}.`)}</p>
+                    <p className="text-xs text-suave">{t("Ele já aparece em Vigiando, logo abaixo.", "It already shows under Watching, below.")}</p>
+                    <button type="button" onClick={() => setCriado(null)} className="text-sm text-destaque hover:underline">
+                      {t("Criar outro", "Create another")}
+                    </button>
+                  </div>
+                ) : (
+                  <FormAlerta key={escolhido.id} item={escolhido} aoCriar={() => setCriado(escolhido.nome)} />
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="grid flex-1 place-items-center gap-3 px-6 py-14 text-center">
+              <span className="grid size-12 place-items-center rounded-full border border-borda text-apagado">
+                <IconeSino tamanho={20} />
+              </span>
+              <p className="max-w-56 text-sm text-suave">{t("Escolha um item ao lado para definir o preço-alvo.", "Pick an item to set the target price.")}</p>
             </div>
-          </>
-        ) : (
-          <div className="grid flex-1 place-items-center gap-3 px-6 py-14 text-center">
-            <span className="grid size-12 place-items-center rounded-full border border-borda text-apagado">
-              <IconeSino tamanho={20} />
-            </span>
-            <p className="max-w-56 text-sm text-suave">{t("Escolha um item ao lado para definir o preço-alvo.", "Pick an item to set the target price.")}</p>
-          </div>
-        )}
-      </Terminal>
+          )}
+        </Terminal>
+        {escolhido && <ChaveirosDoItem item={escolhido} parede={cardEscolhido} direita="1.5rem" />}
+      </div>
     </div>
   );
 }
@@ -297,7 +307,9 @@ function CardVigiando({ alerta }: { alerta: Alerta }) {
       }
     >
       <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex min-w-0 items-center gap-3">
+        {/* pr: o nome não passa por baixo dos chaveiros mini, que pendem do topo desta linha. */}
+        <div className="relative flex min-w-0 items-center gap-3 pr-24">
+          <ChaveirosDoItem item={alerta.item} tamanho="mini" direita="0" className="-top-4!" />
           <IconeItem url={alerta.item.icon_url} nome={alerta.item.nome} tamanho={40} />
           <div className="min-w-0">
             <Link to={`/itens/${alerta.item.id}`} className="block truncate text-sm hover:text-destaque">{alerta.item.nome}</Link>
@@ -380,8 +392,10 @@ function CardDisparado({ alerta }: { alerta: Alerta }) {
         </Vitrine>
       </Link>
       <div className="flex flex-1 flex-col gap-4 p-4">
-        <div>
-          <Link to={`/itens/${alerta.item.id}`} className="block truncate text-sm hover:text-destaque">{alerta.item.nome}</Link>
+        <div className="relative">
+          {/* Os chaveiros mini pendem da borda de baixo da vitrine, ao lado do nome. */}
+          <ChaveirosDoItem item={alerta.item} tamanho="mini" direita="0" className="-top-4!" />
+          <Link to={`/itens/${alerta.item.id}`} className="block truncate pr-24 text-sm hover:text-destaque">{alerta.item.nome}</Link>
           <p className="mt-3 text-xs text-suave">{caiu ? t("Caiu para", "Dropped to") : t("Subiu para", "Rose to")}</p>
           <p className={`font-mono text-4xl leading-none ${caiu ? "text-destaque" : "text-texto"}`}>
             {alerta.preco_disparo !== null ? formatarPreco(alerta.preco_disparo) : "—"}

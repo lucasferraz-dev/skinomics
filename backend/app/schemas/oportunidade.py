@@ -10,6 +10,7 @@ from app.servicos.risco_oportunidade import NivelRisco
 class Oportunidade(BaseModel):
     posicao: int
     item_id: int
+    appid: int = Field(description="Jogo do item na Steam (440 = TF2).")
     nome: str
     tipo: str | None
     icon_url: str | None
