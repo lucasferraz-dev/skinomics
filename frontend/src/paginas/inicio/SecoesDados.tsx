@@ -70,7 +70,7 @@ export function PreviaDaPlataforma() {
                       {item?.preco_atual != null ? formatarPreco(item.preco_atual) : "—"}
                     </span>
                     <Variacao valor={item?.variacao_7d} sufixo="7d" />
-                    <span className="ml-auto hidden font-mono text-[11px] text-apagado sm:inline">90 dias</span>
+                    <span className="ml-auto hidden font-mono text-[11px] text-apagado sm:inline">{t("90 dias", "90 days")}</span>
                   </div>
                   {pontos ? <GraficoHistorico pontos={pontos} altura={260} /> : <div className="h-[260px]"><Carregando /></div>}
                 </div>

@@ -1,3 +1,4 @@
+import { t } from "../lib/idioma";
 import type { HTMLAttributes, ReactNode } from "react";
 
 import { formatarVariacao } from "../lib/formato";
@@ -53,7 +54,7 @@ export function Painel({ children, className = "", ...resto }: { children: React
   );
 }
 
-export function Carregando({ texto = "Carregando…" }: { texto?: string }) {
+export function Carregando({ texto = t("Carregando…", "Loading…") }: { texto?: string }) {
   return <p className="animate-pulse p-8 text-center font-mono text-xs text-apagado">{texto}</p>;
 }
 

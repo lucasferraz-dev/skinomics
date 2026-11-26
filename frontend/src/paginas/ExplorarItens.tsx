@@ -223,8 +223,10 @@ export function ExplorarItens() {
       </section>
 
       <p className="text-xs text-apagado">
-        Preços em dólar (US$) do Mercado da Comunidade Steam, um ponto por dia. Variação e volume contam os
-        últimos 7 dias com preço de cada item. As medalhas marcam os destaques da semana.
+        {t(
+          "Preços em dólar (US$) do Mercado da Comunidade Steam, um ponto por dia. Variação e volume contam os últimos 7 dias com preço de cada item. As medalhas marcam os destaques da semana.",
+          "Prices in US dollars from the Steam Community Market, one point per day. Change and volume count each item's last 7 days with a price. Medals mark the week's highlights.",
+        )}
       </p>
 
       <MascotesFixos falas={falas} />
