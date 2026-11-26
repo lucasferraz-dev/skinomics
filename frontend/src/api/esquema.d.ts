@@ -540,6 +540,11 @@ export interface components {
             posicao: number;
             /** Item Id */
             item_id: number;
+            /**
+             * Appid
+             * @description Jogo do item na Steam (440 = TF2).
+             */
+            appid: number;
             /** Nome */
             nome: string;
             /** Tipo */

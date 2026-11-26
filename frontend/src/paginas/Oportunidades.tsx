@@ -1,8 +1,10 @@
+import { useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import type { HorizontePrevisao } from "../api/itens";
 import { type Oportunidade, type RankingOportunidades, useOportunidades } from "../api/oportunidades";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo } from "../componentes/Basicos";
+import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 import { categoriaDoItem } from "../componentes/chaveiro/temas";
 import { analiseDasOportunidades, margemDepoisDaTaxa } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
@@ -108,7 +110,8 @@ export function Oportunidades() {
                 <Rotulo destaque>{t(`Cenário de ${horizonte} dias`, `${horizonte}-day scenario`)}</Rotulo>
                 <h2 className="text-3xl leading-tight titulo sm:text-4xl">{t("As maiores margens", "The biggest margins")}</h2>
               </div>
-              <div className="grid gap-4 md:grid-cols-3 md:items-end">
+              {/* md:pb: espaço para os chaveiros que pendem embaixo das vitrines (só com as três lado a lado). */}
+              <div className="grid gap-4 md:grid-cols-3 md:items-end md:pb-24">
                 {podio.map((item) => (
                   <VitrineOportunidade key={item.item_id} item={item} horizonte={horizonte} />
                 ))}
@@ -212,68 +215,74 @@ function VitrineOportunidade({ item, horizonte }: { item: Oportunidade; horizont
   const primeiro = item.posicao === 1;
   const liquida = margemDepoisDaTaxa(item.margem_estimada);
   const categoria = categoriaDoItem(item);
+  const card = useRef<HTMLAnchorElement>(null);
 
   return (
-    <Link
-      to={`/itens/${item.item_id}?horizonte=${horizonte}`}
-      data-poleiro
-      className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-painel transition-colors hover:border-destaque/50 ${
-        primeiro ? "border-destaque/40 md:order-2" : item.posicao === 2 ? "border-borda md:order-1" : "border-borda md:order-3"
-      }`}
-    >
-      <div className="flex h-10 items-center justify-between border-b border-borda px-4">
-        <Rotulo destaque>{t(`${item.posicao}º lugar`, `#${item.posicao}`)}</Rotulo>
-        <span className="font-mono text-sm text-apagado transition-colors group-hover:text-destaque" aria-hidden>↗</span>
-      </div>
-
-      <div
-        className={`relative select-none overflow-hidden bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)] ${
-          primeiro ? "aspect-[4/3]" : "aspect-[16/10]"
+    // Os chaveiros ficam fora do link: arrastar um deles não pode abrir o item ao soltar.
+    <div className={`relative min-w-0 ${primeiro ? "md:order-2" : item.posicao === 2 ? "md:order-1" : "md:order-3"}`}>
+      <Link
+        ref={card}
+        to={`/itens/${item.item_id}?horizonte=${horizonte}`}
+        data-poleiro
+        className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-painel transition-colors hover:border-destaque/50 ${
+          primeiro ? "border-destaque/40" : "border-borda"
         }`}
       >
-        <div className="absolute top-1/4 left-1/2 size-40 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
-        {item.icon_url ? (
-          <img
-            src={`${item.icon_url}/256fx256f`}
-            alt=""
-            draggable={false}
-            className="absolute top-1/2 left-1/2 w-[46%] -translate-x-1/2 -translate-y-1/2 -rotate-12 drop-shadow-[0_18px_30px_rgba(0,0,0,0.7)] transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-6"
-          />
-        ) : (
-          <span className="absolute inset-0 grid place-items-center font-mono text-4xl text-apagado">{item.nome.slice(0, 2).toUpperCase()}</span>
-        )}
-        {primeiro && <Medalha tipo="margem" className="absolute top-2 left-4 z-10 -rotate-[8deg]" />}
-        {categoria && (
-          <span className="absolute top-3 right-3 rounded-md border border-borda bg-painel/80 px-2 py-1 font-mono text-[11px] text-suave backdrop-blur">
-            {categoria.nome}
-          </span>
-        )}
-      </div>
+        <div className="flex h-10 items-center justify-between border-b border-borda px-4">
+          <Rotulo destaque>{t(`${item.posicao}º lugar`, `#${item.posicao}`)}</Rotulo>
+          <span className="font-mono text-sm text-apagado transition-colors group-hover:text-destaque" aria-hidden>↗</span>
+        </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
-        <p className="line-clamp-2 text-base leading-snug">{item.nome}</p>
-        <div>
-          <p className={`font-mono leading-none text-destaque ${primeiro ? "text-5xl" : "text-4xl"}`}>{formatarVariacao(item.margem_estimada)}</p>
-          <p className="mt-2 font-mono text-[11px] text-suave">
-            {liquida > 0
-              ? t(`${formatarVariacao(liquida)} depois da taxa da Steam`, `${formatarVariacao(liquida)} after the Steam fee`)
-              : t("a taxa da Steam come a margem", "the Steam fee eats the margin")}
-          </p>
+        <div
+          className={`relative select-none overflow-hidden bg-[radial-gradient(ellipse_at_60%_40%,#1b2119,var(--color-fundo)_70%)] ${
+            primeiro ? "aspect-[4/3]" : "aspect-[16/10]"
+          }`}
+        >
+          <div className="absolute top-1/4 left-1/2 size-40 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" aria-hidden />
+          {item.icon_url ? (
+            <img
+              src={`${item.icon_url}/256fx256f`}
+              alt=""
+              draggable={false}
+              className="absolute top-1/2 left-1/2 w-[46%] -translate-x-1/2 -translate-y-1/2 -rotate-12 drop-shadow-[0_18px_30px_rgba(0,0,0,0.7)] transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-6"
+            />
+          ) : (
+            <span className="absolute inset-0 grid place-items-center font-mono text-4xl text-apagado">{item.nome.slice(0, 2).toUpperCase()}</span>
+          )}
+          {primeiro && <Medalha tipo="margem" className="absolute top-2 left-4 z-10 -rotate-[8deg]" />}
+          {categoria && (
+            <span className="absolute top-3 right-3 rounded-md border border-borda bg-painel/80 px-2 py-1 font-mono text-[11px] text-suave backdrop-blur">
+              {categoria.nome}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2 font-mono text-sm">
-          <span>{formatarPreco(item.preco_atual)}</span>
-          <span className="text-apagado" aria-hidden>→</span>
-          <span className="text-destaque">{formatarPreco(item.preco_previsto)}</span>
-          <span className="sr-only">{t("preço de hoje e média prevista", "today's price and predicted average")}</span>
+
+        <div className="flex flex-1 flex-col gap-4 p-5">
+          <p className="line-clamp-2 text-base leading-snug">{item.nome}</p>
+          <div>
+            <p className={`font-mono leading-none text-destaque ${primeiro ? "text-5xl" : "text-4xl"}`}>{formatarVariacao(item.margem_estimada)}</p>
+            <p className="mt-2 font-mono text-[11px] text-suave">
+              {liquida > 0
+                ? t(`${formatarVariacao(liquida)} depois da taxa da Steam`, `${formatarVariacao(liquida)} after the Steam fee`)
+                : t("a taxa da Steam come a margem", "the Steam fee eats the margin")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-sm">
+            <span>{formatarPreco(item.preco_atual)}</span>
+            <span className="text-apagado" aria-hidden>→</span>
+            <span className="text-destaque">{formatarPreco(item.preco_previsto)}</span>
+            <span className="sr-only">{t("preço de hoje e média prevista", "today's price and predicted average")}</span>
+          </div>
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-borda pt-3">
+            <SeloRisco risco={item.risco} titulo={item.motivos_risco.join(" ")} />
+            <span className="font-mono text-[11px] text-apagado">
+              {formatarDiaMes(item.janela_inicio)} a {formatarDiaMes(item.janela_fim)}
+            </span>
+          </div>
         </div>
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-borda pt-3">
-          <SeloRisco risco={item.risco} titulo={item.motivos_risco.join(" ")} />
-          <span className="font-mono text-[11px] text-apagado">
-            {formatarDiaMes(item.janela_inicio)} a {formatarDiaMes(item.janela_fim)}
-          </span>
-        </div>
-      </div>
-    </Link>
+      </Link>
+      <ChaveirosDoItem item={{ ...item, id: item.item_id }} parede={card} direita="1.5rem" className="hidden md:block" />
+    </div>
   );
 }
 
@@ -323,7 +332,9 @@ function LinhaRanking({ item, horizonte }: { item: Oportunidade; horizonte: Hori
     <li className="group relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 px-4 py-4 transition-colors hover:bg-painel-alto md:grid-cols-[3rem_minmax(0,1fr)_7rem_7rem_7rem_10rem] md:items-center md:gap-4">
       <span className="font-mono text-sm text-apagado">{String(item.posicao).padStart(2, "0")}</span>
 
-      <div className="flex min-w-0 items-center gap-3">
+      {/* sm:pr: o nome não passa por baixo dos chaveiros mini, que pendem do topo desta coluna. */}
+      <div className="relative flex min-w-0 items-center gap-3 sm:pr-24">
+        <ChaveirosDoItem item={{ ...item, id: item.item_id }} tamanho="mini" direita="0.25rem" className="-top-4! hidden sm:block" />
         <IconeItem url={item.icon_url} nome={item.nome} />
         <div className="min-w-0">
           {/* A linha inteira é clicável, menos o risco (que abre os motivos). */}

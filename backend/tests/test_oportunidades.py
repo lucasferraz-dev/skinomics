@@ -171,6 +171,7 @@ def test_horizontes_e_versoes_ativos_independentes(cliente, sessao, mercado, hor
     data = cliente.get(f"/oportunidades?horizonte={horizonte}").json()
     assert data["modelo_versao"] == modelo.id
     assert data["itens"][0]["item_id"] == item.id
+    assert data["itens"][0]["appid"] == item.appid
     assert (
         data["itens"][0]["janela_inicio"]
         == (previsao.data_base + timedelta(days=horizonte - 2)).isoformat()
