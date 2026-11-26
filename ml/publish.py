@@ -1,4 +1,4 @@
-"""Publicação dos três horizontes no banco da API, usando artefatos já avaliados."""
+"""Publicação dos horizontes de um jogo no banco da API, usando artefatos já avaliados."""
 
 import argparse
 import json
@@ -11,22 +11,33 @@ from ml.database import artifact_root, database_engine, load_history
 from ml.predict import load_artifact, predict_history, run_batch
 from ml.registry import activate_models, active_model, register_model, sha256
 
+# Horizontes publicados de cada jogo. O CS2 não tem 30 dias: nenhum modelo ganhou do ingênuo.
+HORIZONTES = {440: {7, 15, 30}, 730: {7, 15}}
+
 
 def prepare(engine, paths):
     """Prévia sem escrita: valida artefatos e inferência antes de mudar o ambiente."""
     artifacts = {}
+    games = set()
     for path in paths:
         artifact = load_artifact(path)
+        games.add(artifact["config"].get("appid", 440))
         horizon = artifact["config"]["horizon"]
         if horizon in artifacts:
             raise ValueError(f"Artefato repetido para {horizon} dias.")
         if not artifact.get("version_id") or not artifact.get("interval"):
             raise ValueError("Use versões identificadas com intervalo calibrado de 80%.")
         artifacts[horizon] = (Path(path), artifact)
-    if set(artifacts) != {7, 15, 30}:
-        raise ValueError("Informe exatamente um artefato para cada horizonte: 7, 15 e 30 dias.")
+    if len(games) != 1:
+        raise ValueError("Publique um jogo por vez: os artefatos são de jogos diferentes.")
+    appid = games.pop()
+    expected = HORIZONTES.get(appid)
+    if set(artifacts) != expected:
+        dias = sorted(expected or ())
+        dias = ", ".join(str(h) for h in dias[:-1]) + f" e {dias[-1]}" if dias else "?"
+        raise ValueError(f"Informe exatamente um artefato para cada horizonte: {dias} dias.")
     with engine.connect() as connection:
-        history = load_history(connection)
+        history = load_history(connection, appid=appid)
         active_names = set(history.loc[history["ativo"], "market_hash_name"])
         plan = []
         for horizon, (path, artifact) in sorted(artifacts.items()):
@@ -34,9 +45,10 @@ def prepare(engine, paths):
             forecast = forecast[forecast["market_hash_name"].isin(active_names)]
             if forecast.empty:
                 raise ValueError(f"Sem itens elegíveis para {horizon} dias.")
-            previous = active_model(connection, horizon)
+            previous = active_model(connection, horizon, appid)
             plan.append(
                 {
+                    "appid": appid,
                     "horizon": horizon,
                     "version": artifact["version_id"],
                     "previous": previous["id"] if previous else None,
@@ -59,10 +71,11 @@ def publish(engine, plan, *, reason, root=None):
         if sha256(entry["artifact"]) != entry["sha256"]:
             raise ValueError("Artefato alterado após a prévia; gere uma nova prévia.")
     versions = {}
+    appid = plan[0]["appid"]
     for entry in plan:
         horizon = entry["horizon"]
         version = register_model(engine, entry["artifact"], root=root)
-        result = run_batch(engine, horizon=horizon, version_id=version, root=root)
+        result = run_batch(engine, horizon=horizon, appid=appid, version_id=version, root=root)
         if result is None:
             raise ValueError(f"Há outro lote de {horizon} dias em execução; tente novamente.")
         versions[horizon] = version
@@ -72,6 +85,7 @@ def publish(engine, plan, *, reason, root=None):
         versions,
         expected={e["horizon"]: e["previous"] for e in plan},
         reason=reason,
+        appid=appid,
         root=root,
     )
     return versions

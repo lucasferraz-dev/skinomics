@@ -2,8 +2,9 @@ from pydantic import BaseModel, Field
 
 
 class ModeloAtivoResumo(BaseModel):
-    """Modelo publicado num horizonte, com as métricas do seu teste temporal."""
+    """Modelo publicado de um jogo num horizonte, com as métricas do seu teste temporal."""
 
+    appid: int = Field(description="Jogo do modelo na Steam (440 = TF2, 730 = CS2).")
     horizonte: int
     versao: str
     nome: str

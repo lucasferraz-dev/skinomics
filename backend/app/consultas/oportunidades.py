@@ -6,6 +6,7 @@ from sqlalchemy import Date, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
+from app.coleta.steam import TF2
 from app.models import Item, ModeloAtivo, ModeloVersao, PrecoDiario, Previsao
 from app.schemas.oportunidade import Oportunidade, RankingOportunidades
 from app.schemas.previsao import HorizontePrevisao
@@ -19,10 +20,16 @@ def listar_oportunidades(
     resposta = RankingOportunidades(
         itens=[], horizonte=horizonte, pagina=pagina, por_pagina=por_pagina
     )
+    # O ranking ainda é só do TF2; o de cada jogo vem com o filtro de jogo na página.
     modelo = sessao.scalar(
         select(ModeloVersao)
         .join(ModeloAtivo, ModeloAtivo.modelo_id == ModeloVersao.id)
-        .where(ModeloAtivo.horizonte == horizonte, ModeloVersao.horizonte == horizonte)
+        .where(
+            ModeloAtivo.appid == TF2,
+            ModeloAtivo.horizonte == horizonte,
+            ModeloVersao.appid == TF2,
+            ModeloVersao.horizonte == horizonte,
+        )
     )
     if modelo is None:
         resposta.motivo = "sem_modelo_ativo"
@@ -40,7 +47,7 @@ def listar_oportunidades(
     catalogo = (
         select(Item.id)
         .join(ultimo, ultimo.c.item_id == Item.id)
-        .where(Item.ativo.is_(True), Item.appid == 440)
+        .where(Item.ativo.is_(True), Item.appid == TF2)
     )
     total_catalogo = sessao.scalar(select(func.count()).select_from(catalogo.subquery())) or 0
     margem = (Previsao.preco_previsto / ultimo.c.preco - 1).label("margem")
@@ -55,7 +62,7 @@ def listar_oportunidades(
         )
         .where(
             Item.ativo.is_(True),
-            Item.appid == 440,
+            Item.appid == TF2,
             func.abs(Previsao.preco_base - ultimo.c.preco) <= Decimal("0.00000001"),
         )
     )

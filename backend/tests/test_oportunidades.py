@@ -188,7 +188,7 @@ def test_horizontes_e_versoes_ativos_independentes(cliente, sessao, mercado, hor
     )
     sessao.add(nova)
     sessao.flush()
-    sessao.get(ModeloAtivo, horizonte).modelo_id = nova.id
+    sessao.get(ModeloAtivo, (440, horizonte)).modelo_id = nova.id
     sessao.flush()
     data = cliente.get(f"/oportunidades?horizonte={horizonte}").json()
     assert data["modelo_versao"] == nova.id

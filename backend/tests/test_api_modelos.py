@@ -52,6 +52,7 @@ def test_devolve_metricas_do_modelo_da_versao_ativa(sessao: Session, cliente: Te
     resposta = cliente.get("/modelos/ativos").json()
 
     assert [m["horizonte"] for m in resposta] == [7, 30]
+    assert {m["appid"] for m in resposta} == {440}
     sete = resposta[0]
     assert sete["versao"] == "v7"
     assert sete["mape_pct"] == 8.58

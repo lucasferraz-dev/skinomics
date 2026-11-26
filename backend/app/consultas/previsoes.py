@@ -3,15 +3,22 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ModeloAtivo, ModeloVersao, PrecoDiario, Previsao
+from app.models import Item, ModeloAtivo, ModeloVersao, PrecoDiario, Previsao
 from app.schemas.previsao import PrevisaoItem
 
 
 def buscar_previsao(sessao: Session, item_id: int, horizonte: int) -> PrevisaoItem:
+    # Cada jogo tem o seu modelo: a previsão de um item de CS2 vem do modelo do CS2.
+    appid = sessao.scalar(select(Item.appid).where(Item.id == item_id))
     modelo = sessao.scalar(
         select(ModeloVersao)
         .join(ModeloAtivo, ModeloAtivo.modelo_id == ModeloVersao.id)
-        .where(ModeloAtivo.horizonte == horizonte, ModeloVersao.horizonte == horizonte)
+        .where(
+            ModeloAtivo.appid == appid,
+            ModeloAtivo.horizonte == horizonte,
+            ModeloVersao.appid == appid,
+            ModeloVersao.horizonte == horizonte,
+        )
     )
     resposta = PrevisaoItem(item_id=item_id, horizonte=horizonte, disponivel=False)
     if modelo is None:
