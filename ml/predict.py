@@ -31,7 +31,7 @@ def load_artifact(path):
 def predict_history(artifact, history):
     config = TrainingConfig(**artifact["config"])
     data = clean_history(history)
-    features = build_features(data)
+    features = build_features(data, config.appid)
     if list(features.columns) != artifact["features"]:
         raise ValueError("Features do artefato incompatíveis com o código de inferência.")
     data = data.drop(columns="is_filled").join(features)
@@ -50,10 +50,11 @@ def predict_history(artifact, history):
     return add_intervals(forecast, artifact.get("interval"))
 
 
-def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=None):
-    """Publica todo o lote em uma transação e registra erros sem perder o lote anterior."""
+def run_batch(engine, *, horizon=7, appid=440, root=None, only_pending=False, version_id=None):
+    """Publica o lote de um jogo numa transação; com erro, o lote anterior continua valendo."""
+    lock = appid * 1000 + horizon
     with engine.connect() as connection:
-        locked = connection.scalar(text("SELECT pg_try_advisory_lock(442, :h)"), {"h": horizon})
+        locked = connection.scalar(text("SELECT pg_try_advisory_lock(442, :k)"), {"k": lock})
         connection.commit()
         if not locked:
             return None
@@ -61,20 +62,23 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=No
         try:
             record = (
                 connection.execute(
-                    text("SELECT * FROM modelo_versao WHERE id = :id AND horizonte = :h"),
-                    {"id": version_id, "h": horizon},
+                    text(
+                        "SELECT * FROM modelo_versao WHERE id = :id AND horizonte = :h"
+                        " AND appid = :appid"
+                    ),
+                    {"id": version_id, "h": horizon, "appid": appid},
                 )
                 .mappings()
                 .first()
                 if version_id
-                else active_model(connection, horizon)
+                else active_model(connection, horizon, appid)
             )
             if record is None:
                 if version_id:
-                    raise ValueError("Versão não cadastrada para o horizonte informado.")
+                    raise ValueError("Versão não cadastrada para o jogo e o horizonte informados.")
                 if only_pending:
                     return None
-                raise ValueError(f"Não há modelo ativo para {horizon} dias.")
+                raise ValueError(f"Não há modelo ativo do jogo {appid} para {horizon} dias.")
             collection_id = latest_collection(connection)
             cutoff = closed_day()
             done = connection.scalar(
@@ -91,9 +95,10 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=No
                     UPDATE execucao_previsao e SET status = 'falha', finalizada_em = now(),
                         erro = 'Processo interrompido antes de concluir o lote.'
                     FROM modelo_versao v WHERE e.modelo_id = v.id
-                      AND v.horizonte = :horizon AND e.status = 'em_andamento'
+                      AND v.horizonte = :horizon AND v.appid = :appid
+                      AND e.status = 'em_andamento'
                 """),
-                {"horizon": horizon},
+                {"horizon": horizon, "appid": appid},
             )
             if only_pending and done:
                 connection.commit()
@@ -113,10 +118,12 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=No
             )
             connection.commit()
             # Uma consulta lê o histórico inteiro de um único snapshot do PostgreSQL.
-            history = load_history(connection, cutoff)
+            history = load_history(connection, cutoff, appid)
             artifact = load_artifact(resolve_artifact(record, root or artifact_root()))
             if artifact["config"]["horizon"] != horizon:
                 raise ValueError("Horizonte do artefato diferente do cadastro.")
+            if artifact["config"].get("appid", 440) != appid:
+                raise ValueError("Jogo do artefato diferente do cadastro.")
             forecast = predict_history(artifact, history)
             catalog = history.loc[
                 history["ativo"], ["item_id", "market_hash_name"]
@@ -188,13 +195,14 @@ def run_batch(engine, *, horizon=7, root=None, only_pending=False, version_id=No
             raise
         finally:
             connection.rollback()
-            connection.execute(text("SELECT pg_advisory_unlock(442, :h)"), {"h": horizon})
+            connection.execute(text("SELECT pg_advisory_unlock(442, :k)"), {"k": lock})
             connection.commit()
 
 
 def main():
     parser = argparse.ArgumentParser(description="Gera previsões com um modelo já treinado.")
     parser.add_argument("--horizon", type=int, default=7)
+    parser.add_argument("--appid", type=int, default=440, help="Jogo: 440 (TF2) ou 730 (CS2)")
     parser.add_argument("--model-version", help="Prepara o lote de uma versão sem ativá-la")
     parser.add_argument("--data", type=Path, help="CSV; se omitido, publica a partir do banco")
     parser.add_argument("--artifact", type=Path, help="Artefato local para previsão via CSV")
@@ -213,7 +221,14 @@ def main():
         else:
             engine = database_engine()
             try:
-                print(run_batch(engine, horizon=args.horizon, version_id=args.model_version))
+                print(
+                    run_batch(
+                        engine,
+                        horizon=args.horizon,
+                        appid=args.appid,
+                        version_id=args.model_version,
+                    )
+                )
             finally:
                 engine.dispose()
     except (ValueError, OSError) as error:

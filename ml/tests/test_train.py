@@ -3,6 +3,7 @@
 import json
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import joblib
@@ -16,6 +17,7 @@ from threadpoolctl import threadpool_limits
 from ml import train
 from ml.models import EMABlend, RatioBaseline, get_models
 from ml.train import (
+    CS2,
     KEY_ITEM,
     TrainingConfig,
     build_features,
@@ -100,6 +102,28 @@ def test_features_do_not_use_future_prices_or_targets(csv_path):
     assert "target_logret" not in original
     assert "days_since_first_obs" not in original
     assert "market_hash_name" not in original
+
+
+def test_cs2_features_have_no_key(history):
+    """No CS2 não existe a Key: a coluna sairia vazia e o HGB não treina com ela."""
+    cs2 = history[history["market_hash_name"] != KEY_ITEM]
+    features = build_features(load_data(cs2), CS2)
+    assert "key_ret_7" not in features
+    assert len(features.columns) == 34
+    assert features["mkt_ret_7"].notna().any()
+
+
+def test_cs2_trains_and_records_the_game(tmp_path, history, config):
+    cs2 = history[history["market_hash_name"] != KEY_ITEM]
+    metadata = train.train_and_save(cs2, tmp_path, replace(config, appid=CS2))
+    assert metadata["config"]["appid"] == CS2
+    assert "key_ret_7" not in metadata["features"]
+    assert metadata["data_path"] == "postgresql:730"
+
+
+def test_config_rejects_unknown_game():
+    with pytest.raises(ValueError, match="appid"):
+        TrainingConfig(appid=570)
 
 
 def test_market_features_are_aligned_by_date(csv_path):

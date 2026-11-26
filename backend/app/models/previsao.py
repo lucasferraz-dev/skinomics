@@ -1,9 +1,19 @@
-"""Registro de modelos, publicação por horizonte e resultados de inferência."""
+"""Registro de modelos, publicação por jogo e horizonte e resultados de inferência."""
 
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -17,6 +27,7 @@ class ModeloVersao(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    appid: Mapped[int] = mapped_column(default=440, server_default="440")
     nome: Mapped[str] = mapped_column(String(100))
     horizonte: Mapped[int]
     meia_janela: Mapped[int]
@@ -27,17 +38,22 @@ class ModeloVersao(Base):
 
 
 class ModeloAtivo(Base):
+    """O modelo em uso de cada jogo em cada horizonte."""
+
     __tablename__ = "modelo_ativo"
 
+    appid: Mapped[int] = mapped_column(primary_key=True, default=440, server_default="440")
     horizonte: Mapped[int] = mapped_column(primary_key=True)
     modelo_id: Mapped[str] = mapped_column(ForeignKey("modelo_versao.id"))
 
 
 class AtivacaoModelo(Base):
     __tablename__ = "ativacao_modelo"
+    __table_args__ = (Index("ix_ativacao_modelo_appid_horizonte", "appid", "horizonte"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    horizonte: Mapped[int] = mapped_column(index=True)
+    appid: Mapped[int] = mapped_column(default=440, server_default="440")
+    horizonte: Mapped[int]
     modelo_id: Mapped[str] = mapped_column(ForeignKey("modelo_versao.id"))
     anterior_id: Mapped[str | None] = mapped_column(ForeignKey("modelo_versao.id"))
     motivo: Mapped[str] = mapped_column(Text)

@@ -61,11 +61,13 @@ def register_model(engine, path, root=None):
         connection.execute(
             text("""
                 INSERT INTO modelo_versao
-                    (id, nome, horizonte, meia_janela, artefato, sha256, metadados)
-                VALUES (:id, :name, :horizon, :window, :artifact, :hash, CAST(:metadata AS JSON))
+                    (id, appid, nome, horizonte, meia_janela, artefato, sha256, metadados)
+                VALUES (:id, :appid, :name, :horizon, :window, :artifact, :hash,
+                        CAST(:metadata AS JSON))
             """),
             {
                 "id": version_id,
+                "appid": config.get("appid", 440),
                 "name": metadata["model_name"],
                 "horizon": config["horizon"],
                 "window": config["target_half_window"],
@@ -77,48 +79,60 @@ def register_model(engine, path, root=None):
     return version_id
 
 
-def active_model(connection, horizon):
+def active_model(connection, horizon, appid=440):
     return (
         connection.execute(
             text("""
             SELECT v.* FROM modelo_ativo a JOIN modelo_versao v ON v.id = a.modelo_id
-            WHERE a.horizonte = :horizon AND v.horizonte = :horizon
+            WHERE a.appid = :appid AND a.horizonte = :horizon
+              AND v.appid = :appid AND v.horizonte = :horizon
         """),
-            {"horizon": horizon},
+            {"horizon": horizon, "appid": appid},
         )
         .mappings()
         .first()
     )
 
 
-def activate_model(engine, version_id=None, *, horizon=7, rollback=False, reason, root=None):
+def activate_model(
+    engine, version_id=None, *, horizon=7, appid=440, rollback=False, reason, root=None
+):
     with engine.begin() as connection:
         return _activate_model(
-            connection, version_id, horizon=horizon, rollback=rollback, reason=reason, root=root
+            connection,
+            version_id,
+            horizon=horizon,
+            appid=appid,
+            rollback=rollback,
+            reason=reason,
+            root=root,
         )
 
 
-def _activate_model(connection, version_id=None, *, horizon=7, rollback=False, reason, root=None):
+def _activate_model(
+    connection, version_id=None, *, horizon=7, appid=440, rollback=False, reason, root=None
+):
     from ml.predict import load_artifact
 
     if not reason.strip():
         raise ValueError("Informe o motivo da promoção ou reversão.")
     if not rollback:
-        horizon = connection.scalar(
-            text("SELECT horizonte FROM modelo_versao WHERE id = :id"), {"id": version_id}
-        )
-        if horizon is None:
+        found = connection.execute(
+            text("SELECT appid, horizonte FROM modelo_versao WHERE id = :id"), {"id": version_id}
+        ).first()
+        if found is None:
             raise ValueError("Versão não cadastrada.")
-    # Serializa as mudanças no mesmo horizonte, inclusive a leitura do anterior.
-    connection.execute(text("SELECT pg_advisory_xact_lock(441, :h)"), {"h": horizon})
-    previous = active_model(connection, horizon)
+        appid, horizon = found
+    # Serializa as mudanças no mesmo jogo e horizonte, inclusive a leitura do anterior.
+    connection.execute(text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": appid * 1000 + horizon})
+    previous = active_model(connection, horizon, appid)
     if rollback:
         version_id = connection.scalar(
             text("""
-            SELECT anterior_id FROM ativacao_modelo WHERE horizonte = :h
+            SELECT anterior_id FROM ativacao_modelo WHERE appid = :appid AND horizonte = :h
             ORDER BY id DESC LIMIT 1
         """),
-            {"h": horizon},
+            {"h": horizon, "appid": appid},
         )
         if version_id is None:
             raise ValueError("Não existe uma versão anterior para este horizonte.")
@@ -132,17 +146,18 @@ def _activate_model(connection, version_id=None, *, horizon=7, rollback=False, r
         return version_id
     connection.execute(
         text("""
-        INSERT INTO modelo_ativo (horizonte, modelo_id) VALUES (:h, :id)
-        ON CONFLICT (horizonte) DO UPDATE SET modelo_id = EXCLUDED.modelo_id
+        INSERT INTO modelo_ativo (appid, horizonte, modelo_id) VALUES (:appid, :h, :id)
+        ON CONFLICT (appid, horizonte) DO UPDATE SET modelo_id = EXCLUDED.modelo_id
     """),
-        {"h": horizon, "id": version_id},
+        {"appid": appid, "h": horizon, "id": version_id},
     )
     connection.execute(
         text("""
-        INSERT INTO ativacao_modelo (horizonte, modelo_id, anterior_id, motivo)
-        VALUES (:h, :id, :previous, :reason)
+        INSERT INTO ativacao_modelo (appid, horizonte, modelo_id, anterior_id, motivo)
+        VALUES (:appid, :h, :id, :previous, :reason)
     """),
         {
+            "appid": appid,
             "h": horizon,
             "id": version_id,
             "previous": previous["id"] if previous else None,
@@ -152,13 +167,15 @@ def _activate_model(connection, version_id=None, *, horizon=7, rollback=False, r
     return version_id
 
 
-def activate_models(engine, versions, *, expected, reason, root=None):
-    """Troca os horizontes em uma transação, apenas após preparar todos os lotes."""
+def activate_models(engine, versions, *, expected, reason, appid=440, root=None):
+    """Troca os horizontes de um jogo em uma transação, só após preparar todos os lotes."""
     with engine.begin() as connection:
         for horizon in sorted(versions):
-            connection.execute(text("SELECT pg_advisory_xact_lock(441, :h)"), {"h": horizon})
+            connection.execute(
+                text("SELECT pg_advisory_xact_lock(441, :k)"), {"k": appid * 1000 + horizon}
+            )
         for horizon, version_id in sorted(versions.items()):
-            current = active_model(connection, horizon)
+            current = active_model(connection, horizon, appid)
             if (current["id"] if current else None) != expected[horizon]:
                 raise ValueError(
                     "O modelo ativo mudou durante a preparação; revise e tente novamente."
@@ -166,9 +183,10 @@ def activate_models(engine, versions, *, expected, reason, root=None):
             ready = connection.scalar(
                 text("""
                     SELECT count(*) FROM previsao p JOIN modelo_versao v ON v.id = p.modelo_id
-                    WHERE v.id = :id AND v.horizonte = :h AND p.nivel_confianca = 0.8
+                    WHERE v.id = :id AND v.horizonte = :h AND v.appid = :appid
+                      AND p.nivel_confianca = 0.8
                 """),
-                {"id": version_id, "h": horizon},
+                {"id": version_id, "h": horizon, "appid": appid},
             )
             if not ready:
                 raise ValueError(f"Versão sem lote calibrado preparado para {horizon} dias.")
@@ -187,6 +205,7 @@ def main():
     activate.add_argument("--reason", required=True)
     rollback = commands.add_parser("rollback")
     rollback.add_argument("--horizon", type=int, default=7)
+    rollback.add_argument("--appid", type=int, default=440, help="440 (TF2) ou 730 (CS2)")
     rollback.add_argument("--reason", required=True)
     listing = commands.add_parser("list", help="Lista versões e métricas do modelo selecionado")
     listing.add_argument("--horizon", type=int)
@@ -208,6 +227,7 @@ def main():
                 engine,
                 getattr(args, "version", None),
                 horizon=getattr(args, "horizon", 7),
+                appid=getattr(args, "appid", 440),
                 rollback=args.command == "rollback",
                 reason=args.reason,
             )

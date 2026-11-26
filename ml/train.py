@@ -36,6 +36,7 @@ from ml.models import EMA, NAIVE, check_lightgbm_device, get_models, lightgbm_de
 
 ML_DIR = Path(__file__).resolve().parent
 KEY_ITEM = "Mann Co. Supply Crate Key"
+TF2, CS2 = 440, 730
 PRICE_ACCURACY_TOLERANCE = 0.15
 REQUIRED_COLUMNS = (
     "observation_date",
@@ -65,6 +66,8 @@ class TrainingConfig:
     device: str = "cpu"
     gpu_platform_id: int = -1
     gpu_device_id: int = -1
+    # Jogo do modelo na Steam. Artefatos antigos não têm o campo: são do TF2.
+    appid: int = TF2
 
     def __post_init__(self):
         lightgbm_device_params(self.device, self.gpu_platform_id, self.gpu_device_id)
@@ -81,6 +84,8 @@ class TrainingConfig:
             raise ValueError("ema_weight deve estar entre 0 e 1.")
         if self.n_jobs == 0:
             raise ValueError("n_jobs não pode ser zero.")
+        if self.appid not in (TF2, CS2):
+            raise ValueError("appid deve ser 440 (TF2) ou 730 (CS2).")
         if self.start_date is not None and pd.isna(pd.Timestamp(self.start_date)):
             raise ValueError("start_date deve ser uma data válida.")
 
@@ -156,8 +161,12 @@ def build_targets(data: pd.DataFrame, config: TrainingConfig) -> pd.DataFrame:
     return data
 
 
-def build_features(data: pd.DataFrame) -> pd.DataFrame:
-    """As 35 features do notebook, calculadas apenas com dados até o dia-base."""
+def build_features(data: pd.DataFrame, appid: int = TF2) -> pd.DataFrame:
+    """As 35 features do notebook, calculadas apenas com dados até o dia-base.
+
+    Fora do TF2 não há Key: o retorno dela sai (a coluna viria toda vazia) e o termômetro do
+    mercado é só a mediana dos itens do próprio jogo.
+    """
     item = data["market_hash_name"]
     price = data["price"]
     log_price = np.log(price)
@@ -204,14 +213,15 @@ def build_features(data: pd.DataFrame) -> pd.DataFrame:
     market = features.loc[~is_key, ["ret_1", "ret_7"]].groupby(dates[~is_key]).median()
     features["mkt_ret_1"] = dates.map(market["ret_1"])
     features["mkt_ret_7"] = dates.map(market["ret_7"])
-    features["key_ret_7"] = dates.map(features.loc[is_key, "ret_7"].set_axis(dates[is_key]))
+    if appid == TF2:
+        features["key_ret_7"] = dates.map(features.loc[is_key, "ret_7"].set_axis(dates[is_key]))
     features["rel_to_mkt_7"] = features["ret_7"] - features["mkt_ret_7"]
     return features.replace([np.inf, -np.inf], np.nan)
 
 
 def prepare_data(csv_path: Path, config: TrainingConfig):
     data = build_targets(load_data(csv_path), config)
-    features = build_features(data)
+    features = build_features(data, config.appid)
     data = data.drop(columns="is_filled").join(features)
     # Inclui itens novos na previsão e os sinaliza, como no notebook.
     latest = data.groupby("market_hash_name").tail(1).copy()
@@ -469,7 +479,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
         "config": asdict(config),
         "target": "log(media_preco_t+H-W_a_t+H+W / preco_atual)",
         "selection_metric": "ganho médio de MAE de log-retorno vs ingênuo no walk-forward",
-        "data_path": "postgresql:TF2"
+        "data_path": f"postgresql:{config.appid}"
         if isinstance(csv_path, pd.DataFrame)
         else str(Path(csv_path).resolve()),
         "labeled_rows": len(labeled),
@@ -514,7 +524,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
 
 def main():
     defaults = TrainingConfig()
-    parser = argparse.ArgumentParser(description="Treina e compara previsores de preços de TF2.")
+    parser = argparse.ArgumentParser(description="Treina e compara previsores de preços.")
     parser.add_argument("--data", type=Path, default=ML_DIR / "data" / "tf2_historico.csv")
     parser.add_argument(
         "--database", action="store_true", help="Treina com o histórico do PostgreSQL"
@@ -560,6 +570,13 @@ def main():
         parser.add_argument(
             f"--{option.replace('_', '-')}", type=int, default=getattr(defaults, option)
         )
+    parser.add_argument(
+        "--appid",
+        type=int,
+        choices=(TF2, CS2),
+        default=defaults.appid,
+        help="Jogo: 440 (TF2, padrão) ou 730 (CS2); o CS2 só treina a partir do banco.",
+    )
     parser.add_argument("--target-clip", type=float, default=defaults.target_clip)
     parser.add_argument("--ema-weight", type=float, default=defaults.ema_weight)
     parser.add_argument(
@@ -609,7 +626,7 @@ def main():
                 engine = database_engine()
                 try:
                     with engine.connect() as connection:
-                        csv_path = load_history(connection)
+                        csv_path = load_history(connection, appid=config.appid)
                 finally:
                     engine.dispose()
             metadata = train_and_save(csv_path, output_dir, config)

@@ -484,6 +484,11 @@ export interface components {
          * @description Modelo publicado num horizonte, com as métricas do seu teste temporal.
          */
         ModeloAtivoResumo: {
+            /**
+             * Appid
+             * @description Jogo do modelo na Steam (440 = TF2, 730 = CS2).
+             */
+            appid: number;
             /** Horizonte */
             horizonte: number;
             /** Versao */

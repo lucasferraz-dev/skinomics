@@ -96,10 +96,11 @@ const COMPROMISSOS = [
 
 const percentual = () => new Intl.NumberFormat(localeAtual(), { maximumFractionDigits: 1 });
 
-/** Métricas do modelo de 7 dias em produção, lidas da API: mudam sozinhas a cada retreino. */
+/** Métricas do modelo de 7 dias do TF2 em produção, lidas da API: mudam sozinhas a cada retreino. */
 function TextoQualidade() {
   const { data, isError } = useModelosAtivos();
-  const sete = data?.find((modelo) => modelo.horizonte === 7);
+  // Sem appid (API publicada antes dos modelos por jogo), o modelo é o do TF2.
+  const sete = data?.find((modelo) => modelo.horizonte === 7 && (modelo.appid ?? 440) === 440);
   // Ex.: o site publicado antes da API com a rota de modelos.
   if (isError) return <>{t("As métricas do modelo em produção estão indisponíveis no momento.", "The production model metrics are unavailable right now.")}</>;
   if (!data) return <>{t("Carregando as métricas do modelo…", "Loading the model metrics…")}</>;

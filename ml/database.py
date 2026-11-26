@@ -28,8 +28,8 @@ def closed_day():
     return datetime.now(UTC).date() - timedelta(days=1)
 
 
-def load_history(connection, cutoff=None):
-    """Carrega todo o mercado TF2, inclusive a Key, para preservar as features globais.
+def load_history(connection, cutoff=None, appid=440):
+    """Carrega todo o mercado de um jogo (no TF2, inclusive a Key) para as features globais.
 
     Nunca recorta somente o item consultado nem trunca o histórico das EMAs/ATH/ATL.
     Dias parciais são descartados; preserva os preenchimentos registrados pela coleta.
@@ -41,16 +41,16 @@ def load_history(connection, cutoff=None):
                    p.data AS observation_date, p.preco AS price, p.volume,
                    p.preenchido AS is_filled, p.coletado_em AS scrape_timestamp_utc
             FROM item i JOIN preco_diario p ON p.item_id = i.id
-            WHERE i.appid = 440 AND p.data <= :cutoff
+            WHERE i.appid = :appid AND p.data <= :cutoff
               AND p.data < (p.coletado_em AT TIME ZONE 'UTC')::date
             ORDER BY i.market_hash_name, p.data
         """),
         connection,
-        params={"cutoff": cutoff},
+        params={"cutoff": cutoff, "appid": appid},
         parse_dates=["observation_date", "scrape_timestamp_utc"],
     )
     if data.empty:
-        raise ValueError("O banco não contém histórico TF2 completo para previsão.")
+        raise ValueError(f"O banco não contém histórico completo do jogo {appid} para previsão.")
     # A idade usa a primeira observação real do item, não o início de uma janela de consulta.
     data["days_since_first_obs"] = (
         data["observation_date"] - data.groupby("item_id")["observation_date"].transform("min")
