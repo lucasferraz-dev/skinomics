@@ -4,6 +4,12 @@
 
 ### Adicionado
 
+- Itens de treino do CS2: `historico_steam --treino` cria os itens novos inativos (só para treinar o
+  modelo, sem aparecer no site nem ganhar previsão) e não busca a imagem deles. Lista
+  `app/coleta/itens_cs2_treino.txt`, com 187 itens montados pelo catálogo público CSGO-API (todas as
+  caixas de armas e as skins Covert e Classified das armas mais usadas, em Field-Tested), fora da
+  coleta diária. A lista de itens da API passou a esconder itens inativos.
+- Uma faca na lista do CS2: ★ Karambit | Tiger Tooth (Factory New).
 - Previsão para os itens de CS2, com modelo próprio: cada jogo tem os seus modelos e o seu modelo
   ativo por horizonte (migração `modelo_por_jogo`, `appid` no registro de modelos), e a previsão de
   um item vem sempre do modelo do jogo dele. O CS2 usa a receita do TF2 sem a Key e publica só 7 e

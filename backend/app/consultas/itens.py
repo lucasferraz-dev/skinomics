@@ -55,6 +55,7 @@ def resumo_dos_itens() -> Subquery:
             Item.nome,
             Item.tipo,
             Item.icon_url,
+            Item.ativo,
             ultimo.c.preco.label("preco_atual"),
             ultimo.c.data.label("data_preco"),
             (ultimo.c.preco / preco_uma_semana_antes - 1).label("variacao_7d"),
@@ -69,7 +70,9 @@ def resumo_dos_itens() -> Subquery:
 def listar_itens(sessao: Session, filtros: FiltrosItens) -> tuple[Sequence[Row], int]:
     """Devolve a página pedida e o total de itens que passam nos filtros."""
     resumo = resumo_dos_itens()
-    consulta = select(resumo)
+    # Itens inativos (os só de treino, por exemplo) ficam fora da lista; a ficha e a Minha lista
+    # continuam abrindo um item pelo id.
+    consulta = select(resumo).where(resumo.c.ativo)
 
     if filtros.busca:
         consulta = consulta.where(

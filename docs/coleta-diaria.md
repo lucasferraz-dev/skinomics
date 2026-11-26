@@ -19,7 +19,7 @@ segundos sem pedir nada. Pelo mesmo motivo, uma coleta que parou no meio continu
 próxima vez.
 
 O ritmo é de um pedido a cada 30 segundos mais até 15 sorteados, então os 43 itens de TF2 levam uns 25
-minutos e os 20 de CS2 mais uns 12. O CS2 só roda se o TF2 terminou bem: se a Steam pediu uma pausa
+minutos e os 21 de CS2 mais uns 13. O CS2 só roda se o TF2 terminou bem: se a Steam pediu uma pausa
 ou o cookie venceu, ele fica para a próxima vez também. Tudo roda em segundo plano, sem abrir janela. Ela roda do IP de casa de propósito: IPs de nuvem
 (GitHub Actions, Render) levam bloqueio (HTTP 429) da Steam quase na hora.
 
@@ -97,3 +97,18 @@ Se a pasta do projeto mudar de lugar, registre a tarefa de novo, porque ela guar
 Um Raspberry Pi em casa poderia rodar a mesma coleta sem depender do PC ligado: o caminho seria um
 `cron` diário com os mesmos dois comandos do script (`historico_steam --pendentes` e
 `ml.worker --once`).
+
+## Itens de treino do CS2
+
+Além dos itens que aparecem no site, o modelo do CS2 treina com uns 190 itens a mais
+(`backend/app/coleta/itens_cs2_treino.txt`). Eles ficam **fora da coleta diária**: entram no banco
+inativos, sem imagem e sem previsão, e só precisam ser atualizados antes de retreinar o modelo, uma
+vez por mês. Rode fora do horário da coleta diária (mesmo IP), dentro de `backend/`:
+
+```powershell
+uv run python -m app.coleta.historico_steam --appid 730 --treino --moeda USD --pendentes `
+    --arquivo app/coleta/itens_cs2_treino.txt --intervalo 35 --variacao 15
+```
+
+São uns 2 horas. Com `--pendentes`, se a Steam pedir uma pausa, a próxima execução continua de onde
+parou.

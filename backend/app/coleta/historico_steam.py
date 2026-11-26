@@ -7,6 +7,10 @@ Uso, dentro de backend/:
 Cada execução cuida de um jogo só (`--appid`, padrão TF2): para o CS2, passe `--appid 730` e a
 lista app/coleta/itens_cs2.txt.
 
+Com `--treino`, os itens novos entram no catálogo inativos: servem só para treinar o modelo (não
+aparecem no site nem ganham previsão) e a coleta não busca a imagem deles. É o modo da lista
+app/coleta/itens_cs2_treino.txt, atualizada de vez em quando, fora da coleta diária.
+
 Com `--pendentes`, só os itens cuja série ainda não chega a ontem: rodar de novo no mesmo dia não
 pede nada à Steam, e uma coleta interrompida (429) continua de onde parou na próxima vez. É o modo
 da coleta diária agendada (scripts/coleta_diaria.ps1).
@@ -76,6 +80,7 @@ def baixar_historico(
     agora: datetime | None = None,
     somente: Sequence[str] = (),
     appid: int = TF2,
+    treino: bool = False,
 ) -> ResumoHistorico:
     """Regrava a série de cada item ativo, ou só dos itens em `somente` (market_hash_name).
 
@@ -88,7 +93,7 @@ def baixar_historico(
     resumo = ResumoHistorico()
 
     with registrar_execucao(sessao, TipoColeta.PRECOS) as execucao:
-        novos = _criar_os_que_faltam(sessao, somente, appid)
+        novos = _criar_os_que_faltam(sessao, somente, appid, ativo=not treino)
         consulta = select(Item).where(Item.appid == appid).order_by(Item.id)
         if somente:
             consulta = consulta.where(Item.market_hash_name.in_(somente))
@@ -135,7 +140,7 @@ def baixar_historico(
             if item.id in novos and item.market_hash_name in resumo.falhas:
                 sessao.delete(item)
                 novos.discard(item.id)
-        if somente and not resumo.interrompida_por:
+        if somente and not treino and not resumo.interrompida_por:
             _buscar_icones(mercado, [i for i in itens if i.market_hash_name not in resumo.falhas])
 
         if not resumo.itens_ok:
@@ -195,13 +200,17 @@ def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
             log.warning("%s: sem ícone (%s)", item.market_hash_name, erro)
 
 
-def _criar_os_que_faltam(sessao: Session, nomes: Sequence[str], appid: int) -> set[int]:
+def _criar_os_que_faltam(
+    sessao: Session, nomes: Sequence[str], appid: int, ativo: bool = True
+) -> set[int]:
     """Cria no catálogo os nomes que ainda não existem; devolve o id dos criados."""
     chaves = {(appid, nome): None for nome in nomes}  # dict: sem repetir, na ordem dada
     existentes = ja_no_catalogo(sessao, chaves)
     # Sem nome de exibição melhor à mão, usa o do mercado; o catálogo pode trocá-lo depois.
     faltando = [
-        ItemCatalogo(appid, nome, nome) for _, nome in chaves if (appid, nome) not in existentes
+        ItemCatalogo(appid, nome, nome, ativo=ativo)
+        for _, nome in chaves
+        if (appid, nome) not in existentes
     ]
     return set(gravar_itens(sessao, faltando).values())
 
@@ -297,6 +306,11 @@ def main() -> None:
         help=f"jogo dos itens: {TF2} (TF2, padrão) ou {CS2} (CS2)",
     )
     parser.add_argument(
+        "--treino",
+        action="store_true",
+        help="itens novos entram inativos, só para treinar o modelo, e sem buscar a imagem",
+    )
+    parser.add_argument(
         "--itens",
         nargs="+",
         default=(),
@@ -330,7 +344,9 @@ def main() -> None:
             cliente, moeda=args.moeda, intervalo=args.intervalo, variacao=args.variacao
         )
         try:
-            resumo = baixar_historico(sessao, mercado, somente=somente, appid=args.appid)
+            resumo = baixar_historico(
+                sessao, mercado, somente=somente, appid=args.appid, treino=args.treino
+            )
         except ColetaInterrompidaError as erro:
             print(f"Coleta interrompida antes do primeiro item: {erro}")
             sys.exit(_codigo_de_saida(erro))
