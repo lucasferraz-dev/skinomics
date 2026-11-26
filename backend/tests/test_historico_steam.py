@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, gravar_precos
 from app.coleta.historico_steam import baixar_historico, itens_pendentes, ler_lista, serie_diaria
 from app.coleta.steam import (
+    CS2,
     LimiteDaSteamError,
     LoginSteamError,
     MercadoSteam,
@@ -65,8 +66,9 @@ def test_lista_ignora_comentarios_e_linhas_vazias_mas_nao_o_jogo_da_velha_do_nom
     ]
 
 
-def test_lista_versionada_nao_tem_nome_repetido() -> None:
-    nomes = ler_lista(Path(__file__).parents[1] / "app" / "coleta" / "itens_tf2.txt")
+@pytest.mark.parametrize("arquivo", ["itens_tf2.txt", "itens_cs2.txt"])
+def test_lista_versionada_nao_tem_nome_repetido(arquivo: str) -> None:
+    nomes = ler_lista(Path(__file__).parents[1] / "app" / "coleta" / arquivo)
 
     assert nomes
     assert len(nomes) == len(set(nomes))
@@ -192,6 +194,32 @@ def test_pendentes_sao_os_itens_cuja_serie_nao_chega_a_ontem(sessao: Session) ->
     # Com uma lista, um nome fora do catálogo também é pendente (a coleta o cria).
     assert itens_pendentes(sessao, ontem, [KEY, "Item Novo"]) == ["Item Novo"]
     assert itens_pendentes(sessao, date(2026, 10, 30)) == []
+
+
+def test_cada_jogo_coleta_so_os_seus_itens(sessao: Session) -> None:
+    ids = _catalogo(sessao)
+    pedidos: list[str] = []
+
+    def responder(pedido: httpx.Request) -> httpx.Response:
+        if "pricehistory" not in pedido.url.path:
+            return httpx.Response(404)  # a busca do ícone, que não interessa aqui
+        pedidos.append(pedido.url.params["appid"])
+        return _resposta([["Nov 01 2026 01: +0", 2.2, "50"]])
+
+    flashback = "M4A1-S | Flashback (Minimal Wear)"
+    ontem = date(2026, 11, 2)
+    assert itens_pendentes(sessao, ontem, appid=CS2) == []
+    assert itens_pendentes(sessao, ontem, [flashback], appid=CS2) == [flashback]
+
+    resumo = baixar_historico(sessao, _mercado(responder), AGORA, [flashback], appid=CS2)
+
+    assert (resumo.itens_ok, resumo.falhas) == (1, {})
+    assert pedidos == ["730"]
+    novo = sessao.scalars(select(Item).where(Item.market_hash_name == flashback)).one()
+    assert novo.appid == CS2
+    # Os itens de TF2 ficaram de fora.
+    assert not _serie(sessao, ids[KEY])
+    assert itens_pendentes(sessao, ontem, appid=CS2) == []
 
 
 def test_troca_a_serie_inteira_do_item(sessao: Session) -> None:

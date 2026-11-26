@@ -4,6 +4,10 @@
 
 ### Adicionado
 
+- Coleta de itens de CS2: o `historico_steam` ganhou `--appid` (440 TF2, 730 CS2) e a lista
+  `app/coleta/itens_cs2.txt`, com 20 itens (a M4A1-S Flashback em Minimal Wear, caixas que ainda caem
+  e que já saíram do drop, e skins em Factory New de várias faixas de preço). A coleta diária roda o
+  CS2 depois do TF2, só quando o TF2 terminou bem. Ainda sem previsão: o modelo do CS2 vem no próximo PR.
 - Alertas de preço (US012, #24): "cair até" (para comprar) ou "subir até" (para vender) um
   preço-alvo, criados no detalhe do item (botão ao lado de Acompanhar, com atalhos de -5%, -10%,
   -20% e a faixa da previsão) ou na aba Alertas, que lista os disparados e os que estão vigiando,

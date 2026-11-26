@@ -1,6 +1,7 @@
 # Coleta diária automática
 
-A coleta baixa da Steam os preços dos itens acompanhados (`backend/app/coleta/itens_tf2.txt`) e, logo
+A coleta baixa da Steam os preços dos itens acompanhados, primeiro os de TF2
+(`backend/app/coleta/itens_tf2.txt`) e depois os de CS2 (`backend/app/coleta/itens_cs2.txt`), e, logo
 depois, publica as previsões novas e confere os alertas de preço dos usuários (quem tiver um alerta
 disparado vê o sino do site ficar verde). Ela roda sozinha no PC do Lucas, pelo Agendador de Tarefas do
 Windows, e não precisa de ninguém no dia a dia: só quando o cookie da Steam vence.
@@ -17,8 +18,9 @@ chega a ontem (`historico_steam --pendentes`), então, se o dia já foi coletado
 segundos sem pedir nada. Pelo mesmo motivo, uma coleta que parou no meio continua de onde parou na
 próxima vez.
 
-O ritmo é de um pedido a cada 30 segundos mais até 15 sorteados, então os 43 itens levam uns 25
-minutos, em segundo plano, sem abrir janela. Ela roda do IP de casa de propósito: IPs de nuvem
+O ritmo é de um pedido a cada 30 segundos mais até 15 sorteados, então os 43 itens de TF2 levam uns 25
+minutos e os 20 de CS2 mais uns 12. O CS2 só roda se o TF2 terminou bem: se a Steam pediu uma pausa
+ou o cookie venceu, ele fica para a próxima vez também. Tudo roda em segundo plano, sem abrir janela. Ela roda do IP de casa de propósito: IPs de nuvem
 (GitHub Actions, Render) levam bloqueio (HTTP 429) da Steam quase na hora.
 
 ## Como saber se está funcionando
