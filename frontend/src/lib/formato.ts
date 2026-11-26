@@ -44,6 +44,11 @@ export function formatarInteiro(valor: number): string {
 }
 
 function paraData(iso: string): Date {
+  // Instante com hora (ex.: quando o item entrou na lista): vale o dia no fuso de quem está vendo.
+  if (iso.includes("T")) {
+    const instante = new Date(iso);
+    return new Date(Date.UTC(instante.getFullYear(), instante.getMonth(), instante.getDate()));
+  }
   const [ano = 0, mes = 1, dia = 1] = iso.split("-").map(Number);
   return new Date(Date.UTC(ano, mes - 1, dia));
 }
