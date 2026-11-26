@@ -69,6 +69,11 @@
 - "Como usar" em Oportunidades, Alertas e Minha lista, que não tinham. O guia pula as partes que não
   estão na tela (sem login, por exemplo, só explica o convite para entrar).
 - Chaveiros mini também nas linhas de item do "Novo alerta".
+- Chaveiros próprios do CS2, lidos do nome da skin: o tipo da arma (rifle, sniper, pistola, SMG,
+  pesada, faca, luvas, além de adesivo, cápsula e caixa), o desgaste (Factory New a Battle-Scarred,
+  em barras do verde ao coral) e as versões StatTrak e Souvenir. A arma é lida só antes do " | ",
+  para o nome da skin não confundir (uma AK "Supernova" não vira escopeta). Valem também nos
+  filtros por categoria do Explorar.
 - Chaveiros nas abas Alertas e Oportunidades, como no Explorar e no item: os grandes pendem do item
   escolhido em "Novo alerta" e das vitrines do pódio; os mini ficam nos cards dos alertas e nas
   linhas do ranking. A API de oportunidades passou a mandar o `appid` do item, para o chaveiro do
