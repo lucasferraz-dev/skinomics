@@ -479,7 +479,7 @@ def train_and_save(csv_path: Path, output_dir: Path, config: TrainingConfig):
         "config": asdict(config),
         "target": "log(media_preco_t+H-W_a_t+H+W / preco_atual)",
         "selection_metric": "ganho médio de MAE de log-retorno vs ingênuo no walk-forward",
-        "data_path": f"postgresql:{config.appid}"
+        "data_path": f"postgresql:{'TF2' if config.appid == TF2 else 'CS2'}"
         if isinstance(csv_path, pd.DataFrame)
         else str(Path(csv_path).resolve()),
         "labeled_rows": len(labeled),

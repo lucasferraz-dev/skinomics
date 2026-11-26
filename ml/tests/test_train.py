@@ -118,7 +118,7 @@ def test_cs2_trains_and_records_the_game(tmp_path, history, config):
     metadata = train.train_and_save(cs2, tmp_path, replace(config, appid=CS2))
     assert metadata["config"]["appid"] == CS2
     assert "key_ret_7" not in metadata["features"]
-    assert metadata["data_path"] == "postgresql:730"
+    assert metadata["data_path"] == "postgresql:CS2"
 
 
 def test_config_rejects_unknown_game():
