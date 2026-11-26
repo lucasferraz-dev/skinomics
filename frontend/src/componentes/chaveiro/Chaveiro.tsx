@@ -16,6 +16,12 @@ const NOMES_EN: Record<string, string> = {
   Arma: "Weapon",
   Inverno: "Winter",
   Verão: "Summer",
+  Pistola: "Pistol",
+  Pesada: "Heavy",
+  Faca: "Knife",
+  Luvas: "Gloves",
+  Adesivo: "Sticker",
+  Cápsula: "Capsule",
 };
 const nomeDoTema = (nome: string) => t(nome, NOMES_EN[nome] ?? nome);
 
