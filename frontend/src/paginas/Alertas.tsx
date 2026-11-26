@@ -7,7 +7,7 @@ import { type ItemResumo, useItens } from "../api/itens";
 import { FormAlerta, IconeSino } from "../componentes/alertas/CriarAlerta";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo } from "../componentes/Basicos";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
-import { categoriaDoItem } from "../componentes/chaveiro/temas";
+import { categoriaDoItem, nomeDoTema } from "../componentes/chaveiro/temas";
 import { analiseDosAlertas } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { t, useIdioma } from "../lib/idioma";
@@ -314,7 +314,7 @@ function CardVigiando({ alerta }: { alerta: Alerta }) {
           <IconeItem url={alerta.item.icon_url} nome={alerta.item.nome} tamanho={40} />
           <div className="min-w-0">
             <Link to={`/itens/${alerta.item.id}`} className="block truncate text-sm hover:text-destaque">{alerta.item.nome}</Link>
-            <p className="truncate text-xs text-apagado">{categoria?.nome ?? alerta.item.tipo ?? " "}</p>
+            <p className="truncate text-xs text-apagado">{categoria ? nomeDoTema(categoria.nome) : (alerta.item.tipo ?? " ")}</p>
           </div>
         </div>
 

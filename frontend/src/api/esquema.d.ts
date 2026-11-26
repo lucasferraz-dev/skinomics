@@ -481,7 +481,7 @@ export interface components {
         };
         /**
          * ModeloAtivoResumo
-         * @description Modelo publicado num horizonte, com as métricas do seu teste temporal.
+         * @description Modelo publicado de um jogo num horizonte, com as métricas do seu teste temporal.
          */
         ModeloAtivoResumo: {
             /**
@@ -954,6 +954,8 @@ export interface operations {
             query?: {
                 /** @description Parte do nome, sem diferenciar maiúsculas */
                 busca?: string | null;
+                /** @description Só os itens deste jogo (440 = TF2, 730 = CS2) */
+                appid?: number | null;
                 /** @description Tipo exato, ex.: "Level 1 Tool" */
                 tipo?: string | null;
                 preco_min?: number | null;

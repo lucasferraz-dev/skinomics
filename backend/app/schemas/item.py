@@ -24,6 +24,7 @@ class FiltrosItens(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     busca: str | None = Field(None, description="Parte do nome, sem diferenciar maiúsculas")
+    appid: int | None = Field(None, description="Só os itens deste jogo (440 = TF2, 730 = CS2)")
     tipo: str | None = Field(None, description='Tipo exato, ex.: "Level 1 Tool"')
     preco_min: float | None = Field(None, ge=0)
     preco_max: float | None = Field(None, ge=0)

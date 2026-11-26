@@ -6,13 +6,13 @@ import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from ".
 import { CardItem, CardItemCarregando } from "../componentes/CardItem";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 import { IconeTema } from "../componentes/chaveiro/IconeTema";
-import { categoriaDoItem, type TemaChaveiro } from "../componentes/chaveiro/temas";
+import { categoriaDoItem, nomeDaCategoria, nomeDoTema, type TemaChaveiro } from "../componentes/chaveiro/temas";
 import { analiseDoExplorar } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { Sparkline } from "../componentes/Sparkline";
 import { t, useIdioma } from "../lib/idioma";
 import { diasAntes, formatarData, formatarInteiro, formatarPreco, formatarVariacao } from "../lib/formato";
-import { jogoDoItem } from "../lib/jogos";
+import { JOGOS, jogoDoItem } from "../lib/jogos";
 import { sinalDoModelo } from "../lib/sinal";
 import { TerminaisDestaque, useDestaquesDaSemana } from "./inicio/Destaques";
 import { Medalha, type TipoMedalha } from "./inicio/Medalha";
@@ -27,24 +27,26 @@ const POR_PAGINA = 24;
 const TETO_CATALOGO = 100;
 
 const FAIXAS = {
-  centavos: { rotulo: "Até US$ 0,10", max: 0.1 },
-  "ate-1": { rotulo: "US$ 0,10 a 1", min: 0.1, max: 1 },
-  "ate-10": { rotulo: "US$ 1 a 10", min: 1, max: 10 },
-  "acima-10": { rotulo: "Acima de US$ 10", min: 10 },
-} satisfies Record<string, { rotulo: string; min?: number; max?: number }>;
+  centavos: { rotulo: () => t("Até US$ 0,10", "Up to US$ 0.10"), max: 0.1 },
+  "ate-1": { rotulo: () => t("US$ 0,10 a 1", "US$ 0.10 to 1"), min: 0.1, max: 1 },
+  "ate-10": { rotulo: () => t("US$ 1 a 10", "US$ 1 to 10"), min: 1, max: 10 },
+  "acima-10": { rotulo: () => t("Acima de US$ 10", "Over US$ 10"), min: 10 },
+} satisfies Record<string, { rotulo: () => string; min?: number; max?: number }>;
 type Faixa = keyof typeof FAIXAS;
 
-const ORDENS: { rotulo: string; ordenar: Ordenacao; direcao: Direcao }[] = [
-  { rotulo: "Mais negociados", ordenar: "volume_7d", direcao: "desc" },
-  { rotulo: "Maiores altas", ordenar: "variacao_7d", direcao: "desc" },
-  { rotulo: "Maiores quedas", ordenar: "variacao_7d", direcao: "asc" },
-  { rotulo: "Menor preço", ordenar: "preco", direcao: "asc" },
-  { rotulo: "Maior preço", ordenar: "preco", direcao: "desc" },
-  { rotulo: "A–Z", ordenar: "nome", direcao: "asc" },
+const ORDENS: { chave: string; rotulo: () => string; ordenar: Ordenacao; direcao: Direcao }[] = [
+  { chave: "negociados", rotulo: () => t("Mais negociados", "Most traded"), ordenar: "volume_7d", direcao: "desc" },
+  { chave: "altas", rotulo: () => t("Maiores altas", "Top gainers"), ordenar: "variacao_7d", direcao: "desc" },
+  { chave: "quedas", rotulo: () => t("Maiores quedas", "Top losers"), ordenar: "variacao_7d", direcao: "asc" },
+  { chave: "barato", rotulo: () => t("Menor preço", "Lowest price"), ordenar: "preco", direcao: "asc" },
+  { chave: "caro", rotulo: () => t("Maior preço", "Highest price"), ordenar: "preco", direcao: "desc" },
+  { chave: "az", rotulo: () => "A–Z", ordenar: "nome", direcao: "asc" },
 ];
 
 type Filtros = {
   busca?: string;
+  /** appid do jogo escolhido (440 TF2, 730 CS2); sem ele, todos. */
+  jogo?: number;
   categoria?: string;
   faixa?: Faixa;
   ordenar: Ordenacao;
@@ -52,14 +54,18 @@ type Filtros = {
   pagina: number;
   visao: Visao;
 };
-type Mudancas = Partial<Record<"busca" | "categoria" | "faixa" | "ordenar" | "direcao" | "pagina" | "visao", string>>;
+type Mudancas = Partial<Record<"busca" | "jogo" | "categoria" | "faixa" | "ordenar" | "direcao" | "pagina" | "visao", string>>;
 
 /** Os filtros moram na URL: dá para compartilhar o link e o "voltar" do navegador funciona. */
 function useFiltrosDaUrl() {
   const [parametros, setParametros] = useSearchParams();
   const faixa = parametros.get("faixa");
+  // Na URL vai a sigla do jogo (?jogo=cs2), mais legível que o appid.
+  const sigla = parametros.get("jogo")?.toUpperCase();
+  const jogo = Object.entries(JOGOS).find(([, dados]) => dados.sigla === sigla)?.[0];
   const filtros: Filtros = {
     busca: parametros.get("busca") ?? undefined,
+    jogo: jogo ? Number(jogo) : undefined,
     categoria: parametros.get("categoria") ?? undefined,
     faixa: faixa && faixa in FAIXAS ? (faixa as Faixa) : undefined,
     ordenar: (parametros.get("ordenar") as Ordenacao | null) ?? "volume_7d",
@@ -95,6 +101,7 @@ function useResultado(filtros: Filtros) {
   const faixa = filtros.faixa ? FAIXAS[filtros.faixa] : undefined;
   const base: FiltrosItens = {
     busca: filtros.busca,
+    appid: filtros.jogo,
     ordenar: filtros.ordenar,
     direcao: filtros.direcao,
     preco_min: faixa && "min" in faixa ? faixa.min : undefined,
@@ -123,7 +130,7 @@ export function ExplorarItens() {
   const { filtros, atualizar } = useFiltrosDaUrl();
   const { itens, total, pagina, isPending, isError, isPlaceholderData } = useResultado(filtros);
   const { itens: catalogo, medalhas } = useDestaquesDaSemana();
-  const filtrando = Boolean(filtros.busca || filtros.categoria || filtros.faixa);
+  const filtrando = Boolean(filtros.busca || filtros.jogo || filtros.categoria || filtros.faixa);
   // Muda a cada "Limpar filtros", para o campo de busca recomeçar vazio (sem remontar a cada tecla).
   const [limpezas, setLimpezas] = useState(0);
   // As mesmas previsões que os cards pedem (cache dividido): os mascotes contam touros e ursos da página.
@@ -134,7 +141,7 @@ export function ExplorarItens() {
   });
   const falas = analiseDoExplorar({ sinais, catalogo, resultado: itens, total, categoria: filtros.categoria, filtrando });
   const limpar = () => {
-    atualizar({ busca: "", categoria: "", faixa: "" });
+    atualizar({ busca: "", jogo: "", categoria: "", faixa: "" });
     setLimpezas((n) => n + 1);
   };
 
@@ -143,16 +150,19 @@ export function ExplorarItens() {
     <div className="mx-auto max-w-6xl space-y-10 pb-44">
       <CabecalhoSecao
         nivel={1}
-        rotulo="Mercado da Steam"
-        titulo="Explorar itens"
-        texto="Compare preço, movimento da semana e liquidez. Filtre por categoria e faixa de preço, e clique num item para ver o histórico e a previsão."
+        rotulo={t("Mercado da Steam", "Steam Market")}
+        titulo={t("Explorar itens", "Explore items")}
+        texto={t(
+          "Compare preço, movimento da semana e liquidez. Filtre por jogo, categoria e faixa de preço, e clique num item para ver o histórico e a previsão.",
+          "Compare price, weekly movement and liquidity. Filter by game, category and price range, and click an item to see its history and forecast.",
+        )}
       />
 
       {/* Sem filtro, a página abre com o que mais se mexeu na semana, como na landing. */}
       {!filtrando && filtros.pagina === 1 && (
         // lg:pb: espaço para os chaveiros dos terminais, que pendem embaixo deles (só aparecem do lg em diante).
         <section data-tv={t("Destaques da semana", "Weekly highlights")} className="space-y-4 lg:pb-16">
-          <Rotulo destaque>Destaques da semana</Rotulo>
+          <Rotulo destaque>{t("Destaques da semana", "Weekly highlights")}</Rotulo>
           <TerminaisDestaque tour="destaques-explorar" />
         </section>
       )}
@@ -177,19 +187,19 @@ export function ExplorarItens() {
             </GradeItens>
           ) : (
             <Painel>
-              <Carregando texto="Carregando itens…" />
+              <Carregando texto={t("Carregando itens…", "Loading items…")} />
             </Painel>
           )
         ) : isError ? (
           <Painel>
-            <MensagemErro titulo="Não foi possível carregar os itens." detalhe="Confira se a API está no ar." />
+            <MensagemErro titulo={t("Não foi possível carregar os itens.", "Couldn't load the items.")} detalhe={t("Confira se a API está no ar.", "Check that the API is up.")} />
           </Painel>
         ) : !itens || itens.length === 0 ? (
           <Painel className="flex flex-col items-center pb-8">
-            <MensagemErro titulo="Nenhum item encontrado." detalhe="Tente outro termo ou tire algum filtro." />
+            <MensagemErro titulo={t("Nenhum item encontrado.", "No items found.")} detalhe={t("Tente outro termo ou tire algum filtro.", "Try another term or remove a filter.")} />
             {filtrando && (
               <button type="button" onClick={limpar} className="text-sm text-destaque underline-offset-4 hover:underline">
-                Limpar filtros
+                {t("Limpar filtros", "Clear filters")}
               </button>
             )}
           </Painel>
@@ -243,9 +253,14 @@ function BarraFiltros({
   filtrando: boolean;
   aoLimpar: () => void;
 }) {
-  // Só as categorias que existem no catálogo, das mais comuns para as mais raras.
+  // Os jogos que existem no catálogo, com quantos itens cada um tem.
+  const jogos = new Map<number, number>();
+  for (const item of catalogo) jogos.set(item.appid, (jogos.get(item.appid) ?? 0) + 1);
+
+  // Só as categorias que existem no catálogo (do jogo escolhido), das mais comuns para as mais raras.
   const contagem = new Map<string, { tema: TemaChaveiro; quantos: number }>();
   for (const item of catalogo) {
+    if (filtros.jogo && item.appid !== filtros.jogo) continue;
     const tema = categoriaDoItem(item);
     if (!tema) continue;
     const atual = contagem.get(tema.nome);
@@ -257,51 +272,78 @@ function BarraFiltros({
     <Painel className="divide-y divide-borda">
       <div className="flex flex-wrap items-center gap-3 p-3 sm:p-4">
         <CampoBusca key={limpezas} valorInicial={filtros.busca ?? ""} aoBuscar={(busca) => atualizar({ busca })} />
-        <span className="font-mono text-xs text-suave">{total !== undefined ? `${formatarInteiro(total)} itens` : " "}</span>
+        <span className="font-mono text-xs text-suave">{total !== undefined ? t(`${formatarInteiro(total)} itens`, `${formatarInteiro(total)} items`) : " "}</span>
         {filtrando && (
           <button type="button" onClick={aoLimpar} className="font-mono text-xs text-apagado transition-colors hover:text-destaque">
-            × Limpar filtros
+            × {t("Limpar filtros", "Clear filters")}
           </button>
         )}
         <AlternarVisao visao={filtros.visao} aoMudar={(visao) => atualizar({ visao: visao === "grade" ? "" : visao })} />
       </div>
 
       <div data-tour="filtros" className="space-y-3 p-3 sm:p-4">
-        <GrupoFiltro rotulo="Categoria">
-          {categorias.map(({ tema, quantos }) => {
-            const ativo = filtros.categoria === tema.nome;
+        <GrupoFiltro rotulo={t("Jogo", "Game")}>
+          {[...jogos.entries()].map(([appid, quantos]) => {
+            const dados = JOGOS[appid];
+            if (!dados) return null;
+            const ativo = filtros.jogo === appid;
             return (
-              <Chip key={tema.nome} ativo={ativo} aoClicar={() => atualizar({ categoria: ativo ? "" : tema.nome })}>
-                <IconeTema tema={tema} cor={ativo ? "currentColor" : undefined} />
-                {tema.nome}
+              // As categorias mudam de um jogo para o outro: trocar de jogo tira a categoria.
+              <Chip key={appid} ativo={ativo} aoClicar={() => atualizar({ jogo: ativo ? "" : dados.sigla.toLowerCase(), categoria: "" })}>
+                <SeloJogo sigla={dados.sigla} cor={ativo ? "currentColor" : dados.cor} />
+                {dados.nome}
                 <span className={`font-mono text-[10px] ${ativo ? "opacity-70" : "text-apagado"}`}>{quantos}</span>
               </Chip>
             );
           })}
         </GrupoFiltro>
-        <GrupoFiltro rotulo="Preço">
-          {(Object.keys(FAIXAS) as Faixa[]).map((chave) => {
-            const ativo = filtros.faixa === chave;
+        <GrupoFiltro rotulo={t("Categoria", "Category")}>
+          {categorias.map(({ tema, quantos }) => {
+            const ativo = filtros.categoria === tema.nome;
             return (
-              <Chip key={chave} ativo={ativo} aoClicar={() => atualizar({ faixa: ativo ? "" : chave })}>
-                {FAIXAS[chave].rotulo}
+              <Chip key={tema.nome} ativo={ativo} aoClicar={() => atualizar({ categoria: ativo ? "" : tema.nome })}>
+                <IconeTema tema={tema} cor={ativo ? "currentColor" : undefined} />
+                {nomeDoTema(tema.nome)}
+                <span className={`font-mono text-[10px] ${ativo ? "opacity-70" : "text-apagado"}`}>{quantos}</span>
               </Chip>
             );
           })}
         </GrupoFiltro>
-        <GrupoFiltro rotulo="Ordenar">
+        <GrupoFiltro rotulo={t("Preço", "Price")}>
+          {(Object.keys(FAIXAS) as Faixa[]).map((chave) => {
+            const ativo = filtros.faixa === chave;
+            return (
+              <Chip key={chave} ativo={ativo} aoClicar={() => atualizar({ faixa: ativo ? "" : chave })}>
+                {FAIXAS[chave].rotulo()}
+              </Chip>
+            );
+          })}
+        </GrupoFiltro>
+        <GrupoFiltro rotulo={t("Ordenar", "Sort")}>
           {ORDENS.map((ordem) => (
             <Chip
-              key={ordem.rotulo}
+              key={ordem.chave}
               ativo={filtros.ordenar === ordem.ordenar && filtros.direcao === ordem.direcao}
               aoClicar={() => atualizar({ ordenar: ordem.ordenar, direcao: ordem.direcao })}
             >
-              {ordem.rotulo}
+              {ordem.rotulo()}
             </Chip>
           ))}
         </GrupoFiltro>
       </div>
     </Painel>
+  );
+}
+
+/** A sigla do jogo numa bolinha com o contorno na cor dele, como o chaveiro do jogo. */
+function SeloJogo({ sigla, cor }: { sigla: string; cor: string }) {
+  return (
+    <span
+      className="grid size-[18px] place-items-center rounded-full border font-mono text-[7px] leading-none font-semibold"
+      style={{ borderColor: cor, color: cor }}
+    >
+      {sigla}
+    </span>
   );
 }
 
@@ -341,11 +383,11 @@ function Chip({ ativo, aoClicar, children }: { ativo: boolean; aoClicar: () => v
 
 function AlternarVisao({ visao, aoMudar }: { visao: Visao; aoMudar: (visao: Visao) => void }) {
   const opcoes: { valor: Visao; rotulo: string; icone: string }[] = [
-    { valor: "grade", rotulo: "Grade", icone: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
-    { valor: "lista", rotulo: "Lista", icone: "M4 6h16M4 12h16M4 18h16" },
+    { valor: "grade", rotulo: t("Grade", "Grid"), icone: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+    { valor: "lista", rotulo: t("Lista", "List"), icone: "M4 6h16M4 12h16M4 18h16" },
   ];
   return (
-    <div data-tour="visao" className="ml-auto flex rounded-lg border border-borda p-0.5" role="group" aria-label="Modo de exibição">
+    <div data-tour="visao" className="ml-auto flex rounded-lg border border-borda p-0.5" role="group" aria-label={t("Modo de exibição", "View mode")}>
       {opcoes.map((opcao) => (
         <button
           key={opcao.valor}
@@ -389,8 +431,8 @@ function CampoBusca({ valorInicial, aoBuscar }: { valorInicial: string; aoBuscar
         type="search"
         value={texto}
         onChange={(evento) => setTexto(evento.target.value)}
-        placeholder="Buscar item…"
-        aria-label="Buscar item"
+        placeholder={t("Buscar item…", "Search item…")}
+        aria-label={t("Buscar item", "Search item")}
         className="w-full bg-transparent text-sm outline-none placeholder:text-apagado"
       />
     </label>
@@ -413,11 +455,11 @@ function TabelaItens({
       <table className="w-full min-w-[800px] text-left">
         <thead className="whitespace-nowrap">
           <tr className="border-b border-borda">
-            <Cabecalho rotulo="Item" coluna="nome" filtros={filtros} atualizar={atualizar} />
-            <Cabecalho rotulo="Preço" coluna="preco" filtros={filtros} atualizar={atualizar} alinharDireita />
-            <Cabecalho rotulo="Var. 7d" coluna="variacao_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
-            <th className="px-4 py-3"><Rotulo>Tendência 30d</Rotulo></th>
-            <Cabecalho rotulo="Volume 7d" coluna="volume_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <Cabecalho rotulo={t("Item", "Item")} coluna="nome" filtros={filtros} atualizar={atualizar} />
+            <Cabecalho rotulo={t("Preço", "Price")} coluna="preco" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <Cabecalho rotulo={t("Var. 7d", "7d change")} coluna="variacao_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
+            <th className="px-4 py-3"><Rotulo>{t("Tendência 30d", "30d trend")}</Rotulo></th>
+            <Cabecalho rotulo={t("Volume 7d", "7d volume")} coluna="volume_7d" filtros={filtros} atualizar={atualizar} alinharDireita />
             <th className="w-10" />
           </tr>
         </thead>
@@ -484,7 +526,7 @@ export function LinhaItem({ item, chaveiros = false, medalha }: { item: ItemResu
             <Link to={`/itens/${item.id}`} className="block truncate text-sm after:absolute after:inset-0">
               {item.nome}
             </Link>
-            <span className="text-xs text-apagado">{categoriaDoItem(item)?.nome ?? item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
+            <span className="text-xs text-apagado">{nomeDaCategoria(item) ?? item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
           </div>
         </div>
       </td>
@@ -534,17 +576,17 @@ function Paginacao({ pagina, total, aoMudar }: { pagina: number; total: number; 
   return (
     <div className="flex items-center justify-between rounded-xl border border-borda bg-painel p-3 sm:px-4">
       <span className="font-mono text-xs text-suave">
-        {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, total)} de {total}
+        {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, total)} {t("de", "of")} {total}
       </span>
       <div className="flex items-center gap-2">
         <span className="hidden font-mono text-xs text-apagado sm:inline">
-          página {pagina} de {ultima}
+          {t(`página ${pagina} de ${ultima}`, `page ${pagina} of ${ultima}`)}
         </span>
         <button type="button" className={botao} disabled={pagina <= 1} onClick={() => aoMudar(pagina - 1)}>
-          Anterior
+          {t("Anterior", "Previous")}
         </button>
         <button type="button" className={botao} disabled={pagina >= ultima} onClick={() => aoMudar(pagina + 1)}>
-          Próxima
+          {t("Próxima", "Next")}
         </button>
       </div>
     </div>

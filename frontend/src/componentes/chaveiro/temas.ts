@@ -3,9 +3,31 @@
 // de que evento ou qualidade é (Halloween, Unusual...; no CS2, StatTrak e o desgaste). Os ícones são
 // desenhados em traço, centrados em (0, 0), cabendo num círculo de raio ~10.
 
+import { t } from "../../lib/idioma";
 import { jogoDoItem } from "../../lib/jogos";
 
 const CS2 = 730;
+
+const NOMES_EN: Record<string, string> = {
+  Caixa: "Crate",
+  Chave: "Key",
+  Presente: "Gift",
+  Pacote: "Package",
+  "Peça de robô": "Robot part",
+  Ferramenta: "Tool",
+  Chapéu: "Hat",
+  Arma: "Weapon",
+  Inverno: "Winter",
+  Verão: "Summer",
+  Pistola: "Pistol",
+  Pesada: "Heavy",
+  Faca: "Knife",
+  Luvas: "Gloves",
+  Adesivo: "Sticker",
+  Cápsula: "Capsule",
+};
+/** Nome do tema no idioma da página; o `nome` em português continua sendo a chave (filtros, links). */
+export const nomeDoTema = (nome: string) => t(nome, NOMES_EN[nome] ?? nome);
 
 export type TemaChaveiro = {
   nome: string;
@@ -220,6 +242,12 @@ const TEMAS: [RegExp, TemaChaveiro][] = [
 export function categoriaDoItem(item: { nome: string; tipo?: string | null; appid?: number }): TemaChaveiro | undefined {
   const texto = `${item.nome} ${item.tipo ?? ""}`.toLowerCase().trim();
   return (item.appid === CS2 ? TIPOS_CS2 : TIPOS).find(([regra]) => regra.test(texto))?.[1];
+}
+
+/** Nome da categoria do item no idioma da página, ou undefined. */
+export function nomeDaCategoria(item: { nome: string; tipo?: string | null; appid?: number }): string | undefined {
+  const categoria = categoriaDoItem(item);
+  return categoria ? nomeDoTema(categoria.nome) : undefined;
 }
 
 /** Chaveiros do item: primeiro o do jogo; depois até três com o que ele é, o evento e a qualidade. */

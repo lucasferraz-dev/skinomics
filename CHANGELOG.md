@@ -75,6 +75,12 @@
 - "Como usar" em Oportunidades, Alertas e Minha lista, que não tinham. O guia pula as partes que não
   estão na tela (sem login, por exemplo, só explica o convite para entrar).
 - Chaveiros mini também nas linhas de item do "Novo alerta".
+- Explorar em inglês de verdade: título, filtros (jogo, categoria, preço, ordem), tabela, paginação e
+  mensagens seguem o idioma escolhido. Os nomes das categorias (Caixa, Rifle, Chapéu...) passam a ser
+  traduzidos em todas as páginas, não só nos chaveiros.
+- Filtro por jogo no Explorar (TF2 ou CS2), com o selo de cada jogo e quantos itens ele tem; trocar
+  de jogo mostra só as categorias dele. A API de itens aceita `appid`, e o filtro fica no link
+  (`?jogo=cs2`).
 - Chaveiros próprios do CS2, lidos do nome da skin: o tipo da arma (rifle, sniper, pistola, SMG,
   pesada, faca, luvas, além de adesivo, cápsula e caixa), o desgaste (Factory New a Battle-Scarred,
   em barras do verde ao coral) e as versões StatTrak e Souvenir. A arma é lida só antes do " | ",
