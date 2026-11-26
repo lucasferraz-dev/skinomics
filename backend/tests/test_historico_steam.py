@@ -222,6 +222,25 @@ def test_cada_jogo_coleta_so_os_seus_itens(sessao: Session) -> None:
     assert itens_pendentes(sessao, ontem, appid=CS2) == []
 
 
+def test_treino_cria_itens_inativos_e_nao_busca_imagem(sessao: Session) -> None:
+    _catalogo(sessao)
+    caminhos: list[str] = []
+
+    def responder(pedido: httpx.Request) -> httpx.Response:
+        caminhos.append(pedido.url.path)
+        return _resposta([["Nov 01 2026 01: +0", 2.2, "50"]])
+
+    nome = "AK-47 | Redline (Field-Tested)"
+    resumo = baixar_historico(sessao, _mercado(responder), AGORA, [nome], appid=CS2, treino=True)
+
+    assert resumo.itens_ok == 1
+    novo = sessao.scalars(select(Item).where(Item.market_hash_name == nome)).one()
+    assert novo.ativo is False
+    assert novo.icon_url is None
+    # Só o histórico: nenhuma visita à página de anúncios, que é a que mais leva 429.
+    assert all("pricehistory" in caminho for caminho in caminhos)
+
+
 def test_troca_a_serie_inteira_do_item(sessao: Session) -> None:
     ids = _catalogo(sessao)
     # Série antiga (em reais, mais longa): nenhum dia dela pode sobrar.
