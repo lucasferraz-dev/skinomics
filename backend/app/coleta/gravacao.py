@@ -20,6 +20,8 @@ class ItemCatalogo:
     nome: str
     tipo: str | None = None
     icon_url: str | None = None
+    # Só vale na criação: um item que já existe não muda de ativo para inativo, nem o contrário.
+    ativo: bool = True
 
 
 @dataclass(frozen=True)

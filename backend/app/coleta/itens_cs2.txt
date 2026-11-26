@@ -23,6 +23,10 @@ Clutch Case
 Chroma 3 Case
 Operation Breakout Weapon Case
 
+# Faca (Tiger Tooth: só existe em Factory New e o padrão é igual em todas, então o preço não depende
+# da unidade, como nas Doppler e Case Hardened)
+★ Karambit | Tiger Tooth (Factory New)
+
 # Skins
 AK-47 | Slate (Factory New)
 AK-47 | Neon Rider (Factory New)

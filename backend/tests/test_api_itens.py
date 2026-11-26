@@ -112,6 +112,19 @@ def test_busca_filtros_e_ordenacao(
     assert _nomes(resposta.json()) == esperado
 
 
+def test_item_inativo_fica_fora_da_lista_mas_abre_pelo_id(
+    cliente: TestClient, sessao: Session, itens: dict[str, Item]
+) -> None:
+    treino = Item(
+        appid=730, market_hash_name="AK-47 | Redline (Field-Tested)", nome="Redline", ativo=False
+    )
+    sessao.add(treino)
+    sessao.flush()
+
+    assert "Redline" not in _nomes(cliente.get("/itens", params={"busca": "redline"}).json())
+    assert cliente.get(f"/itens/{treino.id}").status_code == 200
+
+
 def test_paginacao(cliente: TestClient, itens: dict[str, Item]) -> None:
     resposta = cliente.get("/itens", params={"por_pagina": 3, "pagina": 2}).json()
 
