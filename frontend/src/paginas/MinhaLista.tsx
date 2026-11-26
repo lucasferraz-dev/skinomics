@@ -6,7 +6,7 @@ import { useHistorico } from "../api/itens";
 import { type ItemAcompanhado, useAlternarAcompanhamento, useMinhaLista } from "../api/minhaLista";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo, Variacao } from "../componentes/Basicos";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
-import { categoriaDoItem } from "../componentes/chaveiro/temas";
+import { nomeDaCategoria } from "../componentes/chaveiro/temas";
 import { analiseDaMinhaLista } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { t, useIdioma } from "../lib/idioma";
@@ -197,7 +197,7 @@ function Linha({ item, escala }: { item: ItemAcompanhado; escala: number }) {
             <Link to={`/itens/${item.id}`} className="block truncate text-sm after:absolute after:inset-0">
               {item.nome}
             </Link>
-            <span className="text-xs text-apagado">{categoriaDoItem(item)?.nome ?? item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
+            <span className="text-xs text-apagado">{nomeDaCategoria(item) ?? item.tipo ?? jogoDoItem(item.appid)?.nome}</span>
           </div>
         </div>
       </td>

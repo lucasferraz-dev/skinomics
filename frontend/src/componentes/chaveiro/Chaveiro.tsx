@@ -3,27 +3,8 @@ import { type CSSProperties, type RefObject, useEffect, useRef } from "react";
 
 import { EVENTO_PUXAR_CHAVEIRO } from "../mascote/eventos";
 import { acordar, anguloDisco, type Corpo, registrar } from "./fisica";
-import { type TemaChaveiro, temasDoItem } from "./temas";
+import { nomeDoTema, type TemaChaveiro, temasDoItem } from "./temas";
 
-const NOMES_EN: Record<string, string> = {
-  Caixa: "Crate",
-  Chave: "Key",
-  Presente: "Gift",
-  Pacote: "Package",
-  "Peça de robô": "Robot part",
-  Ferramenta: "Tool",
-  Chapéu: "Hat",
-  Arma: "Weapon",
-  Inverno: "Winter",
-  Verão: "Summer",
-  Pistola: "Pistol",
-  Pesada: "Heavy",
-  Faca: "Knife",
-  Luvas: "Gloves",
-  Adesivo: "Sticker",
-  Cápsula: "Capsule",
-};
-const nomeDoTema = (nome: string) => t(nome, NOMES_EN[nome] ?? nome);
 
 // Tamanhos: o normal, pendurado embaixo de cards, e o mini, que cabe dentro de uma linha de tabela.
 const TAMANHOS = {

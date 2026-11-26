@@ -5,7 +5,7 @@ import type { HorizontePrevisao } from "../api/itens";
 import { type Oportunidade, type RankingOportunidades, useOportunidades } from "../api/oportunidades";
 import { Carregando, IconeItem, MensagemErro, Painel, Rotulo } from "../componentes/Basicos";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
-import { categoriaDoItem } from "../componentes/chaveiro/temas";
+import { categoriaDoItem, nomeDoTema } from "../componentes/chaveiro/temas";
 import { analiseDasOportunidades, margemDepoisDaTaxa } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
 import { t, useIdioma } from "../lib/idioma";
@@ -252,7 +252,7 @@ function VitrineOportunidade({ item, horizonte }: { item: Oportunidade; horizont
           {primeiro && <Medalha tipo="margem" className="absolute top-2 left-4 z-10 -rotate-[8deg]" />}
           {categoria && (
             <span className="absolute top-3 right-3 rounded-md border border-borda bg-painel/80 px-2 py-1 font-mono text-[11px] text-suave backdrop-blur">
-              {categoria.nome}
+              {nomeDoTema(categoria.nome)}
             </span>
           )}
         </div>
@@ -342,7 +342,7 @@ function LinhaRanking({ item, horizonte }: { item: Oportunidade; horizonte: Hori
             {item.nome}
           </Link>
           <p className="truncate text-xs text-apagado">
-            {categoria?.nome ?? item.tipo ?? " "}
+            {categoria ? nomeDoTema(categoria.nome) : (item.tipo ?? " ")}
             {item.desatualizada && <span className="text-suave">{t(", preço antigo", ", old price")}</span>}
           </p>
         </div>

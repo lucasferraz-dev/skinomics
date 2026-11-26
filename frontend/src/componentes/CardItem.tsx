@@ -8,7 +8,7 @@ import { sinalDoModelo } from "../lib/sinal";
 import { Rotulo, Variacao } from "./Basicos";
 import { ChaveirosDoItem } from "./chaveiro/Chaveiro";
 import { IconeTema } from "./chaveiro/IconeTema";
-import { categoriaDoItem } from "./chaveiro/temas";
+import { categoriaDoItem, nomeDoTema } from "./chaveiro/temas";
 import { SeloSinal } from "./SinalModelo";
 import { Sparkline } from "./Sparkline";
 
@@ -34,7 +34,7 @@ export function CardItem({ item, medalha }: { item: ItemResumo; medalha?: TipoMe
           <span className="flex min-w-0 items-center gap-2">
             {categoria && <IconeTema tema={categoria} />}
             <span className="truncate">
-              <Rotulo>{categoria?.nome ?? item.tipo ?? jogoDoItem(item.appid)?.nome ?? "Item"}</Rotulo>
+              <Rotulo>{(categoria ? nomeDoTema(categoria.nome) : undefined) ?? item.tipo ?? jogoDoItem(item.appid)?.nome ?? "Item"}</Rotulo>
             </span>
           </span>
           <span className="font-mono text-sm text-apagado transition-colors group-hover:text-destaque" aria-hidden>

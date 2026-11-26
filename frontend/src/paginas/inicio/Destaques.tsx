@@ -188,7 +188,7 @@ export function TerminaisDestaque({ chaveiros = true, tour }: { chaveiros?: bool
           oportunidade && (
             <span>
               <span className="text-destaque">{formatarVariacao(oportunidade.margem_estimada)}</span>{" "}
-              <span className="text-apagado">até {formatarPreco(oportunidade.preco_previsto)} em 7 dias</span>
+              <span className="text-apagado">{t(`até ${formatarPreco(oportunidade.preco_previsto)} em 7 dias`, `up to ${formatarPreco(oportunidade.preco_previsto)} in 7 days`)}</span>
             </span>
           )
         }

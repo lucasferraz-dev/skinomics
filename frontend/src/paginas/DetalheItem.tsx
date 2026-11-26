@@ -9,7 +9,7 @@ import { BotaoAcompanhar } from "../componentes/BotaoAcompanhar";
 import { CardItem } from "../componentes/CardItem";
 import { ChaveirosDoItem } from "../componentes/chaveiro/Chaveiro";
 import { IconeTema } from "../componentes/chaveiro/IconeTema";
-import { categoriaDoItem, temasDoItem } from "../componentes/chaveiro/temas";
+import { categoriaDoItem, nomeDoTema, temasDoItem } from "../componentes/chaveiro/temas";
 import { GraficoHistorico } from "../componentes/GraficoHistorico";
 import { analiseDoItem } from "../componentes/mascote/analise";
 import { MascotesFixos } from "../componentes/mascote/MascotesFixos";
@@ -101,7 +101,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
           <>
             <span aria-hidden>/</span>
             <Link to={`/itens?categoria=${encodeURIComponent(categoria.nome)}`} className="text-suave transition-colors hover:text-destaque">
-              {categoria.nome}
+              {nomeDoTema(categoria.nome)}
             </Link>
           </>
         )}
@@ -173,7 +173,7 @@ function Conteudo({ item }: { item: ItemResumo }) {
               className="group/botao inline-flex items-center gap-1.5 text-sm text-destaque"
             >
               <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-300 group-hover/botao:bg-[length:100%_1px]">
-                Ver todos: {categoria.nome}
+                {t("Ver todos", "See all")}: {nomeDoTema(categoria.nome)}
               </span>
               <span aria-hidden className="transition-transform duration-300 group-hover/botao:translate-x-1">→</span>
             </Link>
@@ -216,7 +216,9 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
       <div data-tour="item-topo" className="min-w-0 space-y-6">
         <div className="space-y-4">
           <Rotulo destaque>
-            {categoria && jogo ? `${categoria.nome} de ${jogo.nome}` : (categoria?.nome ?? item.tipo ?? jogo?.nome ?? "Item")}
+            {categoria && jogo
+              ? t(`${nomeDoTema(categoria.nome)} de ${jogo.nome}`, `${jogo.nome} ${nomeDoTema(categoria.nome)}`)
+              : (categoria ? nomeDoTema(categoria.nome) : undefined) ?? item.tipo ?? jogo?.nome ?? "Item"}
           </Rotulo>
           {/* Quebra em vez de cortar: no celular, o nome cortado escondia qual item era. */}
           <h1 data-poleiro="texto" className="text-4xl leading-[1.05] text-balance titulo sm:text-5xl">
@@ -231,7 +233,7 @@ function Hero({ item, medalha }: { item: ItemResumo; medalha?: Parameters<typeof
                   style={{ borderColor: `${tema.cor}55`, color: tema.cor }}
                 >
                   <IconeTema tema={tema} tamanho={13} />
-                  {tema.nome}
+                  {nomeDoTema(tema.nome)}
                 </span>
               ))}
             </div>
