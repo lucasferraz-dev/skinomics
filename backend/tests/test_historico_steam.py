@@ -9,9 +9,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.coleta.gravacao import ItemCatalogo, PrecoDia, gravar_itens, gravar_precos
-from app.coleta.historico_steam import baixar_historico, itens_pendentes, ler_lista, serie_diaria
+from app.coleta.historico_steam import (
+    ativar_itens,
+    baixar_historico,
+    itens_pendentes,
+    ler_lista,
+    serie_diaria,
+)
 from app.coleta.steam import (
     CS2,
+    TF2,
     LimiteDaSteamError,
     LoginSteamError,
     MercadoSteam,
@@ -239,6 +246,19 @@ def test_treino_cria_itens_inativos_e_nao_busca_imagem(sessao: Session) -> None:
     assert novo.icon_url is None
     # Só o histórico: nenhuma visita à página de anúncios, que é a que mais leva 429.
     assert all("pricehistory" in caminho for caminho in caminhos)
+
+
+def test_item_de_treino_que_entra_na_lista_do_site_volta_a_ficar_ativo(sessao: Session) -> None:
+    redline, vulcan = "AK-47 | Redline (Field-Tested)", "AK-47 | Vulcan (Field-Tested)"
+    gravar_itens(sessao, [ItemCatalogo(CS2, n, n, ativo=False) for n in (redline, vulcan)])
+
+    assert ativar_itens(sessao, [redline, "Fora do catálogo"], CS2) == 1
+    assert ativar_itens(sessao, [redline], CS2) == 0  # já estava ativo
+    assert ativar_itens(sessao, [vulcan], TF2) == 0  # outro jogo, outro item
+
+    ativos = {i.market_hash_name: i.ativo for i in sessao.scalars(select(Item))}
+    assert ativos[redline] is True
+    assert ativos[vulcan] is False
 
 
 def test_troca_a_serie_inteira_do_item(sessao: Session) -> None:

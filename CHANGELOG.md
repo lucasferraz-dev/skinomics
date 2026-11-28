@@ -4,6 +4,12 @@
 
 ### Adicionado
 
+- Mais 20 itens de CS2 no site, vindos da lista de treino: os mais negociados dela (6 caixas, como a
+  Fever e a Prisma 2, e 14 skins em Field-Tested, como a AK-47 Redline e a AWP Asiimov). O site passa
+  de 21 para 41 itens de CS2. Sem `--treino`, o `historico_steam` agora reativa um item de treino que
+  entrou na lista do site (`ativar_itens`).
+- Modelo do CS2 retreinado com os 187 itens de treino: erra menos em 18 dos 20 itens do site nos dois
+  horizontes (ganho sobre o ingênuo de 4,1% para 9,4% em 7 dias e de 1,8% para 5,7% em 15 dias).
 - Itens de treino do CS2: `historico_steam --treino` cria os itens novos inativos (só para treinar o
   modelo, sem aparecer no site nem ganhar previsão) e não busca a imagem deles. Lista
   `app/coleta/itens_cs2_treino.txt`, com 187 itens montados pelo catálogo público CSGO-API (todas as

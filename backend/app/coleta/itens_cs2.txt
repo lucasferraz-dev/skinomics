@@ -39,3 +39,26 @@ M4A4 | The Emperor (Factory New)
 Desert Eagle | Printstream (Factory New)
 USP-S | Kill Confirmed (Factory New)
 Glock-18 | Water Elemental (Factory New)
+
+# Vindos da lista de treino (28/11/2026): os mais negociados dela, para o site ter mais CS2.
+# Field-Tested, o desgaste em que eles mais vendem.
+Fever Case
+Prisma 2 Case
+Danger Zone Case
+Snakebite Case
+Spectrum 2 Case
+Glove Case
+AK-47 | Redline (Field-Tested)
+AK-47 | Asiimov (Field-Tested)
+AK-47 | Ice Coaled (Field-Tested)
+AK-47 | Searing Rage (Field-Tested)
+AK-47 | Inheritance (Field-Tested)
+AWP | Asiimov (Field-Tested)
+AWP | Duality (Field-Tested)
+M4A1-S | Black Lotus (Field-Tested)
+M4A1-S | Solitude (Field-Tested)
+M4A4 | Tooth Fairy (Field-Tested)
+Desert Eagle | Printstream (Field-Tested)
+Desert Eagle | Mecha Industries (Field-Tested)
+USP-S | Jawbreaker (Field-Tested)
+Glock-18 | Shinobu (Field-Tested)

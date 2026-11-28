@@ -11,13 +11,10 @@ CS:GO Weapon Case 2
 CS:GO Weapon Case 3
 Chroma 2 Case
 Chroma Case
-Danger Zone Case
 Falchion Case
-Fever Case
 Gallery Case
 Gamma 2 Case
 Gamma Case
-Glove Case
 Horizon Case
 Huntsman Weapon Case
 Operation Bravo Case
@@ -27,13 +24,10 @@ Operation Phoenix Weapon Case
 Operation Riptide Case
 Operation Vanguard Weapon Case
 Operation Wildfire Case
-Prisma 2 Case
 Prisma Case
 Revolver Case
 Shadow Case
 Shattered Web Case
-Snakebite Case
-Spectrum 2 Case
 Spectrum Case
 Winter Offensive Weapon Case
 eSports 2013 Case
@@ -44,7 +38,6 @@ eSports 2014 Summer Case
 AK-47 | AUTOEXEC (Field-Tested)
 AK-47 | Aphrodite (Field-Tested)
 AK-47 | Aquamarine Revenge (Field-Tested)
-AK-47 | Asiimov (Field-Tested)
 AK-47 | B the Monster (Field-Tested)
 AK-47 | Bloodsport (Field-Tested)
 AK-47 | Cartel (Field-Tested)
@@ -57,8 +50,6 @@ AK-47 | Fuel Injector (Field-Tested)
 AK-47 | Gold Arabesque (Field-Tested)
 AK-47 | Head Shot (Field-Tested)
 AK-47 | Hydroponic (Field-Tested)
-AK-47 | Ice Coaled (Field-Tested)
-AK-47 | Inheritance (Field-Tested)
 AK-47 | Jaguar (Field-Tested)
 AK-47 | Jet Set (Field-Tested)
 AK-47 | Leet Museo (Field-Tested)
@@ -71,8 +62,6 @@ AK-47 | Panthera onca (Field-Tested)
 AK-47 | Phantom Disruptor (Field-Tested)
 AK-47 | Point Disarray (Field-Tested)
 AK-47 | Red Laminate (Field-Tested)
-AK-47 | Redline (Field-Tested)
-AK-47 | Searing Rage (Field-Tested)
 AK-47 | The Empress (Field-Tested)
 AK-47 | The Oligarch (Field-Tested)
 AK-47 | The Outsiders (Field-Tested)
@@ -80,7 +69,6 @@ AK-47 | Vulcan (Field-Tested)
 AK-47 | Wasteland Rebel (Field-Tested)
 AK-47 | Wild Lotus (Field-Tested)
 AK-47 | X-Ray (Field-Tested)
-AWP | Asiimov (Field-Tested)
 AWP | BOOM (Field-Tested)
 AWP | CMYK (Field-Tested)
 AWP | Chromatic Aberration (Field-Tested)
@@ -90,7 +78,6 @@ AWP | Corticera (Field-Tested)
 AWP | Crakow! (Field-Tested)
 AWP | Desert Hydra (Field-Tested)
 AWP | Dragon Lore (Field-Tested)
-AWP | Duality (Field-Tested)
 AWP | Electric Hive (Field-Tested)
 AWP | Elite Build (Field-Tested)
 AWP | Fever Dream (Field-Tested)
@@ -119,9 +106,7 @@ Desert Eagle | Eastern Enigma (Field-Tested)
 Desert Eagle | Fennec Fox (Field-Tested)
 Desert Eagle | Heat Treated (Field-Tested)
 Desert Eagle | Kumicho Dragon (Field-Tested)
-Desert Eagle | Mecha Industries (Field-Tested)
 Desert Eagle | Ocean Drive (Field-Tested)
-Desert Eagle | Printstream (Field-Tested)
 Desert Eagle | Starcade (Field-Tested)
 Glock-18 | AXIA (Field-Tested)
 Glock-18 | Bullet Queen (Field-Tested)
@@ -131,14 +116,12 @@ Glock-18 | Ghost Protocol (Field-Tested)
 Glock-18 | Gold Toof (Field-Tested)
 Glock-18 | Mirror Mosaic (Field-Tested)
 Glock-18 | Neo-Noir (Field-Tested)
-Glock-18 | Shinobu (Field-Tested)
 Glock-18 | Snack Attack (Field-Tested)
 Glock-18 | Twilight Galaxy (Field-Tested)
 Glock-18 | Vogue (Field-Tested)
 Glock-18 | Wasteland Rebel (Field-Tested)
 Glock-18 | Water Elemental (Field-Tested)
 M4A1-S | Atomic Alloy (Field-Tested)
-M4A1-S | Black Lotus (Field-Tested)
 M4A1-S | Chantico's Fire (Field-Tested)
 M4A1-S | Control Panel (Field-Tested)
 M4A1-S | Cyrex (Field-Tested)
@@ -155,7 +138,6 @@ M4A1-S | Nightmare (Field-Tested)
 M4A1-S | Party Animal (Field-Tested)
 M4A1-S | Player Two (Field-Tested)
 M4A1-S | Printstream (Field-Tested)
-M4A1-S | Solitude (Field-Tested)
 M4A1-S | Stratosphere (Field-Tested)
 M4A1-S | Vaporwave (Field-Tested)
 M4A1-S | Welcome to the Jungle (Field-Tested)
@@ -178,12 +160,10 @@ M4A4 | Temukau (Field-Tested)
 M4A4 | The Battlestar (Field-Tested)
 M4A4 | The Coalition (Field-Tested)
 M4A4 | The Emperor (Field-Tested)
-M4A4 | Tooth Fairy (Field-Tested)
 M4A4 | X-Ray (Field-Tested)
 M4A4 | 龍王 (Dragon King) (Field-Tested)
 USP-S | Caiman (Field-Tested)
 USP-S | Cortex (Field-Tested)
-USP-S | Jawbreaker (Field-Tested)
 USP-S | Kill Confirmed (Field-Tested)
 USP-S | Monster Mashup (Field-Tested)
 USP-S | Neo-Noir (Field-Tested)
