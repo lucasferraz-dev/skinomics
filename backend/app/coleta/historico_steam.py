@@ -9,7 +9,8 @@ lista app/coleta/itens_cs2.txt.
 
 Com `--treino`, os itens novos entram no catálogo inativos: servem só para treinar o modelo (não
 aparecem no site nem ganham previsão) e a coleta não busca a imagem deles. É o modo da lista
-app/coleta/itens_cs2_treino.txt, atualizada de vez em quando, fora da coleta diária.
+app/coleta/itens_cs2_treino.txt, atualizada de vez em quando, fora da coleta diária. Sem
+`--treino`, a lista manda: um item de treino que passa para a lista do site volta a ficar ativo.
 
 Com `--pendentes`, só os itens cuja série ainda não chega a ontem: rodar de novo no mesmo dia não
 pede nada à Steam, e uma coleta interrompida (429) continua de onde parou na próxima vez. É o modo
@@ -35,7 +36,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import httpx2 as httpx
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.coleta.execucao import anotar_falha, registrar_execucao
@@ -181,6 +182,17 @@ def itens_pendentes(
     if nomes:
         return [nome for nome in dict.fromkeys(nomes) if nome not in em_dia]
     return [nome for nome, _ in sessao.execute(consulta) if nome not in em_dia]
+
+
+def ativar_itens(sessao: Session, nomes: Sequence[str], appid: int) -> int:
+    """Põe no site os itens da lista que estavam só no treino; devolve quantos mudaram."""
+    resultado = sessao.execute(
+        update(Item)
+        .where(Item.appid == appid, Item.market_hash_name.in_(nomes), Item.ativo.is_(False))
+        .values(ativo=True)
+    )
+    sessao.commit()
+    return resultado.rowcount
 
 
 def _buscar_icones(mercado: MercadoSteam, itens: Sequence[Item]) -> None:
@@ -333,6 +345,8 @@ def main() -> None:
     # Cabeçalho pronto em vez de `cookies=`: o valor já vem codificado (%7C) do navegador.
     cabecalho = {"Cookie": f"steamLoginSecure={cookie}"}
     with httpx.Client(timeout=30, headers=cabecalho) as cliente, SessionLocal() as sessao:
+        if somente and not args.treino and (ativados := ativar_itens(sessao, somente, args.appid)):
+            print(f"{ativados} itens de treino passaram a aparecer no site.", flush=True)
         if args.pendentes:
             ontem = datetime.now(UTC).date() - timedelta(days=1)
             somente = itens_pendentes(sessao, ontem, somente, args.appid)
